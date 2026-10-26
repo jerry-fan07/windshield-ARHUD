@@ -1,0 +1,104 @@
+<section>
+  <h2 id="b5"><span class="num">B5</span>HUD controller and LED drivers</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Brightness control (2.5, 2.11), heat protection (2.6), the shutter and its fail-safes (2.7)</div>
+    <div><b>Weeks</b>1–3, in parallel with B4 and B6</div>
+    <div><b>Closes</b>No gate; its bench tests (B5.6) must pass before the backlight is built (B9)</div>
+    <div><b>Needs</b>The parts in B5.1; a bench supply, multimeter, oscilloscope</div>
+    <div><b>Produces</b>A tested controller board, two LED-driver channels, firmware with its fail-safe rules, <code>controllerd</code></div>
+    <div><b>People</b>Builder</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> The backlight, the shutter and the temperature limits must keep working when the Jetson crashes, reboots or is unplugged, because those are exactly the moments when nobody is watching the panel. So they get their own small computer, a Raspberry Pi Pico, with its own rules: it dims the LEDs on request, but it turns them off and closes the shutter by itself if the cell gets too hot or the Jetson goes quiet. It is wired so that even an unpowered or resetting Pico leaves the LEDs off and the shutter closed.</p>
+
+  <h3>B5.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:36%">Item</th><th style="width:6%">Qty</th><th>Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Raspberry Pi Pico (RP2040)</td><td>1</td><td>With headers (Pico H) or headers to solder</td></tr>
+      <tr><td>TSL2591 breakout (Adafruit or equivalent)</td><td>1</td><td>I²C address 0x29; range to about 88,000 lux (Adafruit's figure). VEML7700 (0x10, to about 140,000 lux) is the alternative</td></tr>
+      <tr><td>MAX31855K breakout and type-K thermocouples</td><td>1 + 3</td><td>Read-only SPI, 0.25 °C steps; glass-braid bead thermocouples</td></tr>
+      <tr><td>NTC thermistor</td><td>2</td><td>10 kΩ at 25 °C, B ≈ 3950, glass bead</td></tr>
+      <tr><td>RECOM RCD-24-0.50 LED driver, pinned version (or the /W/X3 wired version with both dimming leads)</td><td>2</td><td>One per string. Input 4.5–36 V, output 2–35 V, 0.5 A. Pins: 1 +Vin, 2 analogue dimming, 3 PWM/ON/OFF, 4 GND, 5 −Vout, 6 +Vout (datasheet REV 1/2016). The 0.70 A part also works with the level capped in firmware</td></tr>
+      <tr><td>Dual rail-to-rail op-amp, 5 V supply (MCP6002 class)</td><td>1</td><td>Buffers and scales the two dimming levels to 0–4.4 V</td></tr>
+      <tr><td>NPN transistors (2N3904 or BC547)</td><td>2</td><td>Enable switches for the drivers' PWM/ON/OFF pins</td></tr>
+      <tr><td>Resistors (1%): 10 kΩ ×6, 3.3 kΩ ×2, 4.7 kΩ ×4, 100 kΩ ×2, 1 kΩ ×2; 10 kΩ 0.1% ×1</td><td>1 set</td><td>Filters, gains, pull-ups, NTC divider</td></tr>
+      <tr><td>Capacitors: 1 µF film or X7R ×4, 100 nF ×4, 470 µF 10 V electrolytic ×1, 10 µF ×2</td><td>1 set</td><td>Filters, decoupling, servo rail</td></tr>
+      <tr><td>Schottky diode (1N5817 class)</td><td>1</td><td>VSYS feed from the 5 V buck</td></tr>
+      <tr><td>5 V, 5 A buck converter, input range covering 16 V</td><td>1</td><td>Feeds the Pico, servo, fan, panel board and the OAK-D's Y-adapter</td></tr>
+      <tr><td>SG90 micro servo</td><td>2</td><td>4.8 V nominal; 50 Hz frame, about 1–2 ms pulses</td></tr>
+      <tr><td>Perfboard 70 × 90 mm, female headers for the Pico, JST-XH connectors, two-way screw terminals</td><td>1 set</td><td>Controller carrier</td></tr>
+      <tr><td>Dummy loads: 22 Ω, 10 W resistors</td><td>2</td><td>Bench testing the drivers (they must never run without a load)</td></tr>
+      <tr><td>Shielded 4-core cable, 0.5 mm² twin, heat-shrink</td><td>2 m each</td><td>Sensor and LED leads</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B5.2 The LED electrical design, and why it differs from the plan</h3>
+  <p><b>Strings.</b> Eight LEDs in two strings of four (Figure B9.2), each string on its own driver channel, so a failed LED darkens half the board, not all of it. A Cree XP-G4 has a typical forward voltage of 2.8 V at 700 mA and 85 °C (3.3 V maximum); a Lumileds HL2X 2.77 V. Four in series need about 11.2 V typical and 13.2 V at worst. The RCD-24 is a step-down driver whose dropout at 0.5–0.7 A is under about 0.5 V (datasheet graph), so a 16 V supply leaves more than 2 V of margin at the worst-case forward voltage. That is why the guide sets the DC-DC converter to 16 V (B7.3), inside the Jetson's 9–19 V input range.</p>
+  <p><b>Current.</b> The plan's backlight needs about {{p_led_film}} of LED with crossed prism films for {{l_panel_design}} cd/m², and the guide aims at about 13,000 (B10.1), about 8 W. Two strings of four at 0.5 A deliver about 11 W at full level, leaving margin for film gain below the assumed 2.0. The firmware caps the level if the thermal test (B9.7) demands it.</p>
+  <div class="box">
+    <p class="h">Dimming: analogue, not PWM</p>
+    <p>The plan asks for PWM dimming above 2 kHz to avoid camera beats and names the RCD-24 class. The RCD-24's datasheet limits its PWM input to 1 kHz, and to 200 Hz for a linear response, so it cannot meet that requirement. The guide dims by analogue current instead (pin 2), which produces no flicker at any level, and uses the PWM/ON/OFF pin (pin 3) only as a static on/off switch. Both of the driver's inputs are inverted: 0 V or an open pin means full on. The analogue input runs from 0.13 V (full) to about 4.2 V (off), more than a 3.3 V Pico can produce, hence the op-amp scaling to 0–4.4 V. Analogue dimming covers roughly 20:1 reliably; for the night range the controller can turn one string off (2:1) and the renderer draws white as a dimmer grey (another 20:1), together about 800:1, enough for 3 cd/m² at the eye.</p>
+  </div>
+  <figure>[[FIG g_controller]]<figcaption><b>Figure B5.1.</b> Controller wiring. The fail-safe defaults are in the hardware: drivers off and shutter closed whenever the Pico is not actively driving them.</figcaption></figure>
+
+  <h3>B5.3 Build the controller board</h3>
+  <ol class="steps">
+    <li>Plan the perfboard: Pico on female headers in the middle; the op-amp, transistors and filters on the right toward a 6-way connector to the drivers; the MAX31855 breakout and the sensor connectors on the left; the 5 V input, Schottky diode, 470 µF capacitor and servo header at the bottom. Keep the analogue (NTC, filters, op-amp) away from the servo's supply leads.</li>
+    <li>Solder the female headers and power first: 5 V screw terminal, Schottky diode (anode at 5 V) to VSYS (pin 39), ground to pins 38 and 3. Plug the Pico in, power from the bench supply at 5 V with a 0.5 A limit, and check 3.3 V on pin 36.</li>
+    <li><b>NTC divider.</b> ADC_VREF (pin 35) to the 10 kΩ 0.1% resistor to GP26 (pin 31); GP26 to the NTC connector; the NTC's other lead to AGND (pin 33); 100 nF from GP26 to AGND.</li>
+    <li><b>Light sensor.</b> A 4-way connector: 3V3 (pin 36), GND, SDA to GP4 (pin 6), SCL to GP5 (pin 7). The breakout carries its own pull-ups; use the shielded 4-core to the lid pod, shield grounded at the board end only.</li>
+    <li><b>Thermocouple amplifier.</b> Mount the MAX31855 breakout: VIN to 3V3, GND, CLK to GP18 (pin 24), DO to GP16 (pin 21), CS to GP17 (pin 22). Fit a miniature type-K socket to its thermocouple terminals.</li>
+    <li><b>Dimming levels, two channels.</b> For channel A: GP14 (pin 19) to 10 kΩ, to a node with 1 µF to ground, to another 10 kΩ, to a second 1 µF to ground, to the op-amp's first non-inverting input. Op-amp output to its inverting input through 3.3 kΩ; inverting input to ground through 10 kΩ (gain 1.33). Op-amp output through 1 kΩ to the connector's "A level" pin. Channel B identically from GP12 (pin 16) on the op-amp's second half. Op-amp supply from 5 V with 100 nF at its supply pin.</li>
+    <li><b>Enables, two channels.</b> GP15 (pin 20) through 4.7 kΩ to the base of NPN A; 100 kΩ from base to ground; emitter to ground; collector to the connector's "A enable" pin, which also has a 4.7 kΩ pull-up to 5 V. Channel B the same from GP13 (pin 17).</li>
+    <li><b>Servo.</b> A 3-way header: 5 V, ground, signal from GP22 (pin 29); 470 µF across 5 V and ground right at the header.</li>
+    <li>Wash off flux, inspect every joint under a lens, and check for shorts between 5 V, 3.3 V and ground with the meter before powering again.</li>
+  </ol>
+
+  <h3>B5.4 Wire the LED drivers</h3>
+  <ol class="steps">
+    <li>Mount both RCD-24 modules on a small board or the bay's side, with screw terminals for 16 V in and the LED strings out.</li>
+    <li>For each: pin 1 +Vin to the 16 V rail through a 2 A fuse; pin 4 GND to the rail's ground (never to −Vout); pin 6 +Vout to the string's anode; pin 5 −Vout to the string's cathode; pin 2 to the controller's level pin for that channel; pin 3 to the controller's enable pin.</li>
+    <li>Never connect or disconnect the LED string while the driver is powered, and never run it without a load: switch the 16 V input, not the output. On the bench, use the 22 Ω, 10 W dummy load in place of the string.</li>
+  </ol>
+
+  <h3>B5.5 Firmware</h3>
+  <p>MicroPython is enough (the C SDK is fine too). The firmware talks to <code>controllerd</code> on the Jetson over USB serial with one line per message. Appendix B lists the full pin map and protocol.</p>
+  <div class="term">every 10 ms:
+    read NTC (average 10 samples), convert with the B equation; MAX31855 every 200 ms; TSL2591 every 500 ms
+    if no heartbeat from the Jetson for 5 s:       enables off, shutter closed, flag USB_SILENT
+    if NTC > T2 (cut-off):                         enables off, shutter closed, latch flag OVER_TEMP until NTC < T1 − 5 °C and a reset command
+    elif NTC > T1 (derate):                        cap both levels at 50%, flag DERATE
+    if a sun-close request is active:              enables off, shutter closed
+    else apply the requested levels and shutter state from the last command
+    set level PWM: duty = (4.2 V − 4.07 V × level) / (3.3 V × 1.33), PWM at 25 kHz
+    shutter open: 50 Hz pulses at the open end-point; closed: stop pulses (the spring closes it)
+every 100 ms: send the status line
+hardware watchdog: 500 ms (a hang resets the Pico; its outputs default to off and closed)</div>
+  <p>Levels are linearised with the table measured in B5.6 step 4, because a driver's analogue response is rarely a straight line near its ends. The derate and cut-off temperatures T1 and T2 are set from the thermal test (B9.7); until then use 55 °C and 62 °C at the NTC.</p>
+  <p><b>On the Jetson,</b> <code>controllerd</code> opens the serial port, sends a heartbeat at 5 Hz, computes the level from the ambient light through the dimming curve (<code>config/dimming.yaml</code>, tuned in B13.5), sends shutter requests from the power state and <code>sunWatch</code>, and republishes every status line as <code>health</code>.</p>
+
+  <h3>B5.6 Bench tests (all must pass)</h3>
+  <ol class="steps">
+    <li><b>Safe default.</b> Power the drivers from the bench supply at 16 V with the dummy loads, the controller unpowered. Measure each driver's pin 3: it must be above 0.6 V (off), and no current flows in the loads.<span class="chk">Drivers off with the Pico unpowered</span></li>
+    <li>Power the controller with no firmware running (hold BOOTSEL): still off. Flash the firmware: still off until enabled by a command.</li>
+    <li>Enable channel A at level 0.1: the load current rises to about 50 mA. Watch the load current on the oscilloscope across a 0.1 Ω sense resistor: it must be steady, with no PWM ripple.<span class="chk">No flicker on the load current</span></li>
+    <li>Sweep the level from 0 to 1 in 0.05 steps on each channel, recording the load current at each step. Store the table in the firmware for linearisation. Full level must give 0.5 A ± 5%.</li>
+    <li><b>NTC.</b> Compare the reported temperature with the thermocouple at room temperature and with both taped to a warm aluminium block (60 °C); adjust the B value until they agree within 1 °C.</li>
+    <li><b>Thermocouple.</b> Ice water (0 °C) and boiling water (about 100 °C at sea level): within 2 °C.</li>
+    <li><b>Light sensor.</b> Indoors, compare with a phone light-meter app; outdoors in sun, confirm it does not saturate behind a piece of the dust-cover polariser (it reads about 40% of the open value).</li>
+    <li><b>Servo.</b> Find the open and closed end-points in microseconds with the shutter mechanism (B11) or a mock-up; store them. Stop the pulses with the shutter open: the spring must close it.</li>
+    <li><b>Fail-safes.</b> Stop the heartbeat: both channels off and the shutter closed within 5 s. Warm the NTC past T1: levels halve. Past T2: off and closed, and they stay off when it cools until reset. Send the debug "hang" command: the watchdog resets the Pico within 0.5 s and the outputs go off.<span class="chk">All four fail-safe tests pass</span></li>
+  </ol>
+
+  <h3>B5.7 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>LEDs on at power-up</td><td>An enable transistor is shorted or its pull-up missing; the driver's pin 3 must read above 0.6 V when the Pico is off. Do not proceed until this passes.</td></tr>
+      <tr><td>Dimming does not reach full brightness</td><td>The level voltage at pin 2 must reach about 0.13 V or below; check the op-amp output's low swing and the 1 kΩ series resistor.</td></tr>
+      <tr><td>Dimming does not reach off</td><td>Pin 2 must reach about 4.2 V; check the op-amp supply is 5 V and the gain resistors; turn the channel off with its enable instead.</td></tr>
+      <tr><td>ADC readings noisy</td><td>Average more samples; route the NTC lead away from the servo leads; add 1 µF in parallel with the 100 nF.</td></tr>
+      <tr><td>Pico resets when the servo moves</td><td>Servo supply sagging: the 470 µF must be at the header and the buck must be rated for the peaks.</td></tr>
+    </tbody>
+  </table>
+</section>

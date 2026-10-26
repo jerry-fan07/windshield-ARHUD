@@ -1,0 +1,16 @@
+<!doctype html><html><head><meta charset="utf-8"><title>smoke</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>html,body{margin:0;height:100%;background:#222}</style></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { M } from '../js/mats.js';
+import { rbox } from '../js/util.js';
+const r = new THREE.WebGLRenderer({antialias:true}); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping;
+const s = new THREE.Scene(); s.environment = new THREE.PMREMGenerator(r).fromScene(new RoomEnvironment(), 0.04).texture; s.background = new THREE.Color(0x30343a);
+const c = new THREE.PerspectiveCamera(40, innerWidth/innerHeight, 0.01, 100); c.position.set(0.3,0.25,0.4); c.lookAt(0,0,0);
+const b = rbox(0.13,0.058,0.12,0.006,M.alu); s.add(b);
+const p = rbox(0.05,0.002,0.02,0.0005,M.pcbGreen); p.position.set(0,0.04,0); s.add(p);
+r.render(s,c); document.title='rendered';
+</script></body></html>

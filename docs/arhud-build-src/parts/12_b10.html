@@ -1,0 +1,75 @@
+<section>
+  <h2 id="b10"><span class="num">B10</span>Mirror, fold and filters: specify, order, receive, inspect</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>The magnifier (2.1), the sun defences in the optical path (2.7), the polarisation at the cover (2.8)</div>
+    <div><b>Weeks</b>Quote in week 0–1, order after the trace, arrival after the unquoted lead time</div>
+    <div><b>Closes</b>No gate; every part passes its incoming inspection before B12</div>
+    <div><b>Needs</b>B1's trace outputs; the luminance meter and reference polariser for the checks</div>
+    <div><b>Produces</b>An inspected concave mirror, cold-mirror fold with absorber, hot-mirror IR-cut plate, dust cover with laminated polariser, shutter leaves</div>
+    <div><b>People</b>Builder; the optics shop</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> These are the only custom or specialised optical parts. The concave mirror is the magnifier and sets the image distance and shape; the fold, the IR-cut plate and the dust-cover polariser are the optical half of the sun defence. Each one is checked on arrival against what was ordered, because a wrong figure or a reversed coating is cheap to catch on the bench and expensive to discover in the car.</p>
+
+  <h3>B10.1 What to order</h3>
+  <table>
+    <thead><tr><th style="width:24%">Part</th><th>Specification</th><th style="width:22%">Source (plan)</th></tr></thead>
+    <tbody>
+      <tr><td>Concave mirror</td><td>The B1 trace's figure (freeform sag table, or toroid R<sub>t</sub> / R<sub>s</sub>), clear aperture about 300 × 200 mm, substrate about 12 mm, first-surface protected aluminium ≥ 90% at 450–650 nm, local slope error under about 1.5′ (B1.7). One, plus a quote for a spare.</td><td>Avantier, Shanghai Optics (custom to 500 mm, by quote): $1,000–4,000</td></tr>
+      <tr><td>Cold-mirror fold</td><td>Dielectric cold mirror on 3 mm glass, reflecting ≥ 90% from about 425 to 675 nm and transmitting ≥ 80% from about 750 to 1,200 nm, at the fold's {{lay_fold_inc}}° incidence (most catalogue cold mirrors are specified at 45°; ask for the curve at 35°). Size: the CAD's fold glass, about {{lay_fold_w}} × {{lay_fold_h}} mm; cut from a larger plate if needed.</td><td>Optics catalogues or a dichroic-glass supplier: with the IR-cut plate, $150–400</td></tr>
+      <tr><td>Absorber</td><td>2 mm aluminium, black anodised, the fold glass's size, mounted 3 mm behind it on the bracket's tabs</td><td>Any sheet-metal service</td></tr>
+      <tr><td>Hot-mirror IR-cut plate</td><td>Dielectric hot mirror (reflects about 750–1,200 nm, transmits ≥ 85% of visible), anti-reflection coated, for normal incidence, 1–2 mm glass, large enough to cover the panel mask's opening (measure the printed mask; about 70 × 40 mm)</td><td>As above</td></tr>
+      <tr><td>Dust-cover glass</td><td>3 mm float glass, {{cad_glass_l}} × {{cad_glass_w}} mm, edges arrised; anti-reflection coated if affordable (see the budget note)</td><td>Local glazier</td></tr>
+      <tr><td>Polariser for the dust cover</td><td>Linear polariser film or sheet, at least 300 × 300 mm, with the highest available transmission for light along its pass axis</td><td>Edmund XP42-18 300 × 300 mm (£162); polarization.com film ($20 per foot)</td></tr>
+      <tr><td>Optically clear adhesive sheet (if the polariser has no adhesive)</td><td>300 × 300 mm OCA</td><td>Phone-repair suppliers</td></tr>
+      <tr><td>Shutter leaves</td><td>0.5 mm 5052 aluminium, laser cut from <code>docs/arhud-cad/out/shutter-leaves.dxf</code>, black anodised</td><td>Laser-cutting service</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box">
+    <p class="h">The light budget does not yet include these parts</p>
+    <p>The plan's path from panel to eye, {{path_ws}}, counts the two mirrors and the windshield only. Light also passes the dust-cover glass (about 92% uncoated), its polariser (perhaps 85–90% for light along its axis <span class="tag">assumed</span>), the hot-mirror plate (about 90% <span class="tag">assumed</span>) and, if fitted, the retarder (about 92%). Together that is roughly 0.65–0.75 of the plan's figure, and the {{l_panel_design}} cd/m² panel would deliver about 1,250–1,450 cd/m² at the eye, under the 1,500 target. Mitigations, in order: buy the anti-reflection-coated cover glass and the highest-transmission polariser; measure each part's transmission on arrival (B10.4) and recompute; and build the backlight to about 13,000 cd/m² rather than 10,000 (B9), which the crossed prism films make possible at about 8 W of LED if their assumed gain holds.</p>
+  </div>
+
+  <h3>B10.2 Handling first-surface mirrors</h3>
+  <ul>
+    <li>The reflecting coating is on the front, exposed. It scratches under a fingernail and a fingerprint etches it within days. Wear gloves; hold the mirror by its edges or its back.</li>
+    <li>Store face down on a clean lint-free cloth, or in its shipping case. Never face-up toward a window.</li>
+    <li>Dust: blow it off. Fingerprints: a single, light drag of lens tissue wet with isopropyl alcohol, no pressure, never a dry wipe and never a circular rub.</li>
+  </ul>
+
+  <h3>B10.3 Inspect the concave mirror</h3>
+  <ol class="steps">
+    <li>Unpack it gloved on the optics bench. Check the outline and thickness with calipers against the order; check the edges for chips.</li>
+    <li>Look at the coating under raking light (a torch nearly parallel to the surface, in a dark room): note scratches, digs and coating voids. Photograph them; anything inside the traced footprint larger than about 0.5 mm goes back to the shop.</li>
+    <li><b>Check the curvature.</b> Make a point source: a white LED behind a 0.5 mm hole in black card. Stand the mirror upright on the bench; put the source near its axis at about its radius of curvature (about 0.64–0.69 m for this design) and look at the light returned onto a white card held just beside the source. Slide source and card together along the axis. A sphere returns a point at one distance, its radius. A toroid returns a horizontal line at one distance and a vertical line at another: these are its two radii. Measure each from the mirror's vertex.</li>
+    <li>Compare with the order: within about 1% of each radius for a toroid. For a freeform, compare the shop's measurement report with the sag table instead; the functional test is B12's image.<span class="chk">Radii or report match the order</span></li>
+    <li>Check the reflectance: light a white card evenly, read its luminance with the meter directly, then via the mirror at a small angle from the same distance. The ratio is the reflectance (the plan assumes 0.90).<span class="chk">Reflectance recorded</span></li>
+  </ol>
+
+  <h3>B10.4 Inspect the fold, the IR-cut plate and the cover parts</h3>
+  <ol class="steps">
+    <li>Cold mirror: identify the coated face (pen-tip test, B12.3). Look at a white lamp in it at about 35°: the reflection should look neutral white; a strong colour cast means a coating designed for a different angle. Measure its reflectance for s light: reference polariser in front of the meter, axis across the plane of incidence.</li>
+    <li>Hot-mirror plate: look at an incandescent lamp or the sun's reflection off a wall through it; it should look almost clear. Measure its visible transmission with the meter against a lit white card.</li>
+    <li>Polariser: find and mark its pass axis. Look through it at the glare off a glossy horizontal surface (a table, a wet road) at a low angle: that glare is mostly horizontally polarised (s). It is brightest when the pass axis is horizontal. Mark the axis on the film's edge with an arrow.</li>
+    <li>Measure the polariser's transmission for polarised light: the panel's own output (stock kit) through the film with the axes aligned, against the panel alone. Record it; it enters the budget above.</li>
+  </ol>
+
+  <h3>B10.5 Laminate the dust cover</h3>
+  <ol class="steps">
+    <li>Clean the glass on both faces with isopropyl alcohol and lint-free wipes; work in the least dusty room available, with the air still.</li>
+    <li>Lay the polariser over the glass's underside with its pass axis parallel to the glass edge that will lie across the car. Mark that edge "across".</li>
+    <li>Peel back 30 mm of the liner (or of the OCA's liner), tack that edge, and squeegee slowly toward the far edge while peeling, so no air is trapped.</li>
+    <li>Trim the film 1 mm inside the glass's edge with a fresh blade. Small bubbles at the dust cover are out of focus and only scatter a little light; large ones or creases mean starting again.</li>
+    <li>Check: through the cover, a polarised-sunglasses lens rotated to vertical blocks the bench rig's image if the cover passes s (horizontal) light.<span class="chk">Cover's pass axis across the car</span></li>
+  </ol>
+
+  <h3>B10.6 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Radii off by more than about 1%</td><td>Reject, or re-run the trace with the measured radii: the panel's distance can absorb a small focal error, at the cost of the image distance and size.</td></tr>
+      <tr><td>Mirror late</td><td>Run the demo on Stage 1 (B8) and keep building everything else to be ready the day it arrives.</td></tr>
+      <tr><td>Cold mirror tinted at 35°</td><td>Usable if the colour shift is small; the dimming curve and white balance in <code>hudd</code> can compensate a little; otherwise order a coating designed for 35°.</td></tr>
+    </tbody>
+  </table>
+</section>

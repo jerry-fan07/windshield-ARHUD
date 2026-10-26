@@ -1,0 +1,136 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Fork C components</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+  html, body { margin: 0; height: 100%; background: #1c1f24; color: #e8e6e1; font: 13px "Helvetica Neue", Helvetica, Arial, sans-serif; overflow: hidden; }
+  #info { position: absolute; left: 10px; top: 8px; max-width: 46%; white-space: pre-wrap; background: rgba(0,0,0,0.55); padding: 8px 10px; border-radius: 6px; line-height: 1.35; }
+  #err { color: #ff7a7a; }
+</style>
+</head>
+<body>
+<div id="info"></div>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { validateComponent } from '../js/components/contract.js';
+import * as G from '../js/geom.js';
+
+const info = document.getElementById('info');
+const log = (s, err) => { const d = document.createElement('div'); if (err) d.id = 'err'; d.textContent = s; info.appendChild(d); (err ? console.error : console.log)(s); };
+const _warn = console.warn.bind(console); console.warn = (...a) => { _warn(...a); const d = document.createElement('div'); d.style.color = '#ffd27a'; d.textContent = 'WARN ' + a.join(' '); info.appendChild(d); };
+window.addEventListener('error', (e) => log('ERROR ' + e.message + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno, true));
+window.addEventListener('unhandledrejection', (e) => log('REJECT ' + (e.reason && e.reason.stack || e.reason), true));
+
+const hash = Object.fromEntries(location.hash.slice(1).split('&').filter(Boolean).map((kv) => { const [k, v = '1'] = kv.split('='); return [k, decodeURIComponent(v)]; }));
+if (hash.mode) G.MIRROR.mode = hash.mode;
+
+const pgu = await import('../js/components/pgu.js');
+const optics = await import('../js/components/optics.js');
+const builders = [
+  ['panelKit', pgu.buildPanelKit], ['lcdCell', pgu.buildLcdCell], ['backlight', pgu.buildBacklight], ['retarder', pgu.buildRetarder], ['pgu', pgu.buildPgu],
+  ['coldMirror', optics.buildColdMirror], ['concaveMirror', optics.buildConcaveMirror], ['shutter', optics.buildShutter], ['dustCover', optics.buildDustCover],
+  ['housing', optics.buildHousing], ['hudUnit', optics.buildHudUnit], ['stage0Rig', optics.buildStage0Rig], ['stage1Rig', optics.buildStage1Rig],
+];
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x2a2e35);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const sun = new THREE.DirectionalLight(0xffffff, 1.4); sun.position.set(2, 4, 3); sun.castShadow = true; scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xdde6ff, 0x30302c, 0.4));
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.001, 100);
+const controls = new OrbitControls(camera, renderer.domElement);
+
+const comps = [];
+for (const [id, fn] of builders) {
+  if (hash.only && hash.only !== id) continue;
+  try {
+    const c = fn();
+    const errs = validateComponent(c);
+    log(`${id}: ${c.parts.length} parts, ${c.assembly.length} steps${errs.length ? ' — ' + errs.join('; ') : ' — valid'}`, errs.length > 0);
+    comps.push(c);
+  } catch (e) { log(`${id}: build failed: ${e.stack || e}`, true); }
+}
+
+// bounding box without working visuals
+function bbox(c) {
+  const b = new THREE.Box3();
+  scene.updateMatrixWorld(true);
+  c.group.traverse((o) => {
+    let p = o; while (p && p !== c.group) { if (p.name === 'workingFX') return; p = p.parent; }
+    if (o.isMesh && o.geometry) { o.geometry.computeBoundingBox(); const bb = o.geometry.boundingBox.clone().applyMatrix4(o.matrixWorld); b.union(bb); }
+  });
+  return b;
+}
+
+// layout: grid of cells, each component centred
+const holder = new THREE.Group(); scene.add(holder);
+const cell = hash.only ? 0 : 0.75;
+comps.forEach((c, i) => {
+  const wrap = new THREE.Group(); wrap.add(c.group); holder.add(wrap);
+  const b = bbox(c); const ctr = b.getCenter(new THREE.Vector3()); const size = b.getSize(new THREE.Vector3());
+  const k = hash.only ? 1 : Math.min(1, 0.55 / Math.max(size.x, size.y, size.z));
+  wrap.scale.setScalar(k);
+  wrap.position.set((i % 5) * cell - ctr.x * k, -Math.floor(i / 5) * cell - ctr.y * k, -ctr.z * k);
+  c.userData = { base: c.parts.map((p) => p.object.position.clone()) };
+  if (!hash.only) { const lbl = document.createElement('div'); }
+});
+if (hash.only && comps[0]) {
+  const c = comps[0];
+  if (c.id === 'hudUnit') {
+    // context: windshield patch and the eye
+    const wsW = 0.9, p0 = G.G.clone();
+    const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), new THREE.MeshBasicMaterial({ color: 0x9fd0e0, transparent: true, opacity: 0.08, side: THREE.DoubleSide, depthWrite: false }));
+    glass.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), G.GLASS_N); glass.position.copy(p0).addScaledVector(G.GLASS_UP, 0.05);
+    holder.children[0].add(glass);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.012, 16, 8), new THREE.MeshStandardMaterial({ color: 0xffffff })); eye.position.copy(G.EYE); holder.children[0].add(eye);
+  }
+}
+
+// state
+const explode = hash.explode ? parseFloat(hash.explode) : 0;
+const working = !!hash.working && hash.working !== '0';
+comps.forEach((c) => { c.setWorking(working); c.parts.forEach((p, j) => p.object.position.copy(c.userData.base[j]).addScaledVector(p.explode, explode)); });
+const tEnd = hash.t ? parseFloat(hash.t) : 3;
+let t = 0;
+const dt = 1 / 30;
+while (t < tEnd) { comps.forEach((c) => c.update(t, dt, { working, explode })); t += dt; }
+
+// camera framing
+const all = new THREE.Box3(); comps.forEach((c) => all.union(bbox(c)));
+const ctr = all.getCenter(new THREE.Vector3()); const sz = all.getSize(new THREE.Vector3()).length();
+const dirs = { iso: [1, 0.8, 1.2], side: [0, 0.05, 1], top: [0.001, 1, 0.001], front: [1, 0.15, 0.0001], back: [-1, 0.3, 0.6], under: [0.6, -0.8, 0.8], rear: [-1, 0.6, 1] };
+const dv = new THREE.Vector3(...(dirs[hash.view || 'iso'] || dirs.iso)).normalize();
+const zoom = hash.zoom ? parseFloat(hash.zoom) : 1;
+camera.position.copy(ctr).addScaledVector(dv, sz * 1.9 / zoom);
+if (hash.tx) ctr.add(new THREE.Vector3(parseFloat(hash.tx), parseFloat(hash.ty || 0), parseFloat(hash.tz || 0)));
+camera.lookAt(ctr); controls.target.copy(ctr); controls.update();
+
+if (hash.only && comps[0]) {
+  const c = comps[0];
+  log(`${c.name}\norigin: ${c.mount}\nsize: ${c.size.map((x) => (x * 1000).toFixed(0)).join(' × ')} mm`);
+  if (c.stats) log('stats ' + JSON.stringify({ ...c.stats, blockers: undefined }, (k, v) => typeof v === 'number' ? Math.round(v * 10) / 10 : v));
+  if (c.layout) { const L = c.layout; log(`layout xR ${L.xR.toFixed(3)} xF ${L.xF.toFixed(3)} lid slope ${L.s.toFixed(3)} aperture x ${L.ax0.toFixed(3)}..${L.ax1.toFixed(3)} z ${L.az0.toFixed(3)}..${L.az1.toFixed(3)} L ${L.L.toFixed(3)} W ${L.W.toFixed(3)} lidY(xR) ${L.lidY(L.xR).toFixed(3)}`); }
+  if (c.fold) log(`fold u ${c.fold.u0.toFixed(3)}..${c.fold.u1.toFixed(3)} v ${c.fold.v0.toFixed(3)}..${c.fold.v1.toFixed(3)}`);
+}
+
+let last = performance.now();
+renderer.setAnimationLoop(() => {
+  const now = performance.now(); const d = Math.min(0.05, (now - last) / 1000); last = now;
+  if (!hash.freeze) { t += d; comps.forEach((c) => c.update(t, d, { working, explode })); }
+  controls.update();
+  renderer.render(scene, camera);
+});
+document.title = 'ready';
+</script>
+</body>
+</html>

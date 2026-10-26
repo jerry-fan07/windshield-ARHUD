@@ -1,0 +1,84 @@
+<section>
+  <h2 id="s7"><span class="num">7</span>Software</h2>
+  <p>All new code lives in this repository in a new top-level package, <code>hud/</code>, that has no build dependency on openpilot. The openpilot tree stays in the repository as reference: its raylib user-interface code and its model renderer are the nearest working examples of what hudd must do, and Appendix C points at the files worth reading. Nothing from openpilot runs. The new code is a set of processes joined by a small message bus, a projection chain, a controller firmware, and a recording format, each described below.</p>
+
+  <h3>7.1 Processes on the Jetson</h3>
+  <p>Each job is a separate process. A fault in one does not take down the others, each can be tested alone against a recording, and the GPU-heavy ones can be restarted without blanking the display. A supervisor starts them in order, restarts a crashed process after one second, and marks its topics stale in the meantime; hudd draws the stale state rather than the last frame.</p>
+  <table>
+    <thead><tr><th style="width:17%">Process</th><th>Role</th><th style="width:24%">Publishes</th></tr></thead>
+    <tbody>
+      <tr><td><code>roadd</code></td><td>Owns the ZED 2i: capture at 30 Hz, stereo depth, a plane fit to the road region, the inertial stream at its native rate. Lifts lane points and object boxes it receives from <code>laned</code> and <code>detectd</code> to the car frame. Records the stereo stream when asked.</td><td><code>lanes</code>, <code>objects</code> (3D form), <code>imu</code></td></tr>
+      <tr><td><code>laned</code></td><td>Runs the lane network on the left image (TensorRT, FP16). Outputs up to four lane lines as image points with confidences, plus road edges if the network provides them.</td><td><code>lanes2d</code></td></tr>
+      <tr><td><code>detectd</code></td><td>Runs the object detector (TensorRT, INT8) and the tracker on the left image; runs the sign classifier on sign crops. Outputs tracked boxes with class, identity, velocity and the sign value.</td><td><code>objects2d</code></td></tr>
+      <tr><td><code>egod</code></td><td>Reads the ZED-F9R over serial and the <code>imu</code> topic; fuses them into speed, yaw rate, pitch and a fix-quality flag at 100 Hz. Also computes the sun's direction in the car frame once a second.</td><td><code>ego</code>, <code>gnss</code>, <code>sunWatch</code></td></tr>
+      <tr><td><code>headtrackd</code></td><td>Owns the OAK-D Pro: runs the camera's own face-detection and landmark networks on its vision processor, reads the camera's stereo depth at the eye landmarks, and publishes the eye midpoint in the car frame with a confidence. Running a landmark model on the Jetson instead is the alternative: MediaPipe's Face Landmarker (478 landmarks, Apache 2.0) ships an aarch64 wheel but is not supported on Jetson by its authors and its rate there is <span class="tag">unverified</span>; OpenSeeFace (BSD, 68 landmarks with a pose solve, 44–68 fps on one desktop CPU core) is the lighter choice. The on-camera path is primary because it costs the Jetson nothing.</td><td><code>eyePose</code></td></tr>
+      <tr><td><code>hudd</code></td><td>The renderer. Reads every topic above, compensates for age, projects into the eye frame, draws at 60 Hz with vsync, applies the pre-distortion warp, and outputs full screen on the HDMI port at 1920 × 1080 with the crop region lit and the rest black.</td><td><code>hudFrame</code> (downscaled, for the audience view), <code>hudStats</code></td></tr>
+      <tr><td><code>controllerd</code></td><td>Talks to the RP2040 over USB serial: reads ambient light and the cell thermistor, sets the backlight duty from the dimming curve, drives the shutter from <code>sunWatch</code> and the power state, and raises health flags.</td><td><code>health</code></td></tr>
+      <tr><td><code>logd</code></td><td>Writes every topic to a timestamped log, and asks <code>roadd</code> and <code>headtrackd</code> to record their camera streams alongside it.</td><td>files on disk</td></tr>
+      <tr><td><code>audienced</code></td><td>Composites the downscaled HUD frame, the driver camera with the eye point, and the live numbers into a stream for mini PC 2 over Ethernet.</td><td>MJPEG over HTTP, 15 Hz</td></tr>
+    </tbody>
+  </table>
+  <p>The names and the split are the plan's; what matters is that nothing in the chain can block the renderer and that every published value carries the capture time it was derived from.</p>
+
+  <h3>7.2 Topics and the bus</h3>
+  <p>Processes talk over ZeroMQ publish-subscribe sockets on local inter-process transport, with messages serialised as msgpack maps. The choice is deliberate: both libraries are a single import in Python and C++, the transport adds about a millisecond on one host, and the schemas can change weekly during development without a build step. A schema module defines each topic's fields and version, and every message carries three timestamps: the capture time of the sensor frame it came from, the publish time, and the sequence number, all on the Jetson's monotonic clock. The renderer computes age from the first.</p>
+  <table>
+    <thead><tr><th style="width:16%">Topic</th><th class="num" style="width:10%">Rate</th><th>Fields</th></tr></thead>
+    <tbody>
+      <tr><td><code>lanes</code></td><td class="num">30 Hz</td><td>Per line: points in the car frame (x, y on the fitted plane), confidence, type (ego left, ego right, other, edge); plane parameters; frame capture time.</td></tr>
+      <tr><td><code>objects</code></td><td class="num">30 Hz</td><td>Per tracked object: identity, class, bearing, range, position in the car frame, velocity, box in the image, age of the track; sign value if any; frame capture time.</td></tr>
+      <tr><td><code>ego</code></td><td class="num">100 Hz</td><td>Speed, yaw rate, pitch, pitch rate, longitudinal acceleration, fix quality, source flags.</td></tr>
+      <tr><td><code>gnss</code></td><td class="num">10 Hz</td><td>Position, course, speed, accuracy estimates, time.</td></tr>
+      <tr><td><code>eyePose</code></td><td class="num">30 Hz</td><td>Eye midpoint in the car frame, confidence, frame capture time.</td></tr>
+      <tr><td><code>health</code></td><td class="num">2 Hz</td><td>Ambient illuminance, backlight duty, cell temperature, shutter state, per-process liveness, GPU and CPU temperatures.</td></tr>
+      <tr><td><code>sunWatch</code></td><td class="num">1 Hz</td><td>Sun azimuth and elevation in the car frame, inside-patch flag.</td></tr>
+      <tr><td><code>hudStats</code></td><td class="num">10 Hz</td><td>Age per topic as drawn, render time, dropped frames, registration residual from the last calibration check.</td></tr>
+    </tbody>
+  </table>
+  <p>Two rules keep the bus honest. Topics are published even when their content is empty, so a subscriber can tell "no lanes found" from "laned has died". And no process subscribes to its own output or to the renderer, so the graph is a tree with hudd at the root and nothing can deadlock.</p>
+
+  <h3>7.3 The projection, concretely</h3>
+  <p>The renderer maps points in the car frame onto the virtual image with a chain of four transforms:</p>
+  <div class="formula">D @ K_eye @ view_from_eye @ eye_from_car</div>
+  <ul>
+    <li><code>eye_from_car</code> is the rigid transform from the car frame (x forward, y right, z down, origin at the road camera's left lens) to the eye. The head tracker's live offset is added here. Ground points come from the stereo plane fit, so no fixed camera height is assumed.</li>
+    <li><code>view_from_eye</code> rotates into the eye's viewing frame: looking along the car's x axis, depressed by the look-down angle to the window's centre.</li>
+    <li><code>K_eye</code> is the pinhole for the virtual display plane, from the calibration in section 6.10.</li>
+    <li><code>D</code> is the pre-distortion mesh. It is applied as a render-to-texture pass, not folded into the matrix, because a mesh cannot be expressed as a single matrix.</li>
+  </ul>
+  <p>The age compensation of section 4.6 is applied to the points before this chain runs, so the prediction and the projection are separate, testable steps, and each can be switched off from the audience monitor to show its effect.</p>
+
+  <h3>7.4 Drawing rules</h3>
+  <p>These are the behaviours section 3.3 said must be defined before any drive. They are proposals until the Phase 3 drive on a monitor confirms them.</p>
+  <table>
+    <thead><tr><th style="width:26%">Rule</th><th>Proposed value</th></tr></thead>
+    <tbody>
+      <tr><td>Stale-data cutoff</td><td><code>lanes</code> and <code>objects</code>: content fades over 300 ms once older than 250 ms and is gone at 600 ms. <code>ego</code>: prediction switches off at 200 ms and the speed shows a dash at 1 s. <code>eyePose</code>: the nominal eye point is used after 500 ms, with a status glyph.</td></tr>
+      <tr><td>Lane-line fading</td><td>A line starts appearing above confidence 0.6 and is fully drawn at 0.8; it starts fading below 0.5 and is gone at 0.3. The asymmetry is hysteresis against flicker. A line must be seen in three consecutive frames before it first appears.</td></tr>
+      <tr><td>Ribbon</td><td>Drawn between the two ego lines where both are drawn; where one is missing, the standard width is used from the other and the ribbon is tinted lighter. Its far end is the nearer of the two lines' last confident point.</td></tr>
+      <tr><td>Hazard outlines</td><td>A tracked person, cyclist or sign appears after three consecutive detections with confidence above 0.5 and persists for 400 ms after its last detection, fading in the last 200 ms. Outlines are drawn only inside the window; an object leaving the window is not shown at the edge.</td></tr>
+      <tr><td>Lead chevron</td><td>The nearest tracked vehicle in the ribbon, within 80 m. The gap in seconds appears above 3 m/s. The chevron is not drawn when the ribbon is not drawn.</td></tr>
+      <tr><td>Speed block</td><td>Speed from <code>ego</code>, rounded to the unit, with the fix glyph. The last speed limit, with the sign glyph, until a new sign or 10 minutes. A dash without a fix.</td></tr>
+      <tr><td>Draw region</td><td>Nothing is drawn below the bottom edge of the virtual window or above the horizon line plus 2°.</td></tr>
+      <tr><td>Clutter mode (demo)</td><td>All lines drawn regardless of confidence, every tracked box outlined, the gap shown as text at every vehicle, for ten seconds on a key press. It exists to show what restraint buys.</td></tr>
+      <tr><td>Brightness</td><td>The backlight duty follows a curve against the ambient sensor, from the night ceiling to full at 10,000 lux and above, updated every second with a one-second ramp. The driver can offset it by a step in either direction.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>7.5 The controller board</h3>
+  <p>A Raspberry Pi Pico (RP2040) on a small carrier is the HUD controller. It has five jobs, each simple: read an ambient-light sensor mounted at the dust cover; read a thermistor glued to the back of the cell; generate the backlight's pulse-width signal at a frequency high enough not to beat with the camera's exposure (above 2 kHz); drive the shutter servo; and report all of it over USB serial at 10 Hz. It also holds the fail-safe rules that must not depend on the Jetson: above the first temperature threshold it halves the duty; above the second it turns the backlight off and closes the shutter; if the USB link is silent for 5 seconds it does the same. The firmware is a few hundred lines and is written in Phase 2.</p>
+
+  <h3>7.6 Recording and replay</h3>
+  <p>Development runs on recordings. The ZED's kit records the stereo stream and inertial data in its own format and replays it through the same capture call as live, so <code>roadd</code> cannot tell the difference. <code>logd</code> records every topic with its timestamps. A replay tool publishes a topic log at its original timing, so hudd and the audience view can be developed on the x86 mini PC without a camera or a GPU. A clip tool renders hudd's output to a video file from a topic log for regression checks after each change; mini PC 2 renders the standard clips nightly and flags any frame whose registration residual moved.</p>
+  <figure>[[FIG bench]]<figcaption><b>Figure 24.</b> The two bench chains. Perception replays stereo recordings on the Jetson, because it needs CUDA; the renderer replays topic logs on mini PC 1, because it does not.</figcaption></figure>
+  <p>Two points keep the bench honest. Replayed data has no live latency, so the bench tests timing only through the bus and the render loop; the photodiode test in section 10 is the only measure of the real pipeline. And the mini PC is an x86 machine, so it tests logic but not the Jetson's graphics driver or its power limits. Bench success is necessary for the Phase 2 gate, not sufficient.</p>
+
+  <h3>7.7 Bring-up facts</h3>
+  <ul>
+    <li><strong>Jetson software.</strong> The board was recorded on 2026-10-07 with JetPack 5.1.3 (Ubuntu 20.04, Python 3.8, TensorRT 8.5). The plan reflashes to JetPack 6.2 (Ubuntu 22.04, Python 3.10, TensorRT 10) because the lane and detection exports and the ZED kit's releases target that generation. Seeed's wiki provides the JetPack 6.2 image for this carrier, and the ZED kit's installer requires an exact match of the Linux-for-Tegra version, so the kit package is chosen after the flash from the version the image reports (the 6.2 package is listed as a legacy release as of 2026-10-21; chapter 8). Keep <code>nvpmodel</code> at MAXN, not the "super" modes that Seeed says this carrier cannot cool.</li>
+    <li><strong>Graphics.</strong> hudd uses raylib through its Python binding, as openpilot's UI does, with a GL 3.3 core context, full screen on the HDMI output, 60 Hz with vsync. A first test is a full-resolution triangle, which separates driver problems from renderer problems.</li>
+    <li><strong>Second display.</strong> The carrier has one HDMI output and no DisplayPort (<span class="tag">verify</span> in chapter 8). The audience view therefore leaves the Jetson as a video stream over Ethernet and is displayed by mini PC 2, which removes the previous plan's open question about a second output.</li>
+    <li><strong>Power mode and thermals.</strong> The Jetson's own temperatures go into <code>health</code>. The housing's fan is sized for the backlight, not the Jetson, which sits under a seat with its own airflow.</li>
+    <li><strong>Clock.</strong> One host, one monotonic clock. The ZED's and OAK-D's frame timestamps are translated to it once at capture using the kits' host-time fields.</li>
+  </ul>
+</section>

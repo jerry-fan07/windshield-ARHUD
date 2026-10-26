@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IBL orientation test</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>body{margin:0;background:#000} canvas{display:block} #info{position:fixed;left:8px;top:8px;color:#fff;font:14px monospace;background:rgba(0,0,0,.6);padding:6px}</style>
+</head>
+<body>
+<div id="info">loading</div>
+<script type="module">
+// Checks the sky-map rotation convention in assets.js: the sun aureole of the baked map (shown as the background)
+// must sit on the marker placed in the world's sun direction, and the chrome ball must show it on the same side.
+import * as THREE from 'three';
+import { SkyIBL } from '../js/assets.js';
+const q = new URLSearchParams(location.search);
+const az = parseFloat(q.get('az') || '135'), el = parseFloat(q.get('el') || '25');
+const r = new THREE.WebGLRenderer({ antialias: true });
+r.setSize(960, 540); r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 0.8; document.body.appendChild(r.domElement);
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(70, 960 / 540, 0.1, 1000);
+// world: north = -Z, east = +X. Look toward the sun's azimuth, slightly up.
+const e = el * Math.PI / 180, b = az * Math.PI / 180;
+const sunDir = new THREE.Vector3(Math.cos(e) * Math.sin(b), Math.sin(e), -Math.cos(e) * Math.cos(b));
+cam.position.set(0, 1.5, 0); cam.lookAt(sunDir.clone().multiplyScalar(10).setY(3));
+const marker = new THREE.Mesh(new THREE.SphereGeometry(3, 16, 8), new THREE.MeshBasicMaterial({ color: 0xff2020 }));
+marker.position.copy(sunDir).multiplyScalar(100); scene.add(marker);
+const ball = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 24), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1, roughness: 0.05 }));
+ball.position.copy(cam.position).add(sunDir.clone().setY(0).normalize().multiplyScalar(5)).setY(1.5); scene.add(ball);
+const ibl = new SkyIBL(r);
+await ibl.load();
+const entry = ibl.apply(scene, 'day', el, az, 1.0);
+scene.backgroundRotation.copy(scene.environmentRotation);
+await ibl.texture(entry).then((t) => { scene.background = t; scene.environment = t; });
+scene.backgroundIntensity = 1;
+r.render(scene, cam);
+document.getElementById('info').textContent = `map ${entry.file} sunU ${entry.sunU} az ${az} el ${el} rotY ${(scene.environmentRotation.y * 180 / Math.PI).toFixed(1)} deg; red marker = world sun`;
+window.__done = true;
+</script>
+</body>
+</html>

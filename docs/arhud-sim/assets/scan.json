@@ -1,0 +1,18 @@
+{
+ "source": "simulated scanner",
+ "faces": 67162,
+ "rmsFit_mm": 1.382276742254218,
+ "pairs": 4,
+ "scale": 0.9972713771115167,
+ "fragmentsRemoved": 4568,
+ "generated": "2026-10-22 00:52",
+ "scanner": {
+  "poses": 6,
+  "rays": 88200,
+  "noise_mm": 2.0,
+  "dropout": 0.05,
+  "inputVertices": 56160,
+  "inputFaces": 71730,
+  "landmarkErrorMm": 5.4
+ }
+}

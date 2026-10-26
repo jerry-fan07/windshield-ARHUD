@@ -1,0 +1,64 @@
+<section>
+  <h2 id="s8"><span class="num">8</span>Hardware roles and acquisitions</h2>
+  <p>This chapter lists what is already owned, what must be bought, and in what order. The order matters more than usual here, because the two longest-lead parts depend on a decision that has not been made yet.</p>
+
+  <h3>8.1 What you already have</h3>
+  <table>
+    <thead><tr><th style="width:30%">Item</th><th>Role in this plan</th></tr></thead>
+    <tbody>
+      <tr><td>Seeed reComputer J4012, Orin NX 16 GB</td><td>HUD computer: <code>hudd</code>, <code>headtrackd</code>, <code>perceptd</code>, <code>hudmirror</code>. Reflash to JetPack 6.2. Seeed lists support for JetPack 6.0, 6.1 and 6.2 on this carrier. Input is 9–19 V, so it runs from the car's 12 V bus. Run at MAXN, the 25 W class.</td></tr>
+      <tr><td>YODOIT 16″ 4K 1,200-nit monitor, unit 1</td><td>Picture generator for Stage 0 and Stage 1, and the night PGU in Stage 2. 3840 × 2400, 277 ppi.</td></tr>
+      <tr><td>YODOIT 16″ 4K monitor, unit 2</td><td>Audience and debug display on the passenger side, driven by <code>hudmirror</code>. Also the spare PGU.</td></tr>
+      <tr><td>ACEMAGIC mini PC, unit 1</td><td>x86 development and replay bench. Runs replay, sim and bridge to stand in for the comma four. Builds the fork.</td></tr>
+      <tr><td>ACEMAGIC mini PC, unit 2</td><td>Demo-day recording and CI box. Renders clip regressions nightly and records the mirror feed and the audience view. Spare for unit 1.</td></tr>
+    </tbody>
+  </table>
+  <p>The Jetson is recorded in memory as a JetPack 5.1.3 system with a 3840 × 2400 panel on HDMI-0 and 15 W mode. It has no camera and no panda. Those are the facts of 2026-10-07. The board was unreachable when this plan was written, so they must be checked before flashing.</p>
+
+  <h3>8.2 To acquire</h3>
+  <p>Each row gives the cost and the reason the plan chose this part over a cheaper one. The cost chart shows the same items as ranges. Where the plan gives one price, the bar is a point.</p>
+  <table>
+    <thead><tr><th style="width:30%">Item</th><th class="num" style="width:17%">Approx. cost</th><th>Why this and not the cheaper thing</th></tr></thead>
+    <tbody>
+      <tr><td>comma four and car harness</td><td class="num">$1,098</td><td>The only configuration in which this tree's pandad, cameras, IMU and GPS all work unmodified. The 3X is no longer sold.</td></tr>
+      <tr><td>OEM HUD-option windshield for the chosen car, installed</td><td class="num">$600–1,500 <span class="tag">per car</span></td><td>Wedge PVB removes the ghost image, which nothing applied to a plain windshield does. Pick the car so this exists.</td></tr>
+      <tr><td>Short-throw laser DLP projector, ≥ 2,000 lm</td><td class="num">$1,500–3,000</td><td>The only source class with daylight headroom after a 24% windshield reflection. The monitors reach about a fifth of the daylight target.</td></tr>
+      <tr><td>Custom spherical first-surface concave mirror, about 300 × 200 mm, f ≈ 330 mm</td><td class="num">quote, likely $1,000–4,000</td><td>Sets the 7.5 m virtual image. Order only after the ray trace (section 6.6). Catalogue concave mirrors stop near 100 mm.</td></tr>
+      <tr><td>Rear-projection diffuser film, cold mirror, linear polariser sheet</td><td class="num">$200–400</td><td>PGU screen, sunlight protection and s-polarisation for the windshield. The polariser is needed because the diffuser depolarises the light, and it costs about half of it (section 6.5). Check the "cold mirror" term (section 6.7).</td></tr>
+      <tr><td>Teleprompter beamsplitter glass 70/30, 300 × 400 mm, ×2</td><td class="num">$150–300</td><td>Stage 0 and Stage 1 combiner. One spare for the car.</td></tr>
+      <tr><td>Fresnel lens 300 mm, f ≈ 300 mm, ×2</td><td class="num">$60–150</td><td>Stage 1 virtual image at about 4 m before the custom mirror arrives.</td></tr>
+      <tr><td>Luxonis OAK-D Pro</td><td class="num">$595</td><td>Global shutter, onboard IR illumination for night head tracking, and a stereo depth output for the eye's distance. MediaPipe Face Landmarker runs on the Jetson; running a converted model on the camera's own processor is an option to <span class="tag">verify</span>. Tobii and Smart Eye kits are OEM-only.</td></tr>
+      <tr><td>Arducam AR0234 GMSL kit with deserialiser</td><td class="num">$300–600 <span class="tag">unverified</span></td><td>The only JetPack 6.2-tested GMSL camera kit found for Orin NX. Feeds <code>perceptd</code> and Track B. Compatibility with the classic J401 carrier must be confirmed with Seeed before ordering.</td></tr>
+      <tr><td>Mini-Box DCDC-USB-200</td><td class="num">$89</td><td>Ignition-sensed 12 V supply with clean shutdown for the Jetson. A bare converter would corrupt the filesystem at key-off.</td></tr>
+      <tr><td>USB-C Ethernet adapter, gigabit switch, Cat6</td><td class="num">$80</td><td>Wired link for the bridge. Wi-Fi jitter shows up as path wobble.</td></tr>
+      <tr><td>USB-C PD 100 W car charger, ×2</td><td class="num">$80</td><td>Monitor power. 4K at full brightness exceeds one USB-C port on some units.</td></tr>
+      <tr><td>Luminance meter, spot, e.g. Konica Minolta LS-150 class</td><td class="num">$2,500–4,000</td><td>Needed to prove the contrast criterion. A lux meter cannot measure a virtual image.</td></tr>
+      <tr><td>Photodiode and microcontroller latency probe, laser rangefinder, 30 m target board</td><td class="num">$300</td><td>Latency and registration measurements in section 10.</td></tr>
+      <tr><td>SparkFun ZED-F9P GNSS</td><td class="num">$260</td><td>Only for Track B or future navigation. The comma four already has GPS. Deferred.</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Prices are last seen, not quotes. The two custom optical parts, the mirror and the windshield, have the longest lead times, and the plan's order sequence (section 8.4) changes when they are placed.</p>
+  <figure>[[FIG cost]]<figcaption><b>Figure 20.</b> Acquisition cost ranges per item, from the table above. Dots are single prices. The total excludes the deferred GNSS receiver and is a sum of the listed ranges, not a quote.</figcaption></figure>
+  <p>The two largest uncertainties are the mirror, which is a quote and not a price, and the luminance meter, which is needed for the contrast criterion and cannot be replaced by a lux meter. The mirror cost could move the total by several thousand dollars; the meter is a fixed cost that the validation depends on.</p>
+
+  <h3>8.3 Power and wiring</h3>
+  <p>The Jetson runs from the car's 12 V bus through an ignition-sensed DC-DC converter. Ignition sensing lets the Jetson see the key-off signal and shut down cleanly. Without that, the Jetson loses power mid-write and can corrupt its filesystem, which is the reason the plan lists the Mini-Box as a required part and not an optional one. The monitors take power from two USB-C PD car chargers. The comma four stays on its own car harness.</p>
+  <figure>[[FIG power]]<figcaption><b>Figure 21.</b> Power and data wiring. Power flows from the car battery through the DC-DC converter to the Jetson, and from the chargers to the monitors. Data flows by Ethernet from the comma four and by USB from the sensors. Items marked unverified are open.</figcaption></figure>
+  <p>One wiring question is not answered in the plan. The Jetson drives monitor 1 over HDMI, and the JetPack 5.1.3 record shows a single HDMI output in use. Monitor 2, for the audience view, needs a second output, either a second HDMI or DisplayPort on the carrier, or a USB or network path into a second display device. <span class="tag">unverified</span> The carrier's display outputs must be checked before the audience view is designed.</p>
+  <p>The Ethernet path has one more check. The plan says the comma four's USB 3.1 port powers the USB-C Ethernet adapter, and whether that port runs in host mode with a suitable USB Ethernet driver has not been tested (<span class="tag">verify</span>). If it does not, the fallback is the comma four's Wi-Fi hotspot, with the jitter cost noted in section 4.5.</p>
+
+  <h3>8.4 Order of purchases</h3>
+  <p>Revision 2 listed the orders as one block in Phase 0. Three of them depend on something else, so the plan sorts them by what each one waits on.</p>
+  <table>
+    <thead><tr><th style="width:22%">When</th><th>What to order</th><th>What it waits on</th></tr></thead>
+    <tbody>
+      <tr><td>Week 0–1</td><td>comma four, car harness, OAK-D Pro, USB-C PD chargers, Mini-Box, Ethernet parts, beamsplitters, Fresnel lenses, diffuser and polariser films</td><td>Car choice only for the harness; the rest does not depend on the car</td></tr>
+      <tr><td>Week 0–1</td><td>Request mirror quotes from optics shops</td><td>A quote does not commit the order. The spec must match the windshield, so the quote is revised after the ray trace.</td></tr>
+      <tr><td>After car choice</td><td>OEM HUD-option windshield for the chosen car</td><td>Car choice, and confirmation that the windshield exists for that car</td></tr>
+      <tr><td>After ray trace</td><td>Custom concave mirror</td><td>The ray trace with the windshield's real curvature (section 6.6)</td></tr>
+      <tr><td>After input-lag test</td><td>Laser DLP projector</td><td>A measured input lag and a confirmed polarisation output. The plan says measure before buying and prefer a game mode.</td></tr>
+      <tr><td>Before any sun test</td><td>Thermocouple and the shutter or shade, if adopted</td><td>The sun-hazard review (section 6.7)</td></tr>
+    </tbody>
+  </table>
+  <p>The rows above differ from revision 2 in two places. The mirror is quoted early and ordered late, and the projector waits for a measurement that revision 2 did not require. The first change can lengthen the Stage 2 critical path, because the mirror cannot be ordered until the ray trace and the car are done; section 9 shows where that lands. The second protects the projector budget.</p>
+</section>

@@ -1,0 +1,46 @@
+<section>
+  <h2 id="s7"><span class="num">7</span>Software</h2>
+  <p>All new code lives in this fork under <code>openpilot/selfdrive/hud/</code> and reuses openpilot's messaging, Params and UI framework. The existing UI is left as it is, so the comma four's own screen is unchanged. The new code falls into five processes, a projection chain, and a set of bring-up facts that were checked in the source.</p>
+
+  <h3>7.1 New processes on the Jetson</h3>
+  <p>Each job is a separate process. A fault in one does not take down the others, and each can be tested alone on the bench. The plan does not yet state a restart policy for a crashed process; that is an open item for Phase 1.</p>
+  <table>
+    <thead><tr><th style="width:21%">Process</th><th>Role</th><th style="width:27%">Built from</th></tr></thead>
+    <tbody>
+      <tr><td><code>bridge &lt;comma-ip&gt; &lt;whitelist&gt;</code></td><td>Subscribes to the comma four's ZMQ ports and republishes locally as msgq. The whitelist is a substring match in <code>bridge.cc</code> line 13, so use exact, full service names (section 4.3).</td><td>Existing binary, <code>openpilot/cereal/messaging/bridge.cc</code></td></tr>
+      <tr><td><code>hudd</code></td><td>The HUD renderer. A <code>SubMaster</code> on <code>modelV2</code>, <code>radarState</code>, <code>carState</code>, <code>controlsState</code>, <code>selfdriveState</code>, <code>extrinsicsCalibration</code>, <code>deviceState</code>, <code>pandaStates</code> and <code>longitudinalPlan</code>, plus the two local services below. Projects into the eye frame, predicts by age, pre-distorts, and draws at 4K60 full screen on the HUD output.</td><td>New. Reuses <code>ModelRenderer</code> with a new transform from <code>set_transform</code>. Replaces the video-crop matrix in <code>augmented_road_view.py</code> with an eye-camera matrix.</td></tr>
+      <tr><td><code>headtrackd</code></td><td>Runs MediaPipe Face Landmarker on the Jetson against the OAK-D Pro's stream, with the camera's IR lighting for night. Running a converted landmark model on the camera's own processor instead is an option to <span class="tag">verify</span>. Publishes a new <code>hudEyePose</code> service at camera rate, with a 3D eye position in the car frame and a confidence value.</td><td>New service in <code>log.capnp</code> and <code>services.py</code></td></tr>
+      <tr><td><code>perceptd</code></td><td>Runs a TensorRT 10 detector (signs, pedestrians, cyclists) on a road camera attached to the Jetson. Publishes <code>hudDetections</code> with 3D positions from a ground-plane assumption. HUD-only cues.</td><td>New. Camera: the AR0234 GMSL kit, or a USB global-shutter camera until it arrives.</td></tr>
+      <tr><td><code>hudmirror</code></td><td>Composites the rendered frame, the driver camera with the eye point, and the latency and registration numbers for the audience on monitor 2.</td><td>New, small, built on pyray.</td></tr>
+    </tbody>
+  </table>
+  <p>The two new services matter for the rest of the stack. <code>hudEyePose</code> is the only input that changes the projection on every frame, and <code>hudDetections</code> is the only input that carries something openpilot does not produce. Both are published from the Jetson, and neither is consumed by openpilot, so neither can change how the car is driven.</p>
+
+  <h3>7.2 The projection, concretely</h3>
+  <p>Today's UI computes <code>video_transform @ K_cam @ view_from_calib</code> and passes the result to <code>ModelRenderer.set_transform</code>. That maps the model's points onto the camera's video. The HUD replaces it with a chain that maps the same points onto the virtual image:</p>
+  <div class="formula">D @ K_eye @ view_from_eye @ eye_from_car</div>
+  <ul>
+    <li><code>eye_from_car</code> is the rigid transform from the calibrated model frame (x forward, y right, z down, origin at the road camera) to the eye. The head tracker's live offset is added here. Points on the ground still need the camera height, <code>extrinsicsCalibration.height[0]</code>, with a default of 1.22 m, added in z. <code>model_renderer.py</code> does this today.</li>
+    <li><code>K_eye</code> is the pinhole for the virtual display plane, from the calibration in section 6.9.</li>
+    <li><code>D</code> is the pre-distortion mesh. It is applied as a render-to-texture pass, not folded into the matrix, because a mesh cannot be expressed as a single matrix.</li>
+  </ul>
+  <p>Figure 18 in the optics chapter shows the same chain as boxes with the measurement method for each step. The age compensation of section 4.6 is applied to the points before this chain runs, so the prediction and the projection are separate, testable steps.</p>
+
+  <h3>7.3 Drawing limits</h3>
+  <p><code>MIN_DRAW_DISTANCE</code> rises from 10 m to the bottom edge of the virtual window. Points nearer than that would project below the window, where the hood hides the road, so they are not drawn. This keeps the path from appearing to float over the bonnet.</p>
+
+  <h3>7.4 Bring-up details already known</h3>
+  <p>The following facts were read in the source. Each one changes what must be built first.</p>
+  <ul>
+    <li><strong>Full screen on a chosen output.</strong> <code>system/ui/lib/application.py</code> never calls raylib's full-screen or monitor functions. hudd adds <code>set_window_monitor</code> and <code>toggle_fullscreen</code>, and sets <code>BIG=1</code>, <code>FPS=60</code> and <code>ENABLE_VSYNC=1</code>. Vsync stops tearing in the mirror image.</li>
+    <li><strong>GL version.</strong> The shaders are GLES 3.0 or GL 3.3 core. The Jetson's driver supports both, but this is untested in this tree. A sensible first test is a full-resolution triangle, which separates GL problems from renderer problems.</li>
+    <li><strong>Params and state the UI reads locally.</strong> <code>ui_state.py</code> reads <code>IsMetric</code>, <code>ExperimentalMode</code> and <code>CarParamsPersistent</code> from local Params, and derives <code>started</code> from <code>deviceState</code> and <code>pandaStates</code>. hudd receives <code>deviceState</code> and <code>pandaStates</code> through the bridge and copies the few Params it needs once at start, so the HUD agrees with the comma four about units and engagement.</li>
+    <li><strong>Jetson runtime.</strong> JetPack 6.2 gives Ubuntu 22.04 and a modern glibc. That should let openpilot's manylinux_2_28 aarch64 wheels and the uv-managed Python 3.12 install natively. Building the UI alone does not need LLVM. <span class="tag">unverified</span> until installed on the device.</li>
+    <li><strong>Power mode.</strong> Flash with Seeed's guide and keep <code>nvpmodel</code> at MAXN, not MAXN SUPER, which Seeed says this carrier cannot cool.</li>
+  </ul>
+
+  <h3>7.5 Bench-first development</h3>
+  <p>Nothing in the software plan waits for a car. Every stage can run on a mini PC with recorded data. <code>tools/replay/replay --demo</code> publishes a real route's <code>modelV2</code>, <code>radarState</code>, <code>carState</code> and calibration as msgq. A bridge on the mini PC republishes them to the Jetson exactly as the comma four will. <code>tools/clip</code> renders the HUD to MP4 for regression checks. <code>tools/sim</code> with MetaDrive exercises engagement-state changes. The Stage 0 rig sits on the same desk.</p>
+  <figure>[[FIG bench]]<figcaption><b>Figure 19.</b> The bench chain. Replayed messages leave mini PC 1 by bridge and arrive on the Jetson in the same form they would from the comma four. The regression tools run alongside and do not touch the car.</figcaption></figure>
+  <p>Two points keep the bench honest. Replayed data has no live latency, so the bench tests timing only through the bridge and the render loop; the photodiode test in section 10 is the only measure of the real pipeline. And the mini PC is an x86 machine, so it tests logic but not the Jetson's GL driver or its power limits. Bench success is necessary for the Phase 2 gate, not sufficient.</p>
+</section>

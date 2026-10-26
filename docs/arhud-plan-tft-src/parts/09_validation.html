@@ -1,0 +1,49 @@
+<section>
+  <h2 id="s10"><span class="num">10</span>Validation and demo script</h2>
+  <p>Every target in the plan is measurable, and every measurement has a method. This chapter gives the targets, the method for each, and the caveats that come with the method. The targets are the acceptance tests for the gates in section 9.</p>
+
+  <h3>10.1 Acceptance criteria</h3>
+  <table>
+    <thead><tr><th style="width:25%">Criterion</th><th style="width:24%">Target</th><th>How it is measured</th></tr></thead>
+    <tbody>
+      <tr><td>Static registration at 30 m</td><td>≤ 0.5°</td><td>A camera at the eye point photographs a rendered marker against a surveyed target board, with the marker placed from the road camera's own detection of the board.</td></tr>
+      <tr><td>Registration under head motion, ±75 mm</td><td>≤ 0.3°</td><td>Same setup, with the camera moved on a rail and the tracker on.</td></tr>
+      <tr><td>Motion-to-photon latency, and predicted error</td><td>Whole chain ≤ 90 ms; predicted error ≤ 0.3°</td><td>A photodiode on the panel, triggered by an LED flashed in front of the road camera, measures the whole chain. A synthetic <code>lanes</code> step measures the renderer and panel alone. The age reported in <code>hudStats</code> is cross-checked against both.</td></tr>
+      <tr><td>Luminance at the eye, noon, against sky</td><td>≥ 1,500 cd/m²; contrast ≥ 1.15</td><td>A spot luminance meter at the eye point, measuring a white test patch in the top of the window against the sky behind it.</td></tr>
+      <tr><td>Luminance at the eye, noon, against road</td><td>≥ {{l_road_eye}} cd/m²; contrast ≥ 1.15</td><td>The same meter, a patch in the bottom of the window against the sunlit road behind it. Reported separately; the demo is daylight-capable if this row passes even where the sky row does not.</td></tr>
+      <tr><td>Night luminance and black level</td><td>White ≤ 50 cd/m² at the night setting; black ≤ 0.1 cd/m²</td><td>The same meter, at the night setting, on a white patch and on an unlit region of the window.</td></tr>
+      <tr><td>Panel luminance and uniformity</td><td>≥ {{need_panel_day}} cd/m² on axis; ±20% over the crop; ≥ 50% of on-axis at ±{{cone_design}}° horizontal</td><td>The meter on the panel directly, at the Phase 5 bench.</td></tr>
+      <tr><td>Cell temperature</td><td>Under the panel's rated maximum after 30 minutes at full backlight in a 40 °C enclosure; derate and cut-off thresholds verified</td><td>The thermistor's log, cross-checked once with a thermocouple.</td></tr>
+      <tr><td>Sun focus</td><td>Thermocouple at the focus stays under the cell's rating with the shutter open for 10 minutes at the worst sun position; the sun-watch rule closes the shutter inside the patch</td><td>The empty-housing test of section 6.8, then a check of the rule against a logged drive.</td></tr>
+      <tr><td>Eye box</td><td>≥ 120 × 60 mm without tracker</td><td>A camera on the rail, checking that the full image is visible across the box.</td></tr>
+      <tr><td>Ghost image</td><td>Separation at the eye point within 2× the predicted {{ghost_7_5}}′; judged acceptable on the demo graphics at three eye heights</td><td>Photographed at the eye point; measured against the pixel pitch.</td></tr>
+      <tr><td>Virtual image distance</td><td>≥ 6 m, target 7.5 m</td><td>The camera focus method, against a reference target at known distance.</td></tr>
+      <tr><td>Installation</td><td>Checklist signed before each drive</td><td>Inspection: no connector reaches a vehicle bus; every mount is removable; the fuse is in place; nothing bonded to the glass.</td></tr>
+      <tr><td>Speed shown</td><td>Within 1 m/s of a reference GNSS trace while moving; a dash without a fix</td><td>Logged drive compared with a phone's trace.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.2 What each measurement can and cannot show</h3>
+  <p>Two standards describe how HUD optics are measured and are worth reading before the Phase 5 and 6 measurements: SAE J1757-2 (2018) gives methods for luminance, contrast, eye box and image distance under simulated outdoor light, without setting thresholds, and ISO/TS 21957 (2023) gives test procedures for HUD image geometry and optical properties. Konica Minolta's instrument for J1757-2 is an imaging photometer, not the spot meter this plan buys; the spot meter measures the same quantities at single points, which is what the acceptance table needs.</p>
+  <p>Most of the criteria are angles, so they are measured with a camera placed where the eye will be. A camera is not an eye. It has a fixed focus and a fixed pupil, while the driver's eye accommodates and has a different pupil. The camera therefore measures where the image falls in angle, which is what registration is, but it does not measure how the driver will perceive it. A perception test with real drivers is outside this plan.</p>
+  <p>The registration test has a new subtlety in this plan. Previously the marker's position came from openpilot's model, and the test measured the whole chain from a surveyed board to the eye. Now the road camera must itself detect the board, so the test measures perception and rendering together. To separate them, the board's position is also entered by hand from the survey, and the marker rendered from that; the difference between the two markers is the perception error and the difference between the hand-placed marker and the board is the optical and calibration error.</p>
+  <p>The predicted-error target is measured as follows: a target is placed at a surveyed road point, the car drives past it at a steady speed, and the photographed mark at the moment of the photodiode event is compared with the target's position. That method is the plan's; it has not been tried.</p>
+  <figure>[[FIG regrig]]<figcaption><b>Figure 28.</b> Two measurement setups. Top: the registration test, with the camera at the eye point on a rail and a surveyed target board at 30 m. Bottom: the latency probe, with a photodiode on the panel timing a synthetic step. Panel A is not to scale in depth.</figcaption></figure>
+  <p>The luminance measurements need the meter at the eye point and the background measured in the same direction as the HUD patch. The contrast ratio is (overlay + background) ÷ background, as defined in section 6.1. Measuring the background in a different direction, or at a different time, invalidates the ratio. The road row and the sky row are different directions and are measured separately.</p>
+
+  <h3>10.3 The five-minute demo script</h3>
+  <p>The script is the demonstration the plan builds toward. It is a sequence of six scenes, each showing one of the elements in section 3. The times are the plan's marks for the script, not timed rehearsals. A safety driver who is not the presenter drives the car on the course, as section 11 requires. The driver must not wear polarised sunglasses, and no polarising filter may sit in front of a camera at the eye point, because the s-polarised image is largely blocked by them (section 11.1).</p>
+  <figure>[[FIG storyboard]]<figcaption><b>Figure 29.</b> The five-minute demo script as a timeline: six scenes from 0:00 to 4:30. Scene detail follows in the table.</figcaption></figure>
+  <table>
+    <thead><tr><th style="width:12%">Time</th><th style="width:20%">Scene</th><th>What the audience sees</th></tr></thead>
+    <tbody>
+      <tr><td>0:00</td><td>1 · Set up</td><td>Car stationary, HUD on, ribbon absent because the car is not moving and no lane is ahead. The presenter explains in one breath that the HUD has no connection to the car and that everything drawn comes from the cameras on the glass.</td></tr>
+      <tr><td>0:45</td><td>2 · Pull out</td><td>The driver pulls onto the course. The speed appears from GNSS. The lane lines fade in over the paint and the ribbon locks between them and bends with the first curve.</td></tr>
+      <tr><td>1:45</td><td>3 · Head tracking</td><td>The driver leans left and right. The audience monitor shows the eye point moving with the overlay holding on the paint; the presenter switches the tracker off for five seconds to show the drift, then on.</td></tr>
+      <tr><td>2:45</td><td>4 · Lead car</td><td>A second car is ahead. The chevron locks under its bumper with the gap in metres and seconds, and follows it through a slow-down.</td></tr>
+      <tr><td>3:45</td><td>5 · Pedestrian and sign</td><td>A volunteer pedestrian at the roadside is outlined; a speed-limit sign is read and its value appears in the block. The clutter mode is shown for ten seconds, then the clean mode returns.</td></tr>
+      <tr><td>4:30</td><td>6 · Stop</td><td>The audience monitor shows the measured registration error, latency and contrast from that run, each beside its target.</td></tr>
+    </tbody>
+  </table>
+  <p>The script ends with the measured numbers rather than a claim, each beside its target, so a miss is visible to the audience. If the daylight gate did not pass, the demo runs at dusk and the monitor says so.</p>
+</section>

@@ -1,0 +1,117 @@
+<section>
+  <h2 id="b4"><span class="num">B4</span>Perception software and gate G1</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Where the road and objects are (2.2), how the car moves (2.4), where the eye is (2.3), where the sun is (2.7)</div>
+    <div><b>Weeks</b>1–4, in parallel with B5 and B6</div>
+    <div><b>Closes</b>Gate G1: perception scored on 300 labelled frames; GPU time known</div>
+    <div><b>Needs</b>B2 (Jetson with SDKs), B3 (recordings and labels)</div>
+    <div><b>Produces</b>The <code>hud/</code> package's sensing processes, the scoring tool, a perception score</div>
+    <div><b>People</b>Software builder; a labeller for the 300 frames</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> The renderer needs four answers every frame: where the lane lines are on the ground ahead, where the vehicles and people are, how fast the car is moving and turning, and where the driver's eye is. This stage writes the processes that produce those answers from the sensors, each stamped with the moment its data was captured. Before the HUD depends on them, it scores them on frames a person has labelled by hand, so a weak lane network is found in week 4, not on the demo day.</p>
+
+  <h3>B4.1 Repository layout</h3>
+  <p>The plan makes the HUD software a new standalone package, <code>hud/</code>, with no build dependency on openpilot (the openpilot tree in the repository stays as reference only). A layout that keeps each process small:</p>
+  <div class="term">hud/
+  common/        clock.py (monotonic time, ZED-to-monotonic offset), bus.py (ZeroMQ PUB/SUB, msgpack),
+                 schema.py (topic names and fields, Appendix D), frames.py (car, eye, camera transforms), config.py
+  roadd/         ZED capture, depth, ground plane, lifting, IMU stream, SVO recording
+  laned/         lane network engine, pre- and post-processing
+  detectd/       YOLO11s engine, tracker, sign classifier
+  egod/          GNSS reader, speed and yaw fusion, sun position
+  headtrackd/    OAK-D Pro pipeline, eye midpoint
+  hudd/          renderer (B6)
+  controllerd/   Pico serial link (B5)
+  logd/  audienced/  supervisor.py
+tools/           replay.py, score.py, label_import.py, clip.py, gpu_budget.sh
+config/          calibration.yaml, rules.yaml, dimming.yaml, sun_patch.yaml (all committed)</div>
+
+  <h3>B4.2 The message layer (do this first)</h3>
+  <ol class="steps">
+    <li>Use one clock: <code>time.monotonic_ns()</code> on the Jetson. Every message carries three fields before its payload: <code>t_capture</code> (the monotonic time the sensor frame was captured), <code>t_publish</code>, and <code>seq</code>.</li>
+    <li>Translate each sensor's own timestamp to the monotonic clock at the moment of capture. For the ZED, read the image timestamp (wall clock, nanoseconds) and subtract the current difference between <code>time.time_ns()</code> and <code>time.monotonic_ns()</code>, measured at the same instant; log the jitter of that difference for an hour once, to be sure it is stable.</li>
+    <li>Publish on ZeroMQ PUB sockets bound to <code>ipc:///tmp/hud/&lt;topic&gt;</code>; encode payloads as msgpack maps. Set a small send high-water mark (for example 2) on camera-rate topics so a slow subscriber drops old messages instead of queueing them.</li>
+    <li>Always publish, even when there is nothing to report: an empty <code>objects</code> list means "no objects", while no message at all means the producer is down. Subscribers judge staleness from <code>t_capture</code>, never from arrival time.</li>
+    <li>Write <code>supervisor.py</code>: starts each process, restarts a crashed one after 1 s, and publishes its liveness in <code>health</code>.</li>
+    <li>Write <code>logd</code> and <code>tools/replay.py</code> now: every later step is tested by replaying recordings at their original timing, and the renderer is developed on the mini PC from those logs.</li>
+  </ol>
+
+  <h3>B4.3 <code>roadd</code>: the road camera, depth and the ground plane</h3>
+  <ol class="steps">
+    <li>Open the ZED 2i with the ZED SDK's Python API (<code>pyzed.sl</code>): 1080p or 720p at 30 fps, metres, depth mode <code>NEURAL_LIGHT</code> to start (Stereolabs: 23% of the Orin NX GPU at 30 fps; <code>NEURAL</code> costs 59%). Do not enable positional tracking: the SDK's plane API needs it and it costs about 44% of the GPU, and the SDK's visual-inertial tracking is unreliable in cars (plan, 5.1). Keep both as cross-checks only.</li>
+    <li>Work in the car frame from the start. With the SDK's <code>IMAGE</code> coordinate system (x right, y down, z forward), the plan's car frame (x forward, y right, z down, origin at the left lens) is a permutation: x<sub>car</sub> = z, y<sub>car</sub> = x, z<sub>car</sub> = y. Apply the camera's mounting rotation from <code>calibration.yaml</code> (B7) after that.</li>
+    <li><b>Ground plane, every frame.</b> Take the depth points in a road region: ahead between about 5 and 25 m, within about ±2 m of the car's axis, below the horizon (starting values; tune on recordings). Sample about 2,000 valid points. Fit a plane by RANSAC (3-point hypotheses, 100–200 iterations, inlier threshold about 0.05 m plus 0.5% of range), then refit by least squares on the inliers.</li>
+    <li>Accept the fit only if the inlier share is above about 40%, the normal is within about 5° of the last accepted plane, and the camera's height above it is within 0.15 m of the calibrated height. Otherwise fall back to the calibrated static plane rotated by the IMU's pitch change, and flag it. Smooth the accepted plane with a light exponential filter so it does not jitter. Publish the plane's parameters with the lanes. (The road simulation found the fitted plane worth about a third of the lead-car error under 7 m/s² braking.)</li>
+    <li><b>Lift lanes.</b> For each lane point (u, v) from <code>laned</code>, form the ray through the pixel from the left camera's intrinsics and intersect it with the plane. Keep confidence and line type.</li>
+    <li><b>Smooth lanes</b> (a correction to the plan: the simulator drew raw per-point noise, σ ≈ 0.02 + 0.004·x m, and the lines visibly wobbled). Fit each line in the car frame as y(x) = c<sub>0</sub> + c<sub>1</sub>x + c<sub>2</sub>x² + c<sub>3</sub>x³, weighted by confidence, over its confident range. Carry the previous frame's coefficients forward by the car's motion over the frame interval, then blend (a per-frame weight around 0.3–0.5 for the new fit is a starting value; a small Kalman filter is better). Publish points sampled every metre from the smoothed curve, and the raw points under a debug field.</li>
+    <li><b>Lift objects.</b> Range is the median stereo depth over the lower fifth of the box; beyond 35 m (stereo's useful range with the 4 mm lens), intersect the box's bottom-centre ray with the plane instead. Bearing comes from the box centre. Publish position, velocity (from the track's history), class, track id and age.</li>
+    <li>Republish the ZED's IMU samples on <code>imu</code> with monotonic timestamps. Add an SVO recording switch (SVO files replay through the same capture call, which is how B3's recordings feed this process on the bench).</li>
+  </ol>
+
+  <h3>B4.4 <code>laned</code>: the lane network</h3>
+  <ol class="steps">
+    <li>Start with Ultra Fast Lane Detection v2 (MIT licence; CULane F1 75–76; its repository ships ONNX and TensorRT scripts). Keep CLRNet or CLRerNet (Apache; F1 79.6–81.4) as the second candidate, and YOLOP/YOLOPv2 if one network must do lanes and objects together.</li>
+    <li>Export to ONNX with the repository's script, then build the engine on the Jetson itself (engines are specific to the GPU and TensorRT version): <code>trtexec --onnx=ufldv2.onnx --fp16 --saveEngine=ufldv2.engine</code>. Use the input size from the model's own configuration file.</li>
+    <li>Run on the left image. Post-process to up to four lines as image points with a per-line confidence; label the two nearest the image centre as ego left and ego right.</li>
+    <li>Choose between candidates by score on the course recordings (B4.9), not by published benchmark numbers; there are no published Orin figures for any of them.</li>
+  </ol>
+
+  <h3>B4.5 <code>detectd</code>: objects and tracks</h3>
+  <ol class="steps">
+    <li>Export YOLO11s on the Jetson: <code>yolo export model=yolo11s.pt format=engine half=True imgsz=640</code>. FP16, not INT8: INT8 accuracy collapses on this board (Ultralytics). Ultralytics measures 7.9 ms per 640-pixel image on an Orin NX 16 GB. The licence is AGPL-3.0, acceptable while the repository is public; RF-DETR Nano (Apache) is the alternative.</li>
+    <li>Keep the classes the HUD uses: person, bicycle, motorcycle, car, bus, truck, stop sign, traffic light.</li>
+    <li>Track with ByteTrack or OC-SORT (both MIT, CPU). Require three consecutive detections above 0.5 confidence before a track is published as a hazard; keep it 400 ms after its last detection.</li>
+    <li>Stretch: a small classifier on sign crops for US speed-limit values (LISA or Mapillary data), accepting a value after two consistent reads of one tracked sign. Drop it from the demo if it is not reliable (B14).</li>
+  </ol>
+
+  <h3>B4.6 <code>egod</code>: speed, turn rate and the sun</h3>
+  <ol class="steps">
+    <li>Read the ZED-F9R over USB with a UBX parser (for example <code>pyubx2</code>): position, velocity, speed accuracy, heading and fix type from the navigation solution at the configured priority rate (B3), and the fusion status. Without wheel ticks the receiver runs untethered: trust its dead-reckoned speed only for short outages, and flag the source.</li>
+    <li>Fuse at 100 Hz. Yaw rate comes from the ZED IMU's gyroscope (low latency), with its bias estimated whenever the car is stationary (speed under 0.2 m/s for two seconds). Speed is GNSS Doppler speed, propagated between GNSS updates by the accelerometer and corrected toward each new GNSS value; pitch and pitch rate come from the IMU.</li>
+    <li>Treat the GNSS latency as a parameter (u-blox does not specify it; one user measured about 12 ms on a similar module) and measure it in B6 with the LED test.</li>
+    <li>Rules from the plan: below 1 m/s, report speed 0 and no prediction; with no fix, publish a dash and a glyph flag and no prediction.</li>
+    <li><b>Sun-watch, once a second.</b> From GNSS time, latitude and longitude compute the sun's azimuth and elevation with a standard solar-position algorithm (NREL's SPA, for example through <code>pvlib</code>). Rotate into the car frame using the vehicle heading. Compare with the cell patch from the B1 trace (stored in <code>config/sun_patch.yaml</code>), with a 2° margin and hysteresis so the flag does not chatter at the edge. Publish <code>sunWatch</code>: azimuth, elevation, inside flag.</li>
+  </ol>
+
+  <h3>B4.7 <code>headtrackd</code>: the eye point</h3>
+  <ol class="steps">
+    <li>Build a DepthAI pipeline on the OAK-D Pro that runs face detection and facial landmarks on the camera's own processor and computes stereo depth at the two eye landmarks (MediaPipe is not supported on Jetson; on-camera landmarks are the plan's primary route, OpenSeeFace on the CPU the alternative).</li>
+    <li>Output the eye midpoint in the driver camera's frame with a confidence; transform it to the car frame with the driver camera's measured pose (B7). Publish <code>eyePose</code> at 30 Hz.</li>
+    <li>Turn on the IR flood illuminator at night (the ambient level from <code>health</code> decides): in DepthAI 3, <code>setIrFloodLightIntensity(x)</code> and <code>setIrLaserDotProjectorIntensity(x)</code> on the device, with x from 0 to 1 (both are off by default and strobe with the left mono camera). If the tracker's confidence drops or its data is older than 500 ms, the renderer falls back to the nominal eye point and shows a glyph.</li>
+  </ol>
+
+  <h3>B4.8 Measure the GPU budget</h3>
+  <p>With <code>roadd</code>, <code>laned</code> and <code>detectd</code> running together from an SVO replay, run <code>tegrastats</code> (or <code>jtop</code>) for five minutes and record GPU utilisation, per-process frame times and the SoC temperatures. Compare with the plan's estimate:</p>
+  [[TBL gpu]]
+  <p>If the serial total exceeds 33 ms, run camera-rate topics at 20 Hz, and run depth at half the network rate. Record the result in the log; it closes the second half of gate G1.</p>
+
+  <h3>B4.9 Score perception: gate G1</h3>
+  <ol class="steps">
+    <li>Import the 300 labelled frames (B3.6) with <code>tools/label_import.py</code>: lane polylines and boxes per frame, linked to the SVO frame index.</li>
+    <li>Replay the same SVO segments through <code>roadd</code>, <code>laned</code> and <code>detectd</code>; record the outputs.</li>
+    <li>Run <code>tools/score.py</code>. Lift the labelled lane lines onto the same fitted plane so the comparison is in metres, and compute the plan's criteria.</li>
+  </ol>
+  <table>
+    <thead><tr><th style="width:56%">Criterion (gate G1)</th><th>Target</th><th class="num" style="width:12%">Result</th></tr></thead>
+    <tbody>
+      <tr><td>Ego lane found</td><td>≥ 95% of frames</td><td></td></tr>
+      <tr><td>Lane lateral error at 10 m / 20 m / 30 m</td><td>≤ 0.15 / 0.3 / 0.5 m</td><td></td></tr>
+      <tr><td>Ego-lane vehicles within 50 m recalled</td><td>≥ 90%</td><td></td></tr>
+      <tr><td>Pedestrians within 30 m recalled</td><td>≥ 85%</td><td></td></tr>
+      <tr><td>Range within 10% of the stereo median</td><td>yes</td><td></td></tr>
+      <tr><td>GPU time per frame measured (B4.8)</td><td>known</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h3>B4.10 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Lane network below the score on the course</td><td>Try the second candidate; fine-tune on labelled course frames (label more than 300); as the plan's fallback, use a comma four in passive mode as the perception source (plan, section 12), at the cost of its car constraints.</td></tr>
+      <tr><td>Plane fit fails in traffic, rain or at night</td><td>The static-plane fallback with IMU pitch costs about {{pitch_reg}}° per degree of pitch error at 20 m; tighten the road region; reject frames with too few valid depth points.</td></tr>
+      <tr><td>GPU over budget</td><td>20 Hz, half-rate depth, <code>NEURAL_LIGHT</code>, a smaller lane input, or move face landmarks entirely onto the OAK-D (they should already be there).</td></tr>
+      <tr><td>Overlay drifts with time</td><td>Timestamps are not on one clock: check the ZED-to-monotonic offset and that every topic carries <code>t_capture</code>.</td></tr>
+      <tr><td>Lines jitter frame to frame</td><td>Lane smoothing is off or too light; check the motion carry-forward uses the right sign.</td></tr>
+    </tbody>
+  </table>
+</section>

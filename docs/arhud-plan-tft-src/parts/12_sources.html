@@ -1,0 +1,75 @@
+<section>
+  <h2 id="appD"><span class="num">D</span>Sources</h2>
+  <p>Everything below was read on 2026-10-21 unless marked otherwise, by research agents whose fact sheets were checked against the pages named. Addresses are given for the sources that drive a decision or a number; the rest are named so they can be found. Prices and product claims should be checked again before ordering. Items from the previous plan's source list that still apply are kept at the end and marked as not re-read.</p>
+
+  <h3>Sensors, compute and power</h3>
+  <ul class="small">
+    <li>Stereolabs, ZED 2i store page (price, lens options; 4 mm lens 80° × 52°, depth 1.0–35 m): stereolabs.com/store/products/zed-2i. Datasheet mirror (4 mm lens 72° × 44°, depth 1.5–35 m, under 7% to 30 m; rolling shutter; 400 Hz inertial unit): robu.in/wp-content/uploads/2024/06/ZED_2i_Datasheet.pdf. The two disagree on the 4 mm field.</li>
+    <li>Stereolabs ZED SDK: release page (5.5.1; JetPack 6.2.2 package; 6.1/6.2 legacy package) stereolabs.com/developers/release; Jetson installation (exact L4T match) docs.stereolabs.com/docs/installation/jetson; recording docs.stereolabs.com/docs/video/recording; depth modes (Orin NX 16 GB: NEURAL_LIGHT 23% GPU, NEURAL 59%, NEURAL_PLUS 92% at 12 fps) docs.stereolabs.com/docs/depth-sensing/depth-modes; positional tracking modes (GEN_3: 13% CPU, 44% GPU on an Orin NX 16 GB) docs.stereolabs.com/docs/development/zed-sdk/modules/positional-tracking/modes; plane detection (requires tracking) docs.stereolabs.com/docs/spatial-mapping/plane-detection.</li>
+    <li>Stereolabs community: ZED 2i odometry in an empty car park, community.stereolabs.com/t/zed2i-odometry-on-an-empty-parking/2188; ZED X versus ZED 2i in fast motion, community.stereolabs.com/t/technical-comparison-zed-x-vs-zed-2i-depth-accuracy-and-reconstruction-in-high-velocity-scenes/11242; custom carrier drivers under NDA, community.stereolabs.com/t/need-help-designing-new-carrier-board/10498. ZED X specifications docs.stereolabs.com/docs/products/cameras/zedx/specifications; ZED Link capture cards and certified-carrier list, stereolabs.com/developers/drivers.</li>
+    <li>ZED 2 in-car visual-inertial benchmarks: arxiv.org/abs/2207.06780 and mdpi.com/1424-8220/22/24/9873.</li>
+    <li>Luxonis OAK-D Pro: shop.luxonis.com/products/oak-d-pro and docs.luxonis.com/hardware/products/OAK-D Pro; depthai on PyPI (aarch64 wheels).</li>
+    <li>SparkFun ZED-F9R breakout ($299.95): sparkfun.com/sparkfun-gps-rtk-dead-reckoning-breakout-zed-f9r-sma-qwiic.html; u-blox ZED-F9R-01B datasheet R06 (30 Hz, 0.05 m/s, 0.2° heading, 2% dead-reckoning error): cdn.sparkfun.com/assets/d/4/3/f/4/ZED-F9R-01B_Datasheet_UBX-19054459.pdf; NEO-M9N and MAX-M10S datasheets and SparkFun boards ($70.95, $45.95); SparkFun forum measurement of about 12 ms message latency, community.sparkfun.com/t/pps-to-ubx-nav-timeutc-latency/42514.</li>
+    <li>Seeed reComputer J4012 ($1,399; "Super Mode NOT Supported"): seeedstudio.com/reComputer-J4012-p-5586.html; J4012 flashing wiki (I/O list: one HDMI 2.1, four USB 3.2, one CAN, two CSI, 9–19 V; JetPack 6.2 image; do not enable MAXN SUPER): wiki.seeedstudio.com/reComputer_J4012_Flash_Jetpack/.</li>
+    <li>NVIDIA Jetson Orin module table, nvidia.com/en-us/autonomous-machines/embedded-systems/jetson-orin/; JetPack 6.2 super-mode blog (2025-01-16), developer.nvidia.com/blog/nvidia-jetpack-6-2-brings-super-mode-to-nvidia-jetson-orin-nano-and-jetson-orin-nx-modules; Connect Tech Orin NX module page (NVENC).</li>
+    <li>MediaPipe on PyPI (1.1.1, aarch64 wheel); NVIDIA forum threads forums.developer.nvidia.com/t/mediapipe-build-for-jetson-orin-nano-jp6-2/329399 and /t/mediapipe-tensorflow-lite-gpu-delegate-on-jetson-orin-nano/296851.</li>
+    <li>Mini-Box DCDC-USB-200: mini-box.com/DCDC-USB-200 and its manual (cartft.com). Mean Well NLDD-H specification (PWM 100 Hz–1 kHz): meanwell.com/Upload/PDF/NLDD-H/NLDD-H-SPEC.PDF. Recom RCD-24-1.20 at DigiKey.</li>
+    <li>Konica Minolta LS-150/LS-160 catalogue: sensing.konicaminolta.us/wp-content/uploads/ls150_catalog_eng.pdf; True Test HUD page; reseller prices (unitycolor.com, alibaba.com). Sekonic L-858D-U at fullcompass.com ($689). EPFL infoscience.epfl.ch/record/234291 and SAE 2007-01-0718 on calibrated cameras as luminance meters.</li>
+    <li>Raspberry Pi Pico product page; Adafruit products 1980 (TSL2591), 4162 (VEML7700), 269 (MAX31855), 372 (NTC).</li>
+  </ul>
+
+  <h3>Perception software</h3>
+  <ul class="small">
+    <li>Ultra Fast Lane Detection v2: github.com/cfzd/Ultra-Fast-Lane-Detection-v2 and arxiv.org/abs/2206.07389. CLRNet: github.com/Turoad/CLRNet, arxiv.org/abs/2203.10350; CLRerNet: github.com/hirotomusiker/CLRerNet. LaneATT: github.com/lucastabelini/LaneATT. CondLaneNet: github.com/aliyun/conditional-lane-detection. YOLOP: github.com/hustvl/YOLOP; YOLOPv2: github.com/CAIC-AD/YOLOPv2.</li>
+    <li>Ultralytics DeepStream-on-Jetson guide (Orin NX 16 GB TensorRT times): docs.ultralytics.com/guides/deepstream-nvidia-jetson/; archived Jetson guide v8.3.100 with accuracy per precision: raw.githubusercontent.com/ultralytics/ultralytics/v8.3.100/docs/en/guides/nvidia-jetson.md; licence page ultralytics.com/license.</li>
+    <li>NVIDIA DeepStream 7.1 performance: archive.docs.nvidia.com/metropolis/deepstream/7.1/text/DS_Performance.html; TAO DashCamNet model card: catalog.ngc.nvidia.com/orgs/nvidia/teams/tao/models/dashcamnet; TAO performance table: docs.nvidia.com/tao/tao-toolkit/text/model_zoo/overview.html; nvtracker plugin documentation.</li>
+    <li>RT-DETR: github.com/lyuwenyu/RT-DETR. YOLOX: github.com/Megvii-BaseDetection/YOLOX. RF-DETR on an Orin NX: roboflow.com/blog/rf-detr-nvidia-deepstream.</li>
+    <li>LISA traffic-sign dataset: cvrr.ucsd.edu/lisa-traffic-signs-dataset. Mapillary Traffic Sign Dataset: arxiv.org/abs/1909.04422 and the Mapillary blog. A LISA-derived YOLOv11n model: huggingface.co/cvtechniques/TrafficSignDetection.</li>
+    <li>ByteTrack: github.com/FoundationVision/ByteTrack. OC-SORT: github.com/noahcao/OC_SORT. ByteTrack in DeepStream on an Orin Nano: arxiv.org/abs/2609.13551.</li>
+    <li>Stein, Mano and Shashua, IEEE IV 2003 (single-camera range bounds); arxiv.org/abs/2604.10805 (quadratic growth of range error with a horizon error); OpenCV calib3d header (solvePnP, IPPE).</li>
+    <li>MediaPipe Face Landmarker: developers.google.com/edge/mediapipe/solutions/vision/face_landmarker; FaceMesh V2 model card. 6DRepNet: github.com/thohemp/6DRepNet. OpenSeeFace: github.com/emilianavt/OpenSeeFace.</li>
+    <li>Prior art: WPI "NaviRice" report, digital.wpi.edu/downloads/jh343t91c; jmejco/automotive-hud, mkhawam/hud_toyota, vietanhdev/open-adas, johnny-wang/cv_apps_project on GitHub. No public project was found that registers camera-detected lanes on a windshield HUD.</li>
+  </ul>
+
+  <h3>Optics, glass and standards</h3>
+  <ul class="small">
+    <li>Lumetrics, "Wedge-angle measurements for HUD displays" (ghost geometry; worked example 0.0643°): lumetrics.com/hubfs/Lumetrics_August2021/PDF/Wedge-Angle-Measurements-for-HUD-displaysfinal.pdf.</li>
+    <li>Texas Instruments DLPA057 (AR HUD distances; wedge glass no longer required at long distances; up to 15,000 cd/m²; under 3 at night): ti.com/lit/pdf/dlpa057. TIDUEE5 (eye box and field ranges; 55 lm for 15,000 nits): ti.com/document-viewer/lit/html/TIDUEE5A. DLPA096 (solar load: 1,050 W/m² to 325 after spectral filtering to about 244 into the HUD; imager peak 40 kW/m² at 7 m; BMW F30 TFT rose 45 °C at 12 kW/m²): ti.com/lit/wp/dlpa096/dlpa096.pdf.</li>
+    <li>Patents on Google Patents: WO2016198678A1 (glass 2.1 or 1.6 mm, PVB 0.76 mm; wedge 0.5 mrad conventional, 0.3 mrad or less for AR); US8451541B2 and US5013134A (wedge geometry); NS International US12699266B2 (cold-coated fold mirror, hot-mirror glass, 75.4% cut, over four minutes to damage, 117 °C); Murakami US10133068B2 and GM US10114217B2 (infrared through the cold mirror to a heat sink); Coretronic US11988830B2 (focused sun 20–60 kW/m²; panel limit 100–110 °C); BMW US10551621B2 and Saint-Gobain US20220342217A1 (polarised sunglasses and p-polarised coatings). Continental EP3719561 (virtual image 5,000 minimum, 10,000–15,000 preferred; LCD 50,000–100,000): data.epo.org/publication-server/rest/v1.2/patents/EP3719561NWA1/document.html.</li>
+    <li>AGC p-polarised HUD news (2026-05): agc-automotive.com/news/p-polarized-head-up-display. Hyundai Mobis CES 2025 entry: ces.tech/innovation-awards/2025/lcd-sun-burn-free-conventional-ar-hud. ams OSRAM and Leapmotor C11 announcement (16,000 nits peak), via autonews.gasgoo.com.</li>
+    <li>SAE J1757-2 (2018-11): saemobilus.sae.org/standards/j1757-2_201811-standard-optical-system-hud-automotive. ISO 15008:2017 and ISO/TS 21957:2023 pages at evs.ee. DIN 75220 as described by test laboratories (infinitalab.com; testxchange.com).</li>
+    <li>Scene luminance: Wikipedia "Orders of magnitude (luminance)" and "Lux"; FHWA European road lighting report, international.fhwa.dot.gov/euroroadlighting/04.cfm (asphalt 0.07–0.10 cd/m² per lux); BEGA lighting theory (L = Eρ/π).</li>
+    <li>Retarder and polariser sheets: Edmund Optics UK WP280 half-wave film 600 × 500 mm (edmundoptics.co.uk, product 42706) and XP42-18 polarising film (products 52979, 52980); American Polarizers APHW92-003-PC-280NM (apioptics.com); Knight Optical plastic retarders (knightoptical.com); polarization.com PF006 film. Edmund's wire-grid film is discontinued.</li>
+    <li>Mirrors and glass: Avantier custom concave spherical mirrors (avantierinc.com); Shanghai Optics precision reflectors; Edmund 6-inch 24-inch-focal-length spherical mirror (product 5438, £520); twowaymirrors.com teleprompter mirror pages; Neewer NA17 ($52.99, unverified); Knight Optical LFQ300300 Fresnel (£118.50); Comar 305 FQ 310; Edmund 11-inch Fresnel (product 4736, £121.60).</li>
+    <li>Visual acuity: yorku.ca/eye/acuity.htm; Wikipedia "Visual acuity"; Ashraf, Chapiro and Mantiuk 2025, arxiv.org/html/2410.06068v1.</li>
+  </ul>
+
+  <h3>Displays</h3>
+  <ul class="small">
+    <li>Kyocera automotive displays and HUD line (sizes, transmittance, 105 °C): display.kyocera.com/automotive-displays; Kyocera 2018 HUD panel announcement (europe.kyocera.com) and 2019 2.6-inch announcement (americas.kyocera.com/news/2019/09/05144342.html).</li>
+    <li>Tianma Display Week 2025 automotive brochure (4.1-inch 1280 × 640 HUD PGU with collimated backlight): usa.tianma.com/wp-content/uploads/2025/05/Tianma-Display-Week-2025-Automotive-Technology.pdf; Tianma CES 2026 release (12-inch HUD, 12,000 nits, 7% transmittance) via prnewswire.com.</li>
+    <li>Fomalhaut teardown of a Nippon Seiki BMW HUD (3.15-inch 800 × 480 IPS, two 4 mm LEDs): marklines.com/statics/teardown/fomalhaut_004_ja.pdf. IHS teardown of a Continental BMW HUD (JDI 1.8-inch 480 × 240, 15 LEDs), via electronics360.globalspec.com (page not loadable; search excerpt, unverified). Brightek 3.1-inch HUD backlight module (1,250,000 nits, 6.6 W): brightek.com. Truly LTPS HUD TFT page (transmittance 3.7% to 6.3%): trulyuk.com.</li>
+    <li>Used OEM HUD listings on eBay (BMW F01/F10/G14, Mazda CX-5/CX-50/Mazda3, Audi A4/A6/Q7, Mercedes GLC/W177/EQC, Hyundai Ioniq 5), from listing summaries on 2026-10-21; item pages not loadable, prices unverified. Hackaday, "Displays we love hacking: LVDS and eDP" (2024-05-08).</li>
+    <li>Industrial panels: Litemax 0708-T (7-inch, 1,600 cd/m²) litemax.com; Newhaven NHD-5.0-HDMI-N-RSXP ($74.75, 1,100 nits) and NHD-7.0 series, newhavendisplay.com; Crystalfontz CFAF800480H0-043SN ($24.20, 1,000 cd/m²) and CFAF800480E1-050SR, crystalfontz.com; Riverdi RVT70HSLNWN00 ($44.45), riverdi.com; Raystar RFH700A7-AIH-LNN; Orient Display high-brightness panels and custom 1,500–2,000 nit note, orientdisplay.com; Winstar parts via unisystem.com (unverified).</li>
+    <li>Hobby kits: Waveshare 5-inch 720 × 1280 (waveshare.com/wiki/5inch_720x1280_LCD; $59.99; 62.10 × 110.40 mm; 350 cd/m²), Waveshare 4.3-inch HDMI (B), Waveshare 5-inch 1024 × 600 high-brightness (800 cd/m²) via robotshop.com; Wisecoco 5.5-inch 1920 × 1080 HDMI ($95, 450 cd/m²): wisecocodisplay.com/product/5-5-inch-raspberry-pi-touch-screen-1920-1080/; Focus LCDs E43GA-RW800-R datasheet (edge-lit, 18 LED chips).</li>
+    <li>Backlight physics: LG Philips patent US6532045B2 (7.4% typical transmittance; 3–8%); 3M BEF film data (effective transmission per film and stack gains; 95 °C) and DBEF-QV2 data, as hosted at orientdisplay.com/wp-content/uploads/2022/10/; Cree XLamp XP-G4 and XP-G3 datasheets (assets.cree-led.com); Lumileds LUXEON HL2X page; US DOE 2022 SSL R&amp;D opportunities report (energy.gov); LED Professional on light-guide efficiency (40–60%).</li>
+    <li>Thermal limits: DisplayModule knowledge pages on liquid-crystal operating temperature (clearing point near 75 °C typical); Peng, Wu et al., SID 2016 (vehicle displays need a clearing point near 100 °C), api.creol.ucf.edu/Publications/11679.pdf; Laser Focus World 2016 on automotive liquid-crystal mixtures; HUD solar-simulator study (Luminbox, 2026-01) via sohu.com.</li>
+  </ul>
+
+  <h3>This repository</h3>
+  <ul class="small">
+    <li><code>openpilot/selfdrive/car/card.py</code> lines 110–118, <code>openpilot/selfdrive/selfdrived/selfdrived.py</code> line 46, <code>opendbc_repo/opendbc/car/car.capnp</code> lines 516–517 and 633, <code>openpilot/system/manager/process_config.py</code> line 118, read on 2026-10-21.</li>
+    <li>The previous plan, <code>docs/ARHUD-PLAN.pdf</code> (revision 2, PDF edition, revised 2026-10-09), and its source under <code>docs/arhud-plan-src/</code>.</li>
+  </ul>
+
+  <h3>Carried over from the previous plan, not re-read</h3>
+  <ul class="small">
+    <li>Mercedes supplier portal and VW newsroom on S-Class and ID.4 AR HUDs (10 m); Huawei IAA 2021 release (7.5 m, 13° × 5°); Corning and Hyundai Mobis on Ioniq 5 (7.5 m); Panasonic CES 2022 AR HUD with eye tracking.</li>
+    <li>Analog Devices design note on HUD daylight contrast (ratio 1.15–1.5 against up to 10,000 cd/m² ambient); Karl Guttag, CES 2018 HUD notes on source luminance. The Analog Devices page could not be reached on 2026-10-21.</li>
+    <li>NASA Ames (Foyle; Dowell) on attention capture with superimposed HUD symbology; AIST simulator study on lead-vehicle-centred cues; Frontiers 2019 AR DriveSim study.</li>
+    <li>arXiv 2607.23901 and Jerald 2010 on perceptual latency thresholds; Holloway 1997 on latency as the dominant registration error.</li>
+    <li>California Vehicle Code 26708; Texas Transportation Code 547.613; Florida Statutes 316.2952; NHTSA interpretation aiam4336.</li>
+    <li>comma.ai shop, comma four and harness prices, read 2026-10-08. Seeed JetPack flashing guides for the reComputer J4012, as read on 2026-10-08.</li>
+  </ul>
+  <p class="small">This document is a parallel plan to <code>docs/ARHUD-PLAN.pdf</code>, not a revision of it. The project's README describes the self-driving version and will need updating if this plan is adopted.</p>
+</section>

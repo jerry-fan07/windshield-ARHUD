@@ -1,0 +1,58 @@
+{
+ "generated_from": "docs/arhud-sim/js/geom.js and hud.js tracedWindow() via docs/arhud-road/tools/dump_traced.mjs",
+ "frame": "X forward, Y up, Z right, metres; origin on the road under the nominal eye",
+ "eye": [
+  0,
+  1.22,
+  0
+ ],
+ "look": [
+  0.9961946980917455,
+  -0.08715574274765817,
+  0
+ ],
+ "roadCam": [
+  0.4287508223467746,
+  1.3,
+  0.31
+ ],
+ "driverCam": [
+  0.53,
+  0.86,
+  0
+ ],
+ "carCenterZ": 0.37,
+ "eyeToMirror": 1.06,
+ "mirrorW": 0.3,
+ "mirrorH": 0.2,
+ "glass": {
+  "G": [
+   0.7471460235688092,
+   1.1546331929392564,
+   0
+  ],
+  "N": [
+   0.4694715627858908,
+   0.882947592858927,
+   0
+  ],
+  "cowlY": 0.8,
+  "roofY": 1.385,
+  "bottomX": 1.4141140550199405,
+  "topX": 0.3138890727923364
+ },
+ "entry": [
+  -0.6293203910498374,
+  0.777145961456971,
+  0
+ ],
+ "traced": {
+  "dist": 8.560000000000002,
+  "w": 1.3092529505610881,
+  "h": 0.6859021779488443,
+  "fovW": 8.74637149096232,
+  "fovH": 4.588585634777679,
+  "topW": 8.746371490962323,
+  "botW": 9.681769043595255
+ }
+}

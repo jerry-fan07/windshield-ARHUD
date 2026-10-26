@@ -1,0 +1,54 @@
+<section>
+  <h2 id="s11"><span class="num">11</span>Risks, legal, open questions</h2>
+
+  <h3>11.1 Risks</h3>
+  <p>Risks that carry over from the previous plan keep their mitigations; those that are new to this design are tagged. Each is tied to the section that handles it.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th style="width:24%">Risk</th><th>What could happen, and the mitigation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Lane network does not generalise to the course</strong> <span class="tag acc">new</span></td><td>Public weights are trained on other roads; the course may have faded paint, kerbs without lines, or lighting the network has not seen. Mitigation: the Phase 1 score on labelled frames decides early; fine-tuning on the course's own recordings is the first remedy; the passive comma four is the fallback (section 5.7).</td></tr>
+      <tr><td><strong>Plane fit fails in traffic, rain or at night</strong> <span class="tag acc">new</span></td><td>The stereo region ahead may be occupied or textureless. Mitigation: the static ground plane with inertial pitch is the fallback mode, costing {{pitch_reg}}° per degree of pitch error at 20 m (section 5.5); the fit's confidence is logged and shown as a glyph.</td></tr>
+      <tr><td><strong>GPU over-subscribed</strong> <span class="tag acc">new</span></td><td>The pessimistic sum does not fit 30 Hz (section 5.8). Mitigation: measure in week 1; run the camera-rate topics at 20 Hz and depth at half rate if needed; a lighter depth mode or a smaller detector are the next steps.</td></tr>
+      <tr><td><strong>Backlight uniformity or heat</strong> <span class="tag acc">new</span></td><td>A direct-lit cavity behind a small crop can show the LEDs as hot spots, and the cell can overheat under its own backlight (section 6.6). Mitigation: a mixing cavity depth of at least the LED pitch, a diffuser plate, measurement on a grid; thermistor-driven derating and the 30-minute thermal test at gate G5.</td></tr>
+      <tr><td><strong>Panel too dim for the sky target</strong> <span class="tag acc">new</span></td><td>The design has only {{bl_headroom}}× margin on the one-surface figure, and the transmittance assumption may be optimistic. Mitigation: the road target is the floor for a daylight demo and has more margin; more LEDs or the prism films recover brightness; the collimated backlight is the larger step; a HUD-grade module is the purchase option.</td></tr>
+      <tr><td><strong>Night window glow</strong> <span class="tag acc">new</span></td><td>The cell's black level shows as a grey rectangle at night (section 6.6). Mitigation: the dimming curve holds white at the ceiling; a VA cell is the alternative; measured at gate G6.</td></tr>
+      <tr><td><strong>Panel board input lag</strong> <span class="tag acc">new</span></td><td>Some small-panel HDMI boards buffer a full frame or more. Mitigation: measure with the photodiode in Phase 5 before the panel is final; a board with a direct scaler path, or a panel on a different interface, is the alternative.</td></tr>
+      <tr><td><strong>Custom mirror lead time or quality</strong></td><td>The mirror arrives late or does not match the ray trace. Mitigation: Stage 1 is the demo fallback with the custom-backlit panel.</td></tr>
+      <tr><td><strong>Relay geometry depends on the windshield</strong></td><td>The single-mirror calculation cannot place the image correctly without the windshield in the model. Mitigation: a ray trace with the chosen car's windshield before the mirror is ordered (section 6.7).</td></tr>
+      <tr><td><strong>Ghost image worse than predicted</strong> <span class="tag acc">new</span></td><td>The table in section 6.4 assumes a {{t_glass}} laminate and 65° incidence; a thicker glass or steeper angle widens the ghost. Mitigation: the Stage 2 photograph decides; the wedge windshield is the funded option, at the car-choice cost it brings.</td></tr>
+      <tr><td><strong>Sunlight focused onto the panel</strong></td><td>The concave mirror concentrates sunlight on the cell when the sun is high behind the car (section 6.8). Mitigation: shutter when off, the sun-watch rule when on, the cold-mirror fold and aperture polariser, the thermistor cut-off, and the thermocouple test before any sun exposure.</td></tr>
+      <tr><td><strong>Head tracker at night</strong></td><td>Tracking quality at night is not yet characterised. Mitigation: the OAK-D Pro's infrared illuminator is the reason for choosing it. Face-landmark networks degrade past about 45° of yaw, which is acceptable for a driver looking ahead.</td></tr>
+      <tr><td><strong>GNSS speed in canyons or under trees</strong> <span class="tag acc">new</span></td><td>Speed and prediction degrade without satellites. Mitigation: the dead-reckoning module bridges short outages with its own inertial unit; the speed block shows the fix glyph; the course is chosen with open sky.</td></tr>
+      <tr><td><strong>Camera mount drifts</strong> <span class="tag acc">new</span></td><td>A windshield mount that moves a few millimetres changes the camera-to-car calibration. Mitigation: a rigid bracket; the calibration is checked against the target board before each demo; the plane fit absorbs pitch but not roll or yaw.</td></tr>
+      <tr><td><strong>Prediction sign or rotation wrong</strong></td><td>A sign error would move the ribbon in the wrong direction by an amount comparable to the uncompensated error, about 3° at 10 m. Mitigation: confirm the sign on a recording before any car drive (section 4.6).</td></tr>
+      <tr><td><strong>Stale or missing data</strong></td><td>The HUD could draw the last known lanes after their source has stopped. Mitigation: the drawing rules of section 7.4, with empty messages published so silence is distinguishable from absence.</td></tr>
+      <tr><td><strong>Polarised sunglasses</strong></td><td>The design relies on an s-polarised image, and polarised sunglasses are made to block exactly that polarisation. Production HUDs that tolerate sunglasses use p-polarised glass with a special coating, which is out of this plan's scope. Mitigation: no polarised eyewear for the driver or in front of the eye-point camera during the demo, stated in the script.</td></tr>
+      <tr><td><strong>Panel polarisation orientation</strong></td><td>Mounted in the wrong orientation, the panel's windshield reflection falls from {{rs65}} to {{rp65}}. Mitigation: measure the axis in Phase 5 and orient the panel or add the retarder film (section 6.3).</td></tr>
+      <tr><td><strong>Attention capture</strong></td><td>Superimposed symbology draws attention away from the scene; aviation research on HUDs is the basis. Mitigation: keep everything conformal and sparse, with no full-windshield content.</td></tr>
+      <tr><td><strong>Jetson state unknown</strong></td><td>The facts are from 2026-10-07: JetPack 5.1.3, 15 W mode, no camera. Mitigation: verify before flashing.</td></tr>
+      <tr><td><strong>Speed shown is not the car's speedometer</strong> <span class="tag acc">new</span></td><td>GNSS speed is ground speed and can differ from the car's indicated speed by a few per cent. Mitigation: the audience view and the script say so; the block is labelled as GNSS speed.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>11.2 Legal <span class="tag">confirm locally</span></h3>
+  <p>No federal standard governs head-up displays directly. NHTSA has treated factory head-up display areas as minor exceptions to the defrost and wiper zones. State law governs objects on or near the windshield. California Vehicle Code 26708 bars anything that obstructs the driver's clear view, with small exempt zones in the lower corners and top centre. Texas and Florida have similar obstruction statutes. These statements are from the previous plan and have not been re-checked for this edition.</p>
+  <p>This design changes the exposure in two ways. It no longer involves any driver-assistance system, so the questions about automated driving on public roads do not arise. And it adds a camera mounted on the windshield near the mirror, which is where factory and aftermarket cameras are commonly placed and where the exempt zones of the statutes above tend to be, but that placement must be checked for the state concerned. The dash-top housing that projects into the glass without attaching anything to it remains the least exposed configuration; the Stage 1 combiner stands above the dash and is the more exposed of the two.</p>
+  <p>For the demo, the plan's conditions are a closed course or private lot, a safety driver who is not the presenter, and sign-off from the university's risk office before any public road use. Those conditions are the plan's, not legal advice, and the university's rules govern.</p>
+
+  <h3>11.3 Open questions</h3>
+  <ol>
+    <li><strong>Which car.</strong> It fixes the windshield rake and curvature that the mirror design depends on, and the dash top that the housing must fit. Any car will do; a car whose rake is near {{rake}}° keeps the sun-entry analysis as written.</li>
+    <li><strong>Whether a HUD-grade TFT module can be bought</strong> as a single unit, which would replace the backlight build (chapter 8).</li>
+    <li><strong>Whether the demo venue allows</strong> a second vehicle as the lead car and a volunteer pedestrian.</li>
+    <li><strong>Whether the Stage 1 image quality is good enough to be shown,</strong> or is for development only.</li>
+    <li><strong>What the ray trace gives</strong> for f, u and the mirror shape, with the chosen windshield (section 6.7), and what sun-entry patch it gives for the sun-watch rule.</li>
+    <li><strong>Which lane network</strong> scores best on the course, and whether it needs fine-tuning (section 5.2).</li>
+    <li><strong>What the cell's transmittance, contrast and temperature rating are</strong> for the panel actually bought (section 6.6).</li>
+    <li><strong>Whether the ZED's visual-inertial motion is usable at road speed,</strong> or stays a cross-check (section 5.4).</li>
+    <li><strong>How far the panel board's input lag can be reduced,</strong> and whether a different board is needed (section 4.5).</li>
+    <li><strong>Whether the ghost on the stock windshield is acceptable,</strong> which decides the wedge windshield (section 6.4).</li>
+    <li><strong>Stretch goals, after the demo:</strong> the collimated backlight; a lane-departure glow on the ribbon's edge; navigation arrows from a route and map matching; p-polarised glass.</li>
+  </ol>
+</section>

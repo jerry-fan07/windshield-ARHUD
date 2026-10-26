@@ -1,0 +1,5199 @@
+{
+ "generated": "2026-10-22T02:45:05.227Z",
+ "frame": "simulation car frame: X forward, Y up, Z right, metres; origin on the road under the nominal eye",
+ "categories": [
+  [
+   "pgu",
+   "Picture generator"
+  ],
+  [
+   "optics",
+   "Optics"
+  ],
+  [
+   "housing",
+   "Housing"
+  ],
+  [
+   "sensor",
+   "Sensors"
+  ],
+  [
+   "compute",
+   "Computer"
+  ],
+  [
+   "software",
+   "Software"
+  ],
+  [
+   "controller",
+   "HUD controller"
+  ],
+  [
+   "power",
+   "Power"
+  ],
+  [
+   "display",
+   "Displays"
+  ],
+  [
+   "network",
+   "Network"
+  ],
+  [
+   "stage",
+   "Stage 0 and 1 rigs"
+  ],
+  [
+   "instrument",
+   "Test instruments"
+  ],
+  [
+   "vehicle",
+   "Vehicle"
+  ]
+ ],
+ "registry": [
+  {
+   "id": "panelKit",
+   "cat": "pgu",
+   "name": "5.5-inch 1080p HDMI panel kit (stock)"
+  },
+  {
+   "id": "lcdCell",
+   "cat": "pgu",
+   "name": "LCD cell and the 60 × 30 mm crop"
+  },
+  {
+   "id": "backlight",
+   "cat": "pgu",
+   "name": "Custom direct-lit backlight"
+  },
+  {
+   "id": "retarder",
+   "cat": "pgu",
+   "name": "Half-wave retarder film"
+  },
+  {
+   "id": "pgu",
+   "cat": "pgu",
+   "name": "Picture generation unit (assembled)"
+  },
+  {
+   "id": "coldMirror",
+   "cat": "optics",
+   "name": "Cold-mirror fold and IR absorber"
+  },
+  {
+   "id": "concaveMirror",
+   "cat": "optics",
+   "name": "Concave relay mirror, 300 × 200 mm"
+  },
+  {
+   "id": "windshield",
+   "cat": "optics",
+   "name": "Windshield: reflection and ghost"
+  },
+  {
+   "id": "dustCover",
+   "cat": "optics",
+   "name": "Dust cover with s-pass polariser"
+  },
+  {
+   "id": "shutter",
+   "cat": "optics",
+   "name": "Sun shutter and servo"
+  },
+  {
+   "id": "housing",
+   "cat": "housing",
+   "name": "3-D printed housing"
+  },
+  {
+   "id": "hudUnit",
+   "cat": "housing",
+   "name": "HUD unit, installed optical train"
+  },
+  {
+   "id": "zed2i",
+   "cat": "sensor",
+   "name": "Stereolabs ZED 2i road camera"
+  },
+  {
+   "id": "oakdPro",
+   "cat": "sensor",
+   "name": "Luxonis OAK-D Pro driver camera"
+  },
+  {
+   "id": "zedF9r",
+   "cat": "sensor",
+   "name": "u-blox ZED-F9R GNSS board"
+  },
+  {
+   "id": "gnssAntenna",
+   "cat": "sensor",
+   "name": "GNSS antenna"
+  },
+  {
+   "id": "jetson",
+   "cat": "compute",
+   "name": "Seeed reComputer J4012 (Orin NX 16 GB)"
+  },
+  {
+   "id": "software",
+   "cat": "software",
+   "name": "hud/ processes and topics"
+  },
+  {
+   "id": "controller",
+   "cat": "controller",
+   "name": "HUD controller (RP2040)"
+  },
+  {
+   "id": "ledDriver",
+   "cat": "controller",
+   "name": "Constant-current LED driver"
+  },
+  {
+   "id": "dcdc",
+   "cat": "power",
+   "name": "Mini-Box DCDC-USB-200"
+  },
+  {
+   "id": "fuseTap",
+   "cat": "power",
+   "name": "12 V plug and inline fuse"
+  },
+  {
+   "id": "pdCharger",
+   "cat": "power",
+   "name": "USB-C PD car charger"
+  },
+  {
+   "id": "ethSwitch",
+   "cat": "network",
+   "name": "Gigabit Ethernet switch"
+  },
+  {
+   "id": "miniPC",
+   "cat": "display",
+   "name": "ACEMAGIC mini PC (audience view)"
+  },
+  {
+   "id": "monitor",
+   "cat": "display",
+   "name": "YODOIT 16-inch monitor"
+  },
+  {
+   "id": "stage0Rig",
+   "cat": "stage",
+   "name": "Stage 0 bench rig"
+  },
+  {
+   "id": "stage1Rig",
+   "cat": "stage",
+   "name": "Stage 1 Fresnel and combiner"
+  },
+  {
+   "id": "latencyProbe",
+   "cat": "instrument",
+   "name": "Latency probe (photodiode + LED)"
+  },
+  {
+   "id": "lumMeter",
+   "cat": "instrument",
+   "name": "Spot luminance meter"
+  },
+  {
+   "id": "targetBoard",
+   "cat": "instrument",
+   "name": "30 m target board"
+  },
+  {
+   "id": "rangefinder",
+   "cat": "instrument",
+   "name": "Laser rangefinder"
+  }
+ ],
+ "components": {
+  "panelKit": {
+   "id": "panelKit",
+   "name": "Wisecoco 5.5-inch 1920 × 1080 IPS HDMI kit (as unboxed)",
+   "category": "pgu",
+   "desc": "The picture generator starts as a hobby HDMI kit: a 5.5-inch 1920 × 1080 IPS panel with its stock edge-lit backlight and an HDMI-to-MIPI driver board. The plan buys two; one stays stock for Stage 0 and as a spare, the other is taken apart so only a 60 × 30 mm crop of its cell is lit by the custom backlight.",
+   "working": "The stock edge LEDs light the light-guide plate and the panel shows a test image at the vendor's 450 cd/m², about 6% of the daylight sky target at the eye.",
+   "mount": "centre of the active area, on the front-polariser surface",
+   "size": [
+    0.14,
+    0.012,
+    0.13
+   ],
+   "facts": [
+    [
+     "Active area",
+     "121.8 × 68.5 mm (ASSUMED from the 5.5-inch diagonal)"
+    ],
+    [
+     "Resolution, pitch",
+     "1920 × 1080, 63.4 µm"
+    ],
+    [
+     "Stock luminance",
+     "450 cd/m² (vendor); 87 cd/m² at the eye through the windshield path"
+    ],
+    [
+     "Interface",
+     "HDMI in, MIPI DSI to the panel over a 40-pin FPC; 5 V on micro-USB"
+    ],
+    [
+     "Price",
+     "$95 each; panels line $190–265 (range)"
+    ],
+    [
+     "Why this panel",
+     "the only small 1080p HDMI kit found; no 5-inch 1080p kit exists"
+    ],
+    [
+     "Stock backlight",
+     "edge-lit light guide, a few hundred cd/m²; removed for Stage 2"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "tray",
+     "name": "Metal backlight tray",
+     "desc": "Stamped steel frame that holds the stock backlight sheets."
+    },
+    {
+     "id": "reflector",
+     "name": "Reflector sheet",
+     "desc": "White film that sends light escaping downward back into the light guide."
+    },
+    {
+     "id": "lgp",
+     "name": "Light-guide plate",
+     "desc": "Acrylic plate; printed dots grow away from the LED edge so light leaves evenly."
+    },
+    {
+     "id": "ledStrip",
+     "name": "Edge LED strip (18 LEDs)",
+     "desc": "Side-view LEDs on a flex strip along one long edge."
+    },
+    {
+     "id": "stockDiffuser",
+     "name": "Stock diffuser sheet",
+     "desc": ""
+    },
+    {
+     "id": "stockPrismA",
+     "name": "Stock prism sheet 1",
+     "desc": ""
+    },
+    {
+     "id": "stockPrismB",
+     "name": "Stock prism sheet 2",
+     "desc": ""
+    },
+    {
+     "id": "rearPol",
+     "name": "Rear polariser",
+     "desc": "Passes one linear polarisation into the cell."
+    },
+    {
+     "id": "tft",
+     "name": "TFT glass with driver ICs",
+     "desc": "One thin-film transistor per subpixel; the chip-on-glass drivers sit on the ledge."
+    },
+    {
+     "id": "lc",
+     "name": "Liquid-crystal layer",
+     "desc": "A few micrometres of liquid crystal, sealed between the two glasses."
+    },
+    {
+     "id": "cf",
+     "name": "Colour-filter glass",
+     "desc": "Red, green and blue filter stripes, one per subpixel."
+    },
+    {
+     "id": "frontPol",
+     "name": "Front polariser",
+     "desc": "Crossed with the rear polariser; the panel's output is linearly polarised."
+    },
+    {
+     "id": "fpc",
+     "name": "Flexible printed circuit",
+     "desc": "40-pin MIPI DSI flex from the glass to the board."
+    },
+    {
+     "id": "board",
+     "name": "HDMI driver board",
+     "desc": "HDMI-to-MIPI bridge; 5 V on micro-USB."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Backlight tray",
+     "parts": [
+      "tray"
+     ],
+     "text": "The stamped steel tray is the base of the stock module."
+    },
+    {
+     "title": "Reflector sheet",
+     "parts": [
+      "reflector"
+     ],
+     "text": "A white reflector lines the tray floor."
+    },
+    {
+     "title": "Light guide and edge LEDs",
+     "parts": [
+      "lgp",
+      "ledStrip"
+     ],
+     "text": "The light-guide plate drops in with the 18-LED flex strip against its long edge."
+    },
+    {
+     "title": "Stock optical sheets",
+     "parts": [
+      "stockDiffuser",
+      "stockPrismA",
+      "stockPrismB"
+     ],
+     "text": "Diffuser and two prism sheets even out and steer the light."
+    },
+    {
+     "title": "Cell: rear polariser",
+     "parts": [
+      "rearPol"
+     ],
+     "text": "The rear polariser sits on top of the stock sheets, under the cell glass."
+    },
+    {
+     "title": "Cell: TFT glass",
+     "parts": [
+      "tft"
+     ],
+     "text": "The transistor glass, with the chip-on-glass drivers on its ledge."
+    },
+    {
+     "title": "Cell: liquid crystal",
+     "parts": [
+      "lc"
+     ],
+     "text": "The liquid crystal fills the sealed gap between the glasses."
+    },
+    {
+     "title": "Cell: colour filters",
+     "parts": [
+      "cf"
+     ],
+     "text": "The colour-filter glass closes the cell."
+    },
+    {
+     "title": "Cell: front polariser",
+     "parts": [
+      "frontPol"
+     ],
+     "text": "The front polariser is crossed with the rear one."
+    },
+    {
+     "title": "Flex and driver board",
+     "parts": [
+      "fpc",
+      "board"
+     ],
+     "text": "The FPC plugs into the HDMI board's ZIF connector."
+    }
+   ]
+  },
+  "lcdCell": {
+   "id": "lcdCell",
+   "name": "LCD cell after teardown (60 × 30 mm crop marked)",
+   "category": "pgu",
+   "desc": "The panel with its stock backlight removed. The cell makes no light: each subpixel is a voltage-controlled shutter between two crossed polarisers. Only a 60 × 30 mm crop in the middle is lit and drawn; the rest stays black.",
+   "working": "In the zoomed pixel, the IPS liquid crystal rotates with each subpixel's voltage, turning the light's polarisation so it passes the front polariser; the output is linearly polarised.",
+   "mount": "centre of the 60 × 30 mm crop, on the front-polariser surface",
+   "size": [
+    0.08,
+    0.002,
+    0.13
+   ],
+   "facts": [
+    [
+     "Crop",
+     "60 × 30 mm = 946 × 473 px, 22% of the panel"
+    ],
+    [
+     "Pixel pitch",
+     "63.4 µm (from the assumed active area)"
+    ],
+    [
+     "Resolution in the window",
+     "87 px/deg, 1.51 mm per px at 7.5 m"
+    ],
+    [
+     "Cell transmittance",
+     "6% (ASSUMED; Phase 5 measures stock luminance ÷ backlight luminance)"
+    ],
+    [
+     "Contrast",
+     "1,000:1 (ASSUMED IPS); black at night 0.05 cd/m² at the eye"
+    ],
+    [
+     "Heat in the cell",
+     "about 3.0 W absorbed over 18 cm² at full backlight"
+    ],
+    [
+     "Polarisation",
+     "linear; the axis is measured in Phase 5 (often 45° to the edges)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "tft",
+     "name": "TFT glass with driver ICs",
+     "desc": "The transistor substrate; drivers on the ledge."
+    },
+    {
+     "id": "lc",
+     "name": "Liquid-crystal layer and seal",
+     "desc": "Sealed between the glasses."
+    },
+    {
+     "id": "cf",
+     "name": "Colour-filter glass",
+     "desc": "RGB stripes and the black matrix."
+    },
+    {
+     "id": "rearPol",
+     "name": "Rear polariser",
+     "desc": "Laminated to the back of the TFT glass."
+    },
+    {
+     "id": "frontPol",
+     "name": "Front polariser",
+     "desc": "Laminated to the colour-filter glass; crossed with the rear."
+    },
+    {
+     "id": "fpc",
+     "name": "FPC tail",
+     "desc": "Unplugged from the board during teardown."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "TFT substrate",
+     "parts": [
+      "tft"
+     ],
+     "text": "The cell is built on the transistor glass."
+    },
+    {
+     "title": "Liquid crystal and seal",
+     "parts": [
+      "lc"
+     ],
+     "text": "The liquid crystal is filled and sealed."
+    },
+    {
+     "title": "Colour-filter glass",
+     "parts": [
+      "cf"
+     ],
+     "text": "The filter glass closes the cell."
+    },
+    {
+     "title": "Rear polariser",
+     "parts": [
+      "rearPol"
+     ],
+     "text": "Laminated to the back."
+    },
+    {
+     "title": "Front polariser",
+     "parts": [
+      "frontPol"
+     ],
+     "text": "Laminated to the front, crossed with the rear."
+    },
+    {
+     "title": "Flex tail",
+     "parts": [
+      "fpc"
+     ],
+     "text": "The FPC stays bonded to the ledge."
+    }
+   ]
+  },
+  "backlight": {
+   "id": "backlight",
+   "name": "Custom direct-lit LED backlight (behind the 60 × 30 mm crop)",
+   "category": "pgu",
+   "desc": "The stock edge-lit backlight gives a few hundred cd/m². This replacement lights only the crop, from directly behind: eight high-power white LEDs on an aluminium board, a white mixing cavity, a diffuser plate, two crossed prism films and an infrared-cut glass, cooled by a finned heat sink and a 40 mm fan.",
+   "working": "The LEDs emit in all directions; the white cavity and diffuser even the light out, the crossed prism films send part of it back and bend the rest toward the ±15° cone the eye box needs.",
+   "mount": "centre of the top surface of the IR-cut glass (the cell sits on it)",
+   "size": [
+    0.05,
+    0.0585,
+    0.08
+   ],
+   "facts": [
+    [
+     "Design luminance at the panel",
+     "10,000 cd/m²"
+    ],
+    [
+     "Backlight luminance",
+     "10,000 ÷ 6% cell (ASSUMED) = 166,667 cd/m²"
+    ],
+    [
+     "Flux",
+     "Φ = π·L·A = 942 lm from 18 cm²"
+    ],
+    [
+     "LED power",
+     "12.6 W at 50% efficiency, 150 lm/W (ASSUMED); 6.3 W with films"
+    ],
+    [
+     "Prism films",
+     "crossed pair, gain 2.0 (ASSUMED; 3M about 1.5 per film)"
+    ],
+    [
+     "Emission cone needed",
+     "±11.6° × ±6.3° (design ±15°); Lambertian puts 6.7% inside"
+    ],
+    [
+     "Driver",
+     "constant current, analogue + PWM dimming above 2 kHz (Recom RCD-24 class)"
+    ],
+    [
+     "Price",
+     "$150–300 (estimate)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "heatsink",
+     "name": "Finned heat sink",
+     "desc": "Aluminium, 80 × 50 mm; carries about 12 W of LED heat to the fan."
+    },
+    {
+     "id": "fan",
+     "name": "40 mm fan",
+     "desc": "Draws cabin air through the fins and out of the housing base."
+    },
+    {
+     "id": "pad",
+     "name": "Thermal pad",
+     "desc": "Bonds the LED board to the heat sink."
+    },
+    {
+     "id": "ledBoard",
+     "name": "LED board, 8 high-power white LEDs",
+     "desc": "XP-G class LEDs (158–195 lm/W at 700 mA) on an aluminium MCPCB."
+    },
+    {
+     "id": "leads",
+     "name": "LED leads and connector",
+     "desc": "To the constant-current driver."
+    },
+    {
+     "id": "cavity",
+     "name": "White mixing cavity",
+     "desc": "The LEDs are spaced less than the cavity depth so the spots merge."
+    },
+    {
+     "id": "diffuser",
+     "name": "Diffuser plate",
+     "desc": "Scatters the light so no LED spot shows through."
+    },
+    {
+     "id": "bef1",
+     "name": "Prism film 1 (BEF)",
+     "desc": "Micro-prisms bend light toward the axis and recycle the rest."
+    },
+    {
+     "id": "bef2",
+     "name": "Prism film 2 (BEF, crossed)",
+     "desc": "Rotated 90° so both directions are narrowed."
+    },
+    {
+     "id": "ircut",
+     "name": "IR-cut glass",
+     "desc": "Keeps infrared (LED and solar) off the cell."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Heat sink",
+     "parts": [
+      "heatsink"
+     ],
+     "text": "Everything is built up on the finned heat sink."
+    },
+    {
+     "title": "Fan",
+     "parts": [
+      "fan"
+     ],
+     "text": "The 40 mm fan screws to the fin side and vents through the housing base."
+    },
+    {
+     "title": "Thermal pad",
+     "parts": [
+      "pad"
+     ],
+     "text": "A thermal pad goes on the heat sink face."
+    },
+    {
+     "title": "LED board",
+     "parts": [
+      "ledBoard"
+     ],
+     "text": "Eight high-power white LEDs on an aluminium board, screwed down through the pad."
+    },
+    {
+     "title": "LED leads",
+     "parts": [
+      "leads"
+     ],
+     "text": "Two leads run to the constant-current driver."
+    },
+    {
+     "title": "Mixing cavity",
+     "parts": [
+      "cavity"
+     ],
+     "text": "A 22 mm white-walled cavity over the LEDs mixes their light."
+    },
+    {
+     "title": "Diffuser plate",
+     "parts": [
+      "diffuser"
+     ],
+     "text": "The diffuser closes the cavity."
+    },
+    {
+     "title": "Prism film 1",
+     "parts": [
+      "bef1"
+     ],
+     "text": "First brightness-enhancement film, prisms along one direction."
+    },
+    {
+     "title": "Prism film 2, crossed",
+     "parts": [
+      "bef2"
+     ],
+     "text": "Second film at 90° to the first."
+    },
+    {
+     "title": "IR-cut glass",
+     "parts": [
+      "ircut"
+     ],
+     "text": "The infrared-cut glass is the top of the stack; the cell sits on it."
+    }
+   ]
+  },
+  "retarder": {
+   "id": "retarder",
+   "name": "Half-wave retarder film",
+   "category": "pgu",
+   "desc": "The windshield reflects s-polarised light (perpendicular to the plane of incidence) 19 times better than p. The panel already emits linearly polarised light, but its axis may sit at 45° to the edges. A half-wave film rotates that axis to s at no cost in brightness.",
+   "working": "A half-wave film mirrors the polarisation about its fast axis: output angle = 2 × fast axis − input, so a 45° input with the fast axis at 67.5° leaves at 90°, which is s at the windshield.",
+   "mount": "centre of the film's underside, laid over the crop",
+   "size": [
+    0.04,
+    0.001,
+    0.07
+   ],
+   "facts": [
+    [
+     "Windshield reflectance at 65°",
+     "s 23.6%, p 1.2% (ratio 19)"
+    ],
+    [
+     "Rule",
+     "output angle = 2 × fast-axis angle − input angle"
+    ],
+    [
+     "Needed when",
+     "the measured panel axis is not already along s (Phase 5)"
+    ],
+    [
+     "Sheet sources",
+     "Edmund WP280 600 × 500 mm about £324; Knight Optical 305 mm £213"
+    ],
+    [
+     "Price",
+     "$150–450 (range)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "liner",
+     "name": "Release liner",
+     "desc": "Peeled off before the film goes on the panel."
+    },
+    {
+     "id": "film",
+     "name": "Retarder film",
+     "desc": "Cut to cover the crop, fast axis set from the measured panel axis."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Peel the liner",
+     "parts": [
+      "liner"
+     ],
+     "text": "The release liner comes off."
+    },
+    {
+     "title": "Lay the film",
+     "parts": [
+      "film"
+     ],
+     "text": "The film goes over the crop with its fast axis at the angle the measurement gives."
+    }
+   ]
+  },
+  "pgu": {
+   "id": "pgu",
+   "name": "Picture generation unit (assembled)",
+   "category": "pgu",
+   "desc": "The finished picture generator: the stock cell on the custom backlight, the half-wave retarder on top if the axis needs it, an NTC thermistor on the cell's back for the controller's derating, and the HDMI board on a bracket. Only the crop is lit and drawn; the rest of the panel is black.",
+   "working": "The LEDs light the crop from behind and the crop shows the HUD frame the Jetson renders, mirrored as three reflections require; the fan runs and the heat sink warms.",
+   "mount": "centre of the 60 × 30 mm crop on the front-polariser surface (place at geom.PANEL_C)",
+   "size": [
+    0.14,
+    0.064,
+    0.13
+   ],
+   "facts": [
+    [
+     "Panel luminance (design)",
+     "10,000 cd/m² on axis; uniformity ±20% over the crop"
+    ],
+    [
+     "At the eye",
+     "1,944 cd/m² (path 19.4%: two 90% mirrors × 23.6% glass)"
+    ],
+    [
+     "Image",
+     "946 × 473 px of 1920 × 1080 at 60 Hz over HDMI"
+    ],
+    [
+     "Cell temperature",
+     "thermistor derates, then blanks; 30 min at full power in a 40 °C box must stay under the rating"
+    ],
+    [
+     "Black level",
+     "1.9 cd/m² at the eye by day, 0.05 at night (IPS 1,000:1, ASSUMED)"
+    ],
+    [
+     "Heat",
+     "12.6 W LED, about 3.0 W absorbed in the cell"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "backlight",
+     "name": "Custom backlight",
+     "desc": "Heat sink, fan, LEDs, cavity, diffuser, prism films, IR-cut glass."
+    },
+    {
+     "id": "ntc",
+     "name": "NTC thermistor on the cell back",
+     "desc": "10 kΩ NTC taped to the cell beside the crop, read by the controller."
+    },
+    {
+     "id": "cell",
+     "name": "LCD cell with the crop",
+     "desc": "The stock cell on the IR-cut glass, crop centred over the cavity."
+    },
+    {
+     "id": "retarder",
+     "name": "Half-wave retarder",
+     "desc": "Rotates the output polarisation to s if the measured axis needs it."
+    },
+    {
+     "id": "bracket",
+     "name": "Board bracket and standoffs",
+     "desc": "Screws to the heat sink base."
+    },
+    {
+     "id": "board",
+     "name": "HDMI driver board",
+     "desc": "HDMI in from the Jetson, 1920 × 1080 at 60 Hz."
+    },
+    {
+     "id": "fpc",
+     "name": "Panel FPC",
+     "desc": "Reconnected after the teardown."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Backlight unit",
+     "parts": [
+      "backlight"
+     ],
+     "text": "The finished backlight is the base of the PGU."
+    },
+    {
+     "title": "Thermistor",
+     "parts": [
+      "ntc"
+     ],
+     "text": "The NTC is taped to the cell's back beside the crop, where it reads the hottest glass the backlight sees."
+    },
+    {
+     "title": "LCD cell",
+     "parts": [
+      "cell"
+     ],
+     "text": "The cell, stripped of its stock backlight, lies on the IR-cut glass with the 60 × 30 mm crop over the cavity."
+    },
+    {
+     "title": "Retarder",
+     "parts": [
+      "retarder"
+     ],
+     "text": "If the Phase 5 measurement says the axis is wrong, the half-wave film goes over the crop."
+    },
+    {
+     "title": "Board bracket",
+     "parts": [
+      "bracket"
+     ],
+     "text": "A bracket on the heat sink carries the board on four standoffs."
+    },
+    {
+     "title": "HDMI board",
+     "parts": [
+      "board"
+     ],
+     "text": "The driver board mounts on the standoffs."
+    },
+    {
+     "title": "Flex reconnected",
+     "parts": [
+      "fpc"
+     ],
+     "text": "The panel flex plugs back into the board."
+    }
+   ]
+  },
+  "coldMirror": {
+   "id": "coldMirror",
+   "name": "Cold-mirror fold with IR absorber",
+   "category": "optics",
+   "desc": "The flat fold between the panel and the concave mirror is a dielectric cold mirror: it reflects visible light and transmits infrared. Sunlight that the concave mirror focuses back into the housing loses its infrared half here, into a black absorber, before it can reach the cell.",
+   "working": "Visible light reflects between the panel and the concave mirror; the infrared part of focused sunlight passes through the coating into the absorber, which warms.",
+   "mount": "centre of the reflecting surface at geom.FOLD_C; car-frame orientation (normal geom.FOLD_N)",
+   "size": [
+    0.1,
+    0.09,
+    0.18868403667312114
+   ],
+   "facts": [
+    [
+     "Size (from the traced footprint)",
+     "149 × 88 mm, 3 mm glass"
+    ],
+    [
+     "Incidence",
+     "35.0° at the centre"
+    ],
+    [
+     "Visible passed on (sun)",
+     "48% of the focused solar power (ASSUMED): 42 W → 20 W"
+    ],
+    [
+     "With the IR-cut glass",
+     "31% passes (TI DLPA096): 13 W"
+    ],
+    [
+     "Polarisation",
+     "plane of incidence aligned with the windshield's; s-reflectance checked against the vendor curve"
+    ],
+    [
+     "Price",
+     "$150–400 (estimate)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "bracket",
+     "name": "Printed fold bracket",
+     "desc": "Holds the glass at the traced angle; arms bolt to bosses on the housing walls."
+    },
+    {
+     "id": "absorber",
+     "name": "IR absorber",
+     "desc": "Black finned aluminium: the infrared the coating transmits ends here as heat."
+    },
+    {
+     "id": "glass",
+     "name": "Cold-mirror glass",
+     "desc": "Dielectric coating: reflects visible, transmits infrared."
+    },
+    {
+     "id": "clips",
+     "name": "Retaining clips",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Bracket",
+     "parts": [
+      "bracket"
+     ],
+     "text": "The printed bracket sets the fold angle."
+    },
+    {
+     "title": "Absorber",
+     "parts": [
+      "absorber"
+     ],
+     "text": "The black absorber mounts behind where the glass will sit."
+    },
+    {
+     "title": "Cold-mirror glass",
+     "parts": [
+      "glass"
+     ],
+     "text": "The glass drops into the frame, coating toward the panel and the concave mirror; plane of incidence aligned with the windshield's."
+    },
+    {
+     "title": "Clips",
+     "parts": [
+      "clips"
+     ],
+     "text": "Four clips hold the glass without stress."
+    }
+   ]
+  },
+  "concaveMirror": {
+   "id": "concaveMirror",
+   "name": "Custom concave relay mirror, 300 × 200 mm, f = 330 mm",
+   "category": "optics",
+   "desc": "The one custom optic. With the panel 316 mm away, inside its 330 mm focal length, the mirror forms a magnified virtual image 7.5 m behind itself, which the windshield folds into the driver's view. Used 15.5° off axis, a plain sphere splits that image into two focal distances; a toroid with different radii in the two planes brings them together.",
+   "working": "A panel point sends a fan of rays that leave the mirror diverging, as if from a point 7.5 m behind it; in a second phase, parallel sunlight from the windshield is focused to a 6 mm spot just past the panel.",
+   "mount": "mirror vertex at geom.MIRROR_C; car-frame orientation (normal geom.MIRROR_N, axes geom.MIRROR_U lateral, geom.MIRROR_V tangential)",
+   "size": [
+    0.2,
+    0.25,
+    0.32
+   ],
+   "facts": [
+    [
+     "Focal length, radius (plan)",
+     "f = 330 mm, R = 660 mm (spherical)"
+    ],
+    [
+     "Object distance",
+     "u = 316 mm, 14 mm inside focus"
+    ],
+    [
+     "Magnification, image",
+     "23.7; 1.42 m × 0.71 m at 7.5 m"
+    ],
+    [
+     "Incidence in this layout",
+     "15.5°"
+    ],
+    [
+     "Sphere at this incidence",
+     "tangential image 52.7 m, sagittal 4.1 m behind the mirror"
+    ],
+    [
+     "Toroid correction",
+     "Rt 685 mm, Rs 636 mm: both images at 7.5 m"
+    ],
+    [
+     "Aperture needed",
+     "320 × 165 mm at 1 m (traced here: about 331 mm wide)"
+    ],
+    [
+     "Sun focus",
+     "42 W into a 6 mm spot (131 W/cm²) before filters"
+    ],
+    [
+     "Price",
+     "$1,000–4,000 (estimate)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "cradle",
+     "name": "Printed cradle",
+     "desc": "Back plate and two legs; feet screw to the mirror boss on the housing floor."
+    },
+    {
+     "id": "adjusters",
+     "name": "Tilt adjusters",
+     "desc": "Three push-pull screws set the mirror angle during calibration."
+    },
+    {
+     "id": "substrate",
+     "name": "Mirror (first surface)",
+     "desc": "Aluminium on the front face, so there is no second reflection."
+    },
+    {
+     "id": "clips",
+     "name": "Edge clips",
+     "desc": "Hold the mirror on its adjusters without bending it."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Cradle",
+     "parts": [
+      "cradle"
+     ],
+     "text": "The printed cradle stands on the mirror boss."
+    },
+    {
+     "title": "Adjusters",
+     "parts": [
+      "adjusters"
+     ],
+     "text": "Three spring-loaded screws give tilt in both axes."
+    },
+    {
+     "title": "Mirror",
+     "parts": [
+      "substrate"
+     ],
+     "text": "The first-surface mirror sits on the adjusters, coating facing the fold and the windshield."
+    },
+    {
+     "title": "Edge clips",
+     "parts": [
+      "clips"
+     ],
+     "text": "Four clips hold it."
+    }
+   ]
+  },
+  "windshield": {
+   "id": "windshield",
+   "name": "Windshield: reflection and ghost",
+   "category": "optics",
+   "desc": "The car's stock laminated windshield is the HUD's final reflector. Its inner surface reflects about a quarter of the s-polarised image toward the eye; the outer surface reflects a second, parallel copy offset by 3.1 mm. At a 7.5 m image that is 1.4 arcminutes, about two pixels, so the plan keeps the stock glass and draws thick lines and area fills.",
+   "working": "An s-polarised ray from the mirror splits into the main reflection and the ghost; the offset and each share are labelled from calc.py.",
+   "mount": "centre of the inner (cabin-side) surface; local +Y is the inward normal",
+   "size": [
+    0.24,
+    0.06,
+    0.14
+   ],
+   "facts": [
+    [
+     "s reflectance at 65°",
+     "23.6%"
+    ],
+    [
+     "p reflectance at 65°",
+     "1.2% (ratio 19)"
+    ],
+    [
+     "Brewster angle",
+     "56.7°"
+    ],
+    [
+     "Laminate",
+     "4.96 mm = 2.1 + 0.76 + 2.1 (ASSUMED)"
+    ],
+    [
+     "Ghost offset",
+     "3.1 mm → 1.4′ at 7.5 m"
+    ],
+    [
+     "Ghost brightness",
+     "58% of the main image"
+    ],
+    [
+     "Both surfaces counted",
+     "37%"
+    ],
+    [
+     "Wedge-PVB windshield",
+     "$600–1,500, only if the Stage 2 photo needs it"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "innerPly",
+     "name": "Inner glass ply, 2.1 mm (ASSUMED)",
+     "desc": "Cabin side. Reflects the main image."
+    },
+    {
+     "id": "pvb",
+     "name": "PVB interlayer, 0.76 mm (ASSUMED)",
+     "desc": "Plain (parallel) interlayer on a stock windshield; a wedge-PVB layer tilts the outer surface to merge the ghost."
+    },
+    {
+     "id": "outerPly",
+     "name": "Outer glass ply, 2.1 mm (ASSUMED)",
+     "desc": "Outside. Its reflection is the ghost, offset 3.1 mm."
+    },
+    {
+     "id": "note",
+     "name": "Scale note",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Inner ply",
+     "parts": [
+      "innerPly"
+     ],
+     "text": "The windshield as the factory laminates it. The HUD uses the stock glass; nothing is bonded to it."
+    },
+    {
+     "title": "Interlayer",
+     "parts": [
+      "pvb"
+     ],
+     "text": "A plain PVB interlayer keeps the two glass surfaces parallel, so the two reflections leave parallel and offset."
+    },
+    {
+     "title": "Outer ply",
+     "parts": [
+      "outerPly",
+      "note"
+     ],
+     "text": "The outer surface reflects a second, weaker copy: the ghost."
+    }
+   ]
+  },
+  "dustCover": {
+   "id": "dustCover",
+   "name": "Dust cover with s-pass polariser",
+   "category": "optics",
+   "desc": "The window in the top of the housing. It keeps dust off the mirror, and a polariser laminated to its inside passes the HUD's own s-polarised light while absorbing more than half of any unpolarised sunlight trying to get in. The ambient-light sensor looks out through a window at one edge.",
+   "working": "The HUD's s-polarised light passes; unpolarised sunlight arrives and only about 42% gets through.",
+   "mount": "centre of the glass underside, in the lid plane (local X along the lid toward the front)",
+   "size": [
+    0.29000000000000004,
+    0.008,
+    0.32
+   ],
+   "facts": [
+    [
+     "Polariser",
+     "s-pass (axis across the car); 42% of unpolarised light (ASSUMED)"
+    ],
+    [
+     "HUD light",
+     "s-polarised, so it passes almost unchanged"
+    ],
+    [
+     "Sun after the filters",
+     "13 W → 5.5 W"
+    ],
+    [
+     "Sensor window",
+     "ambient-light sensor (TSL2591 or VEML7700) for the dimming curve"
+    ],
+    [
+     "Demo rule",
+     "no polarised sunglasses: they block exactly this light"
+    ],
+    [
+     "Price",
+     "$150–450 (range)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "glass",
+     "name": "Cover glass",
+     "desc": "3 mm float glass."
+    },
+    {
+     "id": "polariser",
+     "name": "s-pass polariser film",
+     "desc": "Laminated to the inside of the glass, pass axis across the car."
+    },
+    {
+     "id": "bezel",
+     "name": "Printed bezel",
+     "desc": "Clamps the glass into the lid opening."
+    },
+    {
+     "id": "als",
+     "name": "Ambient-light window",
+     "desc": "Light pipe to the controller's light sensor."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Cover glass",
+     "parts": [
+      "glass"
+     ],
+     "text": "The glass is cut to the traced aperture."
+    },
+    {
+     "title": "Polariser",
+     "parts": [
+      "polariser"
+     ],
+     "text": "The s-pass polariser is laminated to its inside face, pass axis across the car."
+    },
+    {
+     "title": "Bezel",
+     "parts": [
+      "bezel"
+     ],
+     "text": "The printed bezel holds it in the lid."
+    },
+    {
+     "title": "Sensor window",
+     "parts": [
+      "als"
+     ],
+     "text": "A light pipe at the rear edge feeds the ambient-light sensor."
+    }
+   ]
+  },
+  "shutter": {
+   "id": "shutter",
+   "name": "Sun shutter: two-leaf blade, servo and return spring",
+   "category": "optics",
+   "desc": "Two thin black leaves cover the mirror aperture under the dust cover. A micro servo opens them through a Scotch-yoke lever; a constant-force spring pulls them shut, so the shutter fails closed if power or the controller stops. It closes whenever the HUD is off and whenever the sun-watch rule finds the sun in the entry patch.",
+   "working": "The servo horn swings the lever, the front leaf slides back under the rear one and carries it into the garage; on release the spring draws both closed.",
+   "mount": "centre of the aperture in the plane of the blades (local X along the lid toward the front)",
+   "size": [
+    0.55,
+    0.03,
+    0.33999999999999997
+   ],
+   "facts": [
+    [
+     "Why",
+     "focused sun: 5.5 W in a 6 mm spot even after the filters (≈ 170 suns)"
+    ],
+    [
+     "Closed when",
+     "the HUD is off (parked car is the long-exposure case), sun-watch says so, cell too hot, or USB silent 5 s"
+    ],
+    [
+     "Entry patch",
+     "21° × 11° of sky, 51° elevation behind the car; crossed in about 83 min"
+    ],
+    [
+     "Actuator",
+     "SG90-class micro servo on the HUD controller, 140 mm Scotch-yoke lever"
+    ],
+    [
+     "Fail-safe",
+     "constant-force spring closes it with no power"
+    ],
+    [
+     "Price",
+     "$40–80 (range) (servo is in the controller line)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "rails",
+     "name": "Rails and stops",
+     "desc": "Printed guides under the dust cover; the garage is behind the aperture."
+    },
+    {
+     "id": "leafRear",
+     "name": "Rear leaf",
+     "desc": "Black blade; the front leaf picks it up halfway."
+    },
+    {
+     "id": "leafFront",
+     "name": "Front leaf",
+     "desc": "Driven by the yoke; slides under the rear leaf."
+    },
+    {
+     "id": "servo",
+     "name": "Servo and Scotch-yoke lever",
+     "desc": "SG90-class servo on the controller's PWM; the lever pin rides in the slot."
+    },
+    {
+     "id": "spring",
+     "name": "Constant-force return spring",
+     "desc": "Pulls the front leaf closed: the shutter fails closed."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Rails",
+     "parts": [
+      "rails"
+     ],
+     "text": "The rails go under the lid, with the garage behind the aperture."
+    },
+    {
+     "title": "Rear leaf",
+     "parts": [
+      "leafRear"
+     ],
+     "text": "The rear leaf slides into the rails."
+    },
+    {
+     "title": "Front leaf",
+     "parts": [
+      "leafFront"
+     ],
+     "text": "The front leaf slides in below it, slot toward the servo."
+    },
+    {
+     "title": "Servo and lever",
+     "parts": [
+      "servo"
+     ],
+     "text": "The servo mounts beside the garage; its lever pin drops into the slot."
+    },
+    {
+     "title": "Return spring",
+     "parts": [
+      "spring"
+     ],
+     "text": "The constant-force spring hooks onto the front leaf: no power, shutter closed."
+    }
+   ]
+  },
+  "housing": {
+   "id": "housing",
+   "name": "3D-printed housing (matte black)",
+   "category": "housing",
+   "desc": "The whole optical train lives in one printed, matte-black shell on the dash top. Panel and backlight sit at the rear, lowest, venting through the base; the fold sits above them; the concave mirror sits at the front; the dust cover and shutter close the top. It comes off without tools, so the car returns to stock.",
+   "working": "Exploded, the housing shows how the base, walls, bosses, baffles and lid fit; matte black inside keeps stray light from showing as haze.",
+   "mount": "centre of the floor underside; in the car this point sits at the housing origin on the dash top",
+   "size": [
+    0.4586432292402447,
+    0.30320861180159975,
+    0.37
+   ],
+   "facts": [
+    [
+     "Outside size",
+     "459 × 303 × 370 mm (L × H × W)"
+    ],
+    [
+     "Lid slope",
+     "12.5° (stays under the glass, over the fold)"
+    ],
+    [
+     "Aperture (traced)",
+     "262 × 329 mm"
+    ],
+    [
+     "Material",
+     "printed matte black, layer lines inside break up reflections"
+    ],
+    [
+     "Mounting",
+     "four feet with soft pads; no tools, nothing bonded to the glass"
+    ],
+    [
+     "Price",
+     "$150–300 (estimate)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "floor",
+     "name": "Floor, vent, feet and PGU pedestal",
+     "desc": "The fan vents through the grille under the backlight."
+    },
+    {
+     "id": "walls",
+     "name": "Walls",
+     "desc": "Side, front and rear walls; a gland at the rear for the cables."
+    },
+    {
+     "id": "bosses",
+     "name": "Fold and mirror bosses",
+     "desc": "Mounting points for the fold bracket and the mirror cradle."
+    },
+    {
+     "id": "baffles",
+     "name": "Internal baffles",
+     "desc": "Block stray paths from the panel to the aperture."
+    },
+    {
+     "id": "lid",
+     "name": "Lid",
+     "desc": "Covers the shutter garage; the aperture opening takes the dust cover."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Floor",
+     "parts": [
+      "floor"
+     ],
+     "text": "The floor with its vent grille, soft-padded feet and the PGU pedestal."
+    },
+    {
+     "title": "Walls",
+     "parts": [
+      "walls"
+     ],
+     "text": "Walls follow the lid slope, under the glass."
+    },
+    {
+     "title": "Bosses",
+     "parts": [
+      "bosses"
+     ],
+     "text": "Bosses for the fold bracket arms and the mirror cradle feet."
+    },
+    {
+     "title": "Baffles",
+     "parts": [
+      "baffles"
+     ],
+     "text": "A stray-light baffle and wall ribs."
+    },
+    {
+     "title": "Lid",
+     "parts": [
+      "lid"
+     ],
+     "text": "The lid closes the top round the aperture."
+    }
+   ]
+  },
+  "hudUnit": {
+   "id": "hudUnit",
+   "name": "HUD optical unit, installed",
+   "category": "housing",
+   "desc": "The finished optical unit on the dash: TFT PGU at the rear and lowest, the cold-mirror fold above it, the concave mirror at the front, the shutter and dust cover in the lid. Light leaves the crop, folds forward, is magnified by the concave mirror and leaves through the dust cover to the windshield, which reflects it to the driver.",
+   "working": "Rays traced back from the eye box through the window corners land on the panel crop: eye ← windshield ← concave mirror ← fold ← panel. Amber rays are clear; red rays are blocked by a part.",
+   "mount": "car-frame origin (group origin = simulation origin); parts sit at the geom.js positions",
+   "size": [
+    0.4586432292402447,
+    0.31320861180159976,
+    0.37
+   ],
+   "facts": [],
+   "parts": [
+    {
+     "id": "housingBase",
+     "name": "Housing base and walls",
+     "desc": "Printed base with vent, feet, pedestal, walls and bosses."
+    },
+    {
+     "id": "pgu",
+     "name": "TFT picture generation unit",
+     "desc": "Backlight, cell, retarder, thermistor, HDMI board."
+    },
+    {
+     "id": "coldMirror",
+     "name": "Cold-mirror fold and absorber",
+     "desc": "Bracket arms bolt to the wall bosses."
+    },
+    {
+     "id": "concaveMirror",
+     "name": "Concave mirror on its cradle",
+     "desc": "Cradle feet on the mirror boss."
+    },
+    {
+     "id": "baffles",
+     "name": "Baffles",
+     "desc": "Stray-light baffle between the panel and the mirror foot; ribs on the walls."
+    },
+    {
+     "id": "shutter",
+     "name": "Shutter",
+     "desc": "Under the lid; garage behind the aperture."
+    },
+    {
+     "id": "lid",
+     "name": "Lid",
+     "desc": "Closes over the shutter garage; the aperture takes the dust cover."
+    },
+    {
+     "id": "dustCover",
+     "name": "Dust cover",
+     "desc": "Glass with the s-pass polariser."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Housing base",
+     "parts": [
+      "housingBase"
+     ],
+     "text": "The printed base goes on the dash top on its padded feet; nothing is bonded or screwed to the car."
+    },
+    {
+     "title": "Picture generation unit",
+     "parts": [
+      "pgu"
+     ],
+     "text": "The PGU drops onto its pedestal at the rear, lowest, fan over the vent; the HDMI and LED leads leave through the rear gland."
+    },
+    {
+     "title": "Cold-mirror fold",
+     "parts": [
+      "coldMirror"
+     ],
+     "text": "The fold goes above the panel at 35.0° incidence, absorber behind it."
+    },
+    {
+     "title": "Concave mirror",
+     "parts": [
+      "concaveMirror"
+     ],
+     "text": "The concave mirror stands at the front, 316 mm of folded path from the crop."
+    },
+    {
+     "title": "Baffles",
+     "parts": [
+      "baffles"
+     ],
+     "text": "The stray-light baffle and wall ribs go in."
+    },
+    {
+     "title": "Shutter",
+     "parts": [
+      "shutter"
+     ],
+     "text": "The shutter rails, leaves, servo and spring mount under the lid line."
+    },
+    {
+     "title": "Lid",
+     "parts": [
+      "lid"
+     ],
+     "text": "The lid closes over the shutter garage."
+    },
+    {
+     "title": "Dust cover",
+     "parts": [
+      "dustCover"
+     ],
+     "text": "The dust cover, polariser inside, closes the aperture."
+    }
+   ]
+  },
+  "zed2i": {
+   "id": "zed2i",
+   "name": "Stereolabs ZED 2i (4 mm lenses) with mirror-stalk clamp",
+   "category": "sensor",
+   "desc": "The road camera and the HUD's main sensor. Its left lens is the origin of every coordinate in the plan. roadd reads its stereo pair for depth, fits the road plane each frame, lifts the lane and object detections onto it, and streams its IMU to egod.",
+   "working": "Both lens fields of view, a road-patch point cloud with a RANSAC plane fit choosing inliers over a car and clutter, and the IMU axes pulsing.",
+   "mount": "LEFT lens optical centre (the plan's car-frame origin); X along the optical axis, right lens at +Z 0.12 m",
+   "size": [
+    0.11,
+    0.09,
+    0.18
+   ],
+   "facts": [
+    [
+     "Lens",
+     "4 mm: 80° × 52° (store page) vs 72° × 44° (datasheet), CONFLICT; f ≈ 1,144 px at 1080p from 80°"
+    ],
+    [
+     "Stereo",
+     "baseline 120 mm; depth 1.0/1.5–35 m; rolling shutter"
+    ],
+    [
+     "Depth error",
+     "1.64 m at 30 m for 0.25 px disparity (ASSUMED) → 0.047° at the eye"
+    ],
+    [
+     "IMU",
+     "400 Hz; gyro gives egod a low-latency yaw rate"
+    ],
+    [
+     "Interface",
+     "USB 3; ZED SDK 5.5.1 supports JetPack 6.2.x (installer needs an exact L4T match)"
+    ],
+    [
+     "Mount",
+     "high on the windshield centreline, clamped to the mirror stalk; camera-to-eye 54 cm in this layout (plan ASSUMED 45 cm; keep within ≈ 0.5 m)"
+    ],
+    [
+     "Ground plane",
+     "own RANSAC fit per frame (the SDK plane API needs tracking at ≈ 44% GPU)"
+    ],
+    [
+     "Cost",
+     "$499 (firm; plan line \"Stereolabs ZED 2i, 4 mm lens\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "body",
+     "name": "Aluminium body (IP66), USB-C with screw locks, 1/4-20 thread",
+     "desc": "Sealed aluminium enclosure; USB-C with screw locks on the back; tripod thread underneath."
+    },
+    {
+     "id": "board",
+     "name": "Stereo sensor board and IMU",
+     "desc": "Two rolling-shutter image sensors 120 mm apart and the 400 Hz IMU."
+    },
+    {
+     "id": "front",
+     "name": "Front glass with polariser",
+     "desc": "Front window with a built-in polariser."
+    },
+    {
+     "id": "lensL",
+     "name": "Left 4 mm lens (origin of the car frame)",
+     "desc": "The left lens centre is the origin of the plan's car frame: x forward, y right, z down."
+    },
+    {
+     "id": "lensR",
+     "name": "Right 4 mm lens",
+     "desc": "120 mm stereo baseline."
+    },
+    {
+     "id": "plate",
+     "name": "Quick-release plate on the 1/4-20 thread",
+     "desc": "Screws into the camera's tripod thread."
+    },
+    {
+     "id": "arm",
+     "name": "Rigid bracket arm",
+     "desc": "Rigid so the camera cannot drift; registration depends on its pose (target check before demos)."
+    },
+    {
+     "id": "clamp",
+     "name": "Mirror-stalk clamp with thumbscrew",
+     "desc": "Clamps the rear-view-mirror stalk with a rubber liner: nothing is bonded to the glass, and it comes off without tools."
+    },
+    {
+     "id": "cable",
+     "name": "USB 3 cable (to the Jetson along the headliner)",
+     "desc": "Runs along the headliner and A-pillar to the Jetson."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Sensor board",
+     "parts": [
+      "board"
+     ],
+     "text": "Two image sensors on a rigid board, 120 mm apart, with the IMU between them."
+    },
+    {
+     "title": "Body",
+     "parts": [
+      "body"
+     ],
+     "text": "The sealed aluminium body; USB-C with screw locks at the back."
+    },
+    {
+     "title": "Lenses and front glass",
+     "parts": [
+      "lensL",
+      "lensR",
+      "front"
+     ],
+     "text": "4 mm lenses (narrower field, more pixels on the road ahead) behind the polarised front window."
+    },
+    {
+     "title": "Bracket",
+     "parts": [
+      "plate",
+      "arm",
+      "clamp"
+     ],
+     "text": "Quick-release plate on the tripod thread, a rigid arm, and a lined clamp on the mirror stalk."
+    },
+    {
+     "title": "Cable",
+     "parts": [
+      "cable"
+     ],
+     "text": "USB 3 along the headliner and A-pillar to the Jetson."
+    }
+   ]
+  },
+  "oakdPro": {
+   "id": "oakdPro",
+   "name": "Luxonis OAK-D Pro (driver camera)",
+   "category": "sensor",
+   "desc": "The driver camera. It finds the driver's face and eyes on its own processor and reports the eye midpoint, so hudd can re-project every graphic for where the eyes actually are; without it, a 150 mm head move shifts graphics by over a degree.",
+   "working": "An infrared dot pattern and flood light a face; landmarks and the eye midpoint follow the head as it moves.",
+   "mount": "centre (RGB) camera optical centre; X along the optical axis toward the driver",
+   "size": [
+    0.05,
+    0.08,
+    0.1
+   ],
+   "facts": [
+    [
+     "Cameras",
+     "global-shutter stereo pair (75 mm), RGB centre camera"
+    ],
+    [
+     "Illumination",
+     "IR flood + dot projector, for the head tracker at night"
+    ],
+    [
+     "Compute",
+     "on-device depth and NN inference (RVC2): face detection and landmarks; BNO086 IMU"
+    ],
+    [
+     "Output",
+     "eye midpoint in the car frame + confidence, 30 Hz (eyePose); nominal eye after 500 ms stale"
+    ],
+    [
+     "Why",
+     "parallax for a 150 mm head shift: 1.15° at 7.5 m, 0.29° at 30 m"
+    ],
+    [
+     "Latency",
+     "30–50 ms (parallax only)"
+    ],
+    [
+     "Note",
+     "MediaPipe is unsupported on Jetson; on-camera landmarks are primary, OpenSeeFace the CPU alternative"
+    ],
+    [
+     "Cost",
+     "$349–429 (range; plan line \"Luxonis OAK-D Pro (driver camera)\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "body",
+     "name": "Aluminium body with heat-sink fins",
+     "desc": "Passively cooled; the RVC2 vision processor inside runs the face networks."
+    },
+    {
+     "id": "board",
+     "name": "Board: RVC2 vision processor, BNO086 IMU",
+     "desc": "On-device stereo depth and neural inference: head tracking costs the Jetson nothing."
+    },
+    {
+     "id": "front",
+     "name": "Front window",
+     "desc": ""
+    },
+    {
+     "id": "optics",
+     "name": "Global-shutter stereo pair, RGB camera, IR dot projector and flood",
+     "desc": "Stereo pair 75 mm apart; the infrared dot projector and flood illuminator make it work at night."
+    },
+    {
+     "id": "mount",
+     "name": "Column-shroud mount with ball head",
+     "desc": "On the steering-column shroud, aimed at the driver's face; removable."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Board",
+     "parts": [
+      "board"
+     ],
+     "text": "Vision processor, IMU and the camera modules."
+    },
+    {
+     "title": "Body",
+     "parts": [
+      "body"
+     ],
+     "text": "Finned aluminium body; USB-C on the side."
+    },
+    {
+     "title": "Optics and window",
+     "parts": [
+      "optics",
+      "front"
+     ],
+     "text": "Stereo pair, RGB camera, IR projector and flood, behind the front window."
+    },
+    {
+     "title": "Mount",
+     "parts": [
+      "mount"
+     ],
+     "text": "Ball-head mount on the column shroud, aimed at the face; its pose is measured once."
+    }
+   ]
+  },
+  "zedF9r": {
+   "id": "zedF9r",
+   "name": "u-blox ZED-F9R dead-reckoning GNSS (SparkFun breakout)",
+   "category": "sensor",
+   "desc": "Satellite positioning with its own inertial unit. egod uses its Doppler speed as the unbiased reference, its heading and clock for the sun-watch rule, and its dead reckoning to ride through tunnels and tree cover. It is also the speed shown in the HUD's speed block.",
+   "working": "Satellites in view send signals to the antenna; the board reports a fix, satellite count, speed and heading.",
+   "mount": "centre of the board underside",
+   "size": [
+    0.05,
+    0.01,
+    0.045
+   ],
+   "facts": [
+    [
+     "Output",
+     "fused speed, heading and position at ≤ 30 Hz"
+    ],
+    [
+     "Accuracy",
+     "velocity 0.05 m/s; heading 0.2°; dead reckoning ≈ 2% of distance"
+    ],
+    [
+     "Role",
+     "unbiased speed reference for age compensation; heading and time for the sun-watch rule"
+    ],
+    [
+     "Latency",
+     "unspecified by u-blox (≈ 12 ms reported by one user): measured with the LED test"
+    ],
+    [
+     "Fallback",
+     "NEO-M9N ($71, 25 Hz, no dead reckoning)"
+    ],
+    [
+     "Speed shown",
+     "within 1 m/s of a reference GNSS trace while moving; dash without a fix"
+    ],
+    [
+     "Cost",
+     "$300–380 (range; plan line \"u-blox ZED-F9R board (SparkFun) + antenna\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "pcb",
+     "name": "Breakout board",
+     "desc": "Red SparkFun breakout with headers, LEDs and a backup cell."
+    },
+    {
+     "id": "module",
+     "name": "ZED-F9R module (GNSS + IMU, sensor fusion)",
+     "desc": "Multi-band GNSS with its own IMU: fused speed and heading, dead reckoning through outages."
+    },
+    {
+     "id": "connectors",
+     "name": "SMA antenna jack, USB-C, Qwiic",
+     "desc": "SMA to the antenna; USB-C to the Jetson (serial to egod)."
+    },
+    {
+     "id": "cable",
+     "name": "Antenna cable (to the dash antenna)",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Breakout board",
+     "parts": [
+      "pcb"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Module",
+     "parts": [
+      "module"
+     ],
+     "text": "The ZED-F9R: GNSS receiver and IMU with on-module fusion."
+    },
+    {
+     "title": "Connectors and antenna cable",
+     "parts": [
+      "connectors",
+      "cable"
+     ],
+     "text": "SMA to the dash antenna; USB-C to the Jetson."
+    }
+   ]
+  },
+  "gnssAntenna": {
+   "id": "gnssAntenna",
+   "name": "Active multi-band GNSS antenna",
+   "category": "sensor",
+   "desc": "The antenna for the GNSS board. It sits on the dash under the windshield, where it sees most of the sky, and feeds the ZED-F9R through a thin coaxial lead.",
+   "working": "Satellite signals arrive from above and converge on the patch element.",
+   "mount": "centre of the magnetic base underside (sits on the dash top near the glass)",
+   "size": [
+    0.07,
+    0.02,
+    0.07
+   ],
+   "facts": [
+    [
+     "Bands",
+     "multi-band L1/L2, as the ZED-F9R needs"
+    ],
+    [
+     "Placement",
+     "dash top near the glass, passenger side; open-sky course preferred"
+    ],
+    [
+     "Mount",
+     "magnetic base on a pad: nothing bonded"
+    ],
+    [
+     "Cost",
+     "$300–380 (range; plan line \"u-blox ZED-F9R board (SparkFun) + antenna\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "base",
+     "name": "Magnetic base and ground plane",
+     "desc": "A non-scratch pad goes under it on the dash; nothing is bonded."
+    },
+    {
+     "id": "lna",
+     "name": "Low-noise amplifier board",
+     "desc": "Amplifies the faint satellite signal before the cable."
+    },
+    {
+     "id": "element",
+     "name": "Ceramic patch element (L1/L2)",
+     "desc": "The receiving element."
+    },
+    {
+     "id": "radome",
+     "name": "Radome",
+     "desc": ""
+    },
+    {
+     "id": "cable",
+     "name": "RG-174 lead with SMA plug",
+     "desc": "To the ZED-F9R board by the Jetson."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Base",
+     "parts": [
+      "base"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Amplifier and element",
+     "parts": [
+      "lna",
+      "element"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Radome and lead",
+     "parts": [
+      "radome",
+      "cable"
+     ],
+     "text": "On the dash top near the glass, with a clear view of the sky."
+    }
+   ]
+  },
+  "jetson": {
+   "id": "jetson",
+   "name": "Seeed reComputer J4012 (Jetson Orin NX 16 GB)",
+   "category": "compute",
+   "desc": "The only computer in the car. It runs every HUD process: stereo depth and the ground plane, the lane and object networks, ego-motion, head tracking, the 60 Hz renderer and the logs. It drives the panel over its single HDMI port and streams the audience view over Ethernet.",
+   "working": "The fan spins, the status LED blinks, warm air rises from the vents and the panel shows GPU time per job against the 33 ms frame period.",
+   "mount": "centre of the underside (rubber feet on y = 0); I/O panel faces +X",
+   "size": [
+    0.12,
+    0.0585,
+    0.13
+   ],
+   "facts": [
+    [
+     "Module",
+     "Jetson Orin NX 16 GB (8-core Arm, 1024-core Ampere GPU)"
+    ],
+    [
+     "Carrier",
+     "Seeed J401: 1x HDMI 2.1, no DisplayPort, 4x USB 3.2, GbE, CAN (unused)"
+    ],
+    [
+     "Power",
+     "9–19 V input, from the ignition-sensed DC-DC"
+    ],
+    [
+     "Mode",
+     "MAXN; Seeed says the carrier cannot cool MAXN SUPER"
+    ],
+    [
+     "Software",
+     "JetPack 6.2 (Ubuntu 22.04, Python 3.10, TensorRT 10)"
+    ],
+    [
+     "GPU budget",
+     "24–50 ms serial per frame (ASSUMED except ZED depth and YOLO11s); 33 ms at 30 Hz"
+    ],
+    [
+     "Cited",
+     "ZED NEURAL_LIGHT 23% / NEURAL 59% GPU at 30 fps; YOLO11s FP16 7.9 ms"
+    ],
+    [
+     "State",
+     "Recorded 2026-10-07 on JetPack 5.1.3; unreachable since: verify before flashing"
+    ],
+    [
+     "Cost",
+     "owned"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "base",
+     "name": "Base plate and feet",
+     "desc": "Aluminium base plate; the carrier board stands on it."
+    },
+    {
+     "id": "ssd",
+     "name": "M.2 2280 NVMe SSD",
+     "desc": "System disk: JetPack 6.2, the hud/ package and topic logs."
+    },
+    {
+     "id": "carrier",
+     "name": "J401 carrier board and I/O",
+     "desc": "Carrier with 1x HDMI 2.1, 4x USB 3.2, gigabit Ethernet, a 9–19 V DC jack, a CAN port (unused: no vehicle bus), two camera connectors and the M.2 slot."
+    },
+    {
+     "id": "som",
+     "name": "Jetson Orin NX 16 GB module",
+     "desc": "8-core Arm CPU, 1024-core Ampere GPU, 16 GB LPDDR5. Runs every HUD process; MAXN mode, never MAXN SUPER."
+    },
+    {
+     "id": "heatsink",
+     "name": "Heatsink and heat pipes",
+     "desc": "Copper heat pipes carry heat from the module to aluminium fins."
+    },
+    {
+     "id": "fan",
+     "name": "Cooling fan",
+     "desc": "Draws air through the fins; the carrier cannot cool the MAXN SUPER mode, so the plan runs MAXN."
+    },
+    {
+     "id": "shell",
+     "name": "Enclosure walls",
+     "desc": "Aluminium enclosure; the I/O panel side is anodised black."
+    },
+    {
+     "id": "lid",
+     "name": "Top cover with vents",
+     "desc": "Vented aluminium cover over the fan."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Base plate and feet",
+     "parts": [
+      "base"
+     ],
+     "text": "Start from the aluminium base; the rubber feet keep it off the bracket."
+    },
+    {
+     "title": "Fit the SSD",
+     "parts": [
+      "ssd"
+     ],
+     "text": "The M.2 2280 NVMe drive holds JetPack 6.2, the hud/ package and logs."
+    },
+    {
+     "title": "Carrier board",
+     "parts": [
+      "carrier"
+     ],
+     "text": "The J401 carrier stands on brass spacers; all ports face the I/O side."
+    },
+    {
+     "title": "Seat the Orin NX module",
+     "parts": [
+      "som"
+     ],
+     "text": "The module clips into the 260-pin socket."
+    },
+    {
+     "title": "Heatsink and fan",
+     "parts": [
+      "heatsink",
+      "fan"
+     ],
+     "text": "Thermal pad, heat-pipe heatsink, then the fan on its 4-pin header."
+    },
+    {
+     "title": "Close the enclosure",
+     "parts": [
+      "shell",
+      "lid"
+     ],
+     "text": "Walls and the vented lid. Reflash to JetPack 6.2 from Seeed's image and set MAXN (nvpmodel mode 0)."
+    }
+   ]
+  },
+  "software": {
+   "id": "software",
+   "name": "hud/ software: processes and topics",
+   "category": "software",
+   "desc": "The HUD software is one process per job on the Jetson. Sensor processes publish topics; hudd subscribes to all of them, compensates each for its age and draws the frame at 60 Hz. The graph is a tree with hudd at the root.",
+   "working": "Messages flow along each topic at its real rate (fast streams thinned for display); every 12 s one process crashes, its topics go stale and the supervisor restarts it after 1 s.",
+   "mount": "centre of the back board; the diorama faces +X",
+   "size": [
+    0.06,
+    0.62,
+    1
+   ],
+   "facts": [
+    [
+     "Processes",
+     "9, one per job, plus a supervisor (restart after 1 s, topics marked stale)"
+    ],
+    [
+     "Transport",
+     "ZeroMQ PUB/SUB over ipc, msgpack maps"
+    ],
+    [
+     "Each message",
+     "capture time, publish time, sequence; empty messages still published"
+    ],
+    [
+     "Rates",
+     "ego 100 Hz · lanes, objects, eyePose 30 Hz · gnss, hudStats 10 Hz · health 2 Hz · sunWatch 1 Hz"
+    ],
+    [
+     "Stale rule",
+     "lanes/objects fade over 300 ms once older than 250 ms, gone at 600 ms"
+    ],
+    [
+     "Renderer",
+     "raylib (GL 3.3 core), 1920 × 1080 at 60 Hz, vsync; only the 946 × 473 px crop is drawn"
+    ],
+    [
+     "GPU budget",
+     "24–50 ms serial per frame (ASSUMED)"
+    ],
+    [
+     "Package",
+     "standalone hud/ (planned), no openpilot build dependency"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "board",
+     "name": "Jetson host (JetPack 6.2)",
+     "desc": "One host, one monotonic clock; every topic carries its sensor frame's capture time."
+    },
+    {
+     "id": "zedSrc",
+     "name": "ZED 2i (sensor input)",
+     "desc": "USB 3"
+    },
+    {
+     "id": "f9rSrc",
+     "name": "ZED-F9R (sensor input)",
+     "desc": "USB serial"
+    },
+    {
+     "id": "oakSrc",
+     "name": "OAK-D Pro (sensor input)",
+     "desc": "USB 3"
+    },
+    {
+     "id": "picoSrc",
+     "name": "RP2040 (sensor input)",
+     "desc": "USB serial"
+    },
+    {
+     "id": "roadd",
+     "name": "roadd process",
+     "desc": "depth · plane · lift"
+    },
+    {
+     "id": "laned",
+     "name": "laned process",
+     "desc": "lane net TRT FP16"
+    },
+    {
+     "id": "detectd",
+     "name": "detectd process",
+     "desc": "YOLO11s + tracker"
+    },
+    {
+     "id": "egod",
+     "name": "egod process",
+     "desc": "speed · yaw · sun"
+    },
+    {
+     "id": "headtrackd",
+     "name": "headtrackd process",
+     "desc": "eye midpoint"
+    },
+    {
+     "id": "controllerd",
+     "name": "controllerd process",
+     "desc": "backlight · shutter"
+    },
+    {
+     "id": "hudd",
+     "name": "hudd process",
+     "desc": "60 Hz renderer (root)"
+    },
+    {
+     "id": "logd",
+     "name": "logd process",
+     "desc": "records all topics"
+    },
+    {
+     "id": "audienced",
+     "name": "audienced process",
+     "desc": "MJPEG to mini PC 2"
+    },
+    {
+     "id": "panelOut",
+     "name": "TFT panel (output)",
+     "desc": "HDMI 1080p60"
+    },
+    {
+     "id": "pcOut",
+     "name": "Mini PC 2 (output)",
+     "desc": "Ethernet"
+    },
+    {
+     "id": "ssdOut",
+     "name": "SSD (output)",
+     "desc": "topic logs"
+    },
+    {
+     "id": "supervisor",
+     "name": "Supervisor",
+     "desc": "Starts every process, restarts a crashed one after 1 s and marks its topics stale."
+    },
+    {
+     "id": "topics",
+     "name": "Topics (ZeroMQ PUB/SUB, msgpack)",
+     "desc": "Each message carries capture time, publish time and a sequence; empty messages are still published so silence is not absence."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Flash the Jetson",
+     "parts": [
+      "board"
+     ],
+     "text": "Reflash to JetPack 6.2 from Seeed's image (Ubuntu 22.04, Python 3.10, TensorRT 10); set MAXN."
+    },
+    {
+     "title": "Road camera and roadd",
+     "parts": [
+      "zedSrc",
+      "roadd"
+     ],
+     "text": "Install the ZED SDK package that matches the reported L4T release; roadd owns the ZED 2i: capture, depth, RANSAC ground plane, IMU."
+    },
+    {
+     "title": "Networks",
+     "parts": [
+      "laned",
+      "detectd"
+     ],
+     "text": "Export the lane network and YOLO11s to TensorRT FP16 engines; laned and detectd run them on the left image."
+    },
+    {
+     "title": "Ego-motion",
+     "parts": [
+      "f9rSrc",
+      "egod"
+     ],
+     "text": "egod fuses the ZED-F9R and the ZED IMU into speed, yaw rate and pitch at 100 Hz, and computes the sun direction at 1 Hz."
+    },
+    {
+     "title": "Head tracking",
+     "parts": [
+      "oakSrc",
+      "headtrackd"
+     ],
+     "text": "headtrackd reads on-camera face landmarks and depth from the OAK-D Pro: eye midpoint in the car frame."
+    },
+    {
+     "title": "Controller link",
+     "parts": [
+      "picoSrc",
+      "controllerd"
+     ],
+     "text": "controllerd talks to the RP2040: ambient light, cell temperature, backlight duty, shutter."
+    },
+    {
+     "title": "Renderer",
+     "parts": [
+      "hudd",
+      "panelOut"
+     ],
+     "text": "hudd is the root: age compensation, eye projection, 60 Hz draw with vsync, pre-distortion warp, full-screen HDMI."
+    },
+    {
+     "title": "Logging and audience",
+     "parts": [
+      "logd",
+      "ssdOut",
+      "audienced",
+      "pcOut"
+     ],
+     "text": "logd records every topic; audienced streams the HUD frame and driver camera to mini PC 2."
+    },
+    {
+     "title": "Supervisor and topics",
+     "parts": [
+      "supervisor",
+      "topics"
+     ],
+     "text": "The supervisor starts everything; topics flow at their rates with hudd at the root of the tree."
+    }
+   ]
+  },
+  "controller": {
+   "id": "controller",
+   "name": "HUD controller (Raspberry Pi Pico, RP2040)",
+   "category": "controller",
+   "desc": "A Raspberry Pi Pico that owns the HUD's analogue world: it reads ambient light and the cell temperature, drives the backlight and the sun shutter, and enforces the thermal and watchdog rules on its own, so a stuck Jetson cannot cook the panel.",
+   "working": "Ambient light sweeps from night to noon and the PWM duty follows; the cell heats until threshold 1 halves the duty and threshold 2 blanks it and closes the shutter; a 5 s USB silence does the same.",
+   "mount": "centre of the carrier board underside",
+   "size": [
+    0.12,
+    0.02,
+    0.1
+   ],
+   "facts": [
+    [
+     "MCU",
+     "Raspberry Pi Pico (RP2040), USB serial to controllerd at 10 Hz"
+    ],
+    [
+     "Inputs",
+     "TSL2591 or VEML7700 ambient light; 10 kΩ NTC on the cell; MAX31855 thermocouple for the sun test"
+    ],
+    [
+     "Outputs",
+     "backlight PWM above 2 kHz and analogue dim to the LED driver; shutter servo"
+    ],
+    [
+     "Dimming",
+     "night ceiling 257 cd/m² at the panel (2.6% of full) up to full at ≥ 10,000 lux; 1 s update, 1 s ramp"
+    ],
+    [
+     "Fail-safe",
+     "above threshold 1 halve the duty; above threshold 2 backlight off and shutter closed; USB silent 5 s, the same"
+    ],
+    [
+     "Thresholds",
+     "set from the bought panel's rating (not published for the kit); values shown here are examples"
+    ],
+    [
+     "Cost",
+     "$40–80 (range; plan line \"HUD controller: RP2040, sensors, shutter servo\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "board",
+     "name": "Carrier perfboard",
+     "desc": "Perfboard with headers for the Pico, the sensor leads, the servo and the LED-driver dim output."
+    },
+    {
+     "id": "pico",
+     "name": "Raspberry Pi Pico (RP2040)",
+     "desc": "Dual-core RP2040 microcontroller: reads the sensors, sets backlight PWM and the shutter servo, reports at 10 Hz over USB serial."
+    },
+    {
+     "id": "wires",
+     "name": "Jumper wiring",
+     "desc": "Point-to-point wiring on the perfboard."
+    },
+    {
+     "id": "lightSensor",
+     "name": "TSL2591 ambient-light sensor",
+     "desc": "Ambient light at the dust cover; sets the backlight from the night ceiling up to full at 10,000 lux and above."
+    },
+    {
+     "id": "thermocouple",
+     "name": "MAX31855 and K-type thermocouple",
+     "desc": "Reads the thermocouple placed at the sun focus for the empty-housing sun test."
+    },
+    {
+     "id": "ntc",
+     "name": "10 kΩ NTC thermistor on the cell",
+     "desc": "Glued to the back of the LCD cell: derates the backlight above threshold 1 and blanks it above threshold 2."
+    },
+    {
+     "id": "leads",
+     "name": "Servo lead and USB cable",
+     "desc": "Servo to the shutter; USB to the Jetson for power and the 10 Hz serial link."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Carrier board",
+     "parts": [
+      "board"
+     ],
+     "text": "Perfboard with headers for the Pico, the sensors, the servo and the dim output to the LED driver."
+    },
+    {
+     "title": "Pico",
+     "parts": [
+      "pico"
+     ],
+     "text": "Solder headers and seat the Raspberry Pi Pico."
+    },
+    {
+     "title": "Wiring",
+     "parts": [
+      "wires"
+     ],
+     "text": "I2C to the light sensor, SPI to the MAX31855, ADC to the NTC divider, PWM to the LED driver and the servo."
+    },
+    {
+     "title": "Sensor leads",
+     "parts": [
+      "lightSensor",
+      "thermocouple",
+      "ntc"
+     ],
+     "text": "The light sensor goes to the dust cover, the NTC onto the back of the LCD cell, the thermocouple to the sun focus for the test."
+    },
+    {
+     "title": "Servo and USB",
+     "parts": [
+      "leads"
+     ],
+     "text": "Shutter servo lead and the USB cable to the Jetson."
+    }
+   ]
+  },
+  "ledDriver": {
+   "id": "ledDriver",
+   "name": "Constant-current LED driver (Recom RCD-24 class)",
+   "category": "power",
+   "desc": "Holds the backlight LEDs at a constant current, whatever their temperature, and dims them in two ways: an analogue level that lowers the current, and PWM that switches it on and off thousands of times a second.",
+   "working": "The PWM input above 2 kHz chops the constant current; the analogue input sets its height; the LED brightness follows the average.",
+   "mount": "centre of the board underside",
+   "size": [
+    0.045,
+    0.016,
+    0.035
+   ],
+   "facts": [
+    [
+     "Type",
+     "constant-current buck with analogue + PWM dimming (Recom RCD-24 class, about $18)"
+    ],
+    [
+     "PWM",
+     "above 2 kHz to avoid a beat with the cameras; Mean Well NLDD-H rejected (PWM ≤ 1 kHz)"
+    ],
+    [
+     "LED power",
+     "12.6 W Lambertian design; 6.3 W with prism films (gain 2, ASSUMED)"
+    ],
+    [
+     "Supply",
+     "12 V rail from the DC-DC converter"
+    ],
+    [
+     "Current variant",
+     "0.70 A shown (example); choose with the LED string"
+    ],
+    [
+     "Cost",
+     "$150–300 (estimate; plan line \"Backlight: LEDs, driver, films, heat sink, fan\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "board",
+     "name": "Driver board",
+     "desc": "Small carrier for the driver module, terminals and the dim header."
+    },
+    {
+     "id": "module",
+     "name": "RCD-24 buck module",
+     "desc": "Constant-current buck converter with analogue and PWM dimming inputs."
+    },
+    {
+     "id": "termIn",
+     "name": "Input terminal (12 V from the DC-DC)",
+     "desc": "12 V from the ignition-sensed converter."
+    },
+    {
+     "id": "termOut",
+     "name": "Output terminal (LED string)",
+     "desc": "Constant current to the backlight LEDs."
+    },
+    {
+     "id": "dim",
+     "name": "Dim header (PWM, analogue, ground)",
+     "desc": "From the RP2040: PWM above 2 kHz and an analogue level."
+    },
+    {
+     "id": "load",
+     "name": "Demo load: one LED of the backlight string",
+     "desc": "Stands in for the 6–8 LED backlight string built in the PGU."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Board",
+     "parts": [
+      "board"
+     ],
+     "text": "Carrier board."
+    },
+    {
+     "title": "Driver module",
+     "parts": [
+      "module"
+     ],
+     "text": "Solder the RCD-24 module."
+    },
+    {
+     "title": "Terminals and dim header",
+     "parts": [
+      "termIn",
+      "termOut",
+      "dim"
+     ],
+     "text": "12 V in, LED string out, PWM and analogue dim from the controller."
+    },
+    {
+     "title": "Connect the LED string",
+     "parts": [
+      "load"
+     ],
+     "text": "The backlight LEDs in series on the output."
+    }
+   ]
+  },
+  "dcdc": {
+   "id": "dcdc",
+   "name": "Mini-Box DCDC-USB-200 (ignition-sensed converter)",
+   "category": "power",
+   "desc": "Sits between the car's 12 V accessory feed and the Jetson. It watches the ignition line: on key-on it powers up; on key-off it waits a set delay, tells the Jetson to shut down cleanly, then cuts power. It also cuts out if the battery sags below 11.2 V.",
+   "working": "Ignition on: the output comes up. Ignition off: a shutdown countdown runs, the Jetson is told to shut down, then the output goes off.",
+   "mount": "centre of the enclosure underside; terminal end faces -X, output end +X",
+   "size": [
+    0.095,
+    0.028,
+    0.062
+   ],
+   "facts": [
+    [
+     "Job",
+     "ignition-sensed 12 V supply with configurable shutdown delays and a deep-discharge cut-off"
+    ],
+    [
+     "Cut-off",
+     "11.2 V"
+    ],
+    [
+     "Feeds",
+     "the Jetson (9–19 V input) and the LED driver"
+    ],
+    [
+     "Why",
+     "a bare converter would corrupt the Jetson's filesystem at key-off"
+    ],
+    [
+     "Vehicle link",
+     "only the fused 12 V accessory feed; no wire to any vehicle bus"
+    ],
+    [
+     "Cost",
+     "$89 (firm; plan line \"DC-DC converter with ignition sense\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "pcb",
+     "name": "Converter board",
+     "desc": "Buck-boost converter with a microcontroller that watches the ignition line and the input voltage."
+    },
+    {
+     "id": "shell",
+     "name": "Extruded enclosure",
+     "desc": "Aluminium extrusion; slides off the board."
+    },
+    {
+     "id": "endIn",
+     "name": "Input end: 12 V, ground, ignition sense",
+     "desc": "Fused 12 V accessory feed and the ignition-sense wire."
+    },
+    {
+     "id": "endOut",
+     "name": "Output end: regulated 12 V and the USB configuration port",
+     "desc": "Feeds the Jetson and the LED driver."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Board",
+     "parts": [
+      "pcb"
+     ],
+     "text": "The converter board."
+    },
+    {
+     "title": "Enclosure",
+     "parts": [
+      "shell"
+     ],
+     "text": "Slide the board into the extrusion."
+    },
+    {
+     "title": "End plates",
+     "parts": [
+      "endIn",
+      "endOut"
+     ],
+     "text": "Input terminals with the ignition sense; output terminals and the configuration USB."
+    }
+   ]
+  },
+  "fuseTap": {
+   "id": "fuseTap",
+   "name": "12 V accessory plug and inline fuse",
+   "category": "power",
+   "desc": "The single connection to the car: a plug in the accessory socket with a fuse in the positive lead. Everything else in the HUD runs from the converter downstream of it.",
+   "working": "Current flows from the plug through the fuse toward the converter.",
+   "mount": "tip of the 12 V plug at the origin; the lead runs toward -X",
+   "size": [
+    0.26,
+    0.03,
+    0.06
+   ],
+   "facts": [
+    [
+     "Role",
+     "the only vehicle interface: a fused, ignition-sensed 12 V accessory feed"
+    ],
+    [
+     "Load",
+     "about 3 A at 12 V (estimate: Jetson ≤ 25 W plus 12.6 W of LEDs)"
+    ],
+    [
+     "Fuse",
+     "sized to the measured draw (7.5 A shown as an example)"
+    ],
+    [
+     "Checklist",
+     "fuse in place, no connector to any vehicle bus, signed before each drive"
+    ],
+    [
+     "Cost",
+     "$90–120 (range; plan line \"USB-C PD charger, Ethernet switch, cables\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "plug",
+     "name": "12 V accessory-socket plug",
+     "desc": "Fused 12 V from the accessory socket: the only connection to the car."
+    },
+    {
+     "id": "lead",
+     "name": "Twin lead with ferrules",
+     "desc": "Red to the DC-DC V+ through the fuse; black to ground."
+    },
+    {
+     "id": "fuseHolder",
+     "name": "Inline ATO blade-fuse holder",
+     "desc": "Protects the wiring; sized to the measured draw."
+    },
+    {
+     "id": "fuse",
+     "name": "Blade fuse (rating to the measured draw; 7.5 A shown)",
+     "desc": "Example rating; the real value follows the measured draw."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Plug",
+     "parts": [
+      "plug"
+     ],
+     "text": "The 12 V accessory-socket plug."
+    },
+    {
+     "title": "Lead",
+     "parts": [
+      "lead"
+     ],
+     "text": "Twin lead, crimped ferrules for the DC-DC terminals."
+    },
+    {
+     "title": "Fuse holder and fuse",
+     "parts": [
+      "fuseHolder",
+      "fuse"
+     ],
+     "text": "Inline in the positive lead, close to the plug."
+    }
+   ]
+  },
+  "pdCharger": {
+   "id": "pdCharger",
+   "name": "USB-C PD car charger",
+   "category": "power",
+   "desc": "Powers the passenger-side audience display chain, so it does not load the Jetson's converter.",
+   "working": "The ring LED lights when power is negotiated.",
+   "mount": "tip of the plug at the origin, pointing -X into the socket; ports face +X",
+   "size": [
+    0.065,
+    0.032,
+    0.032
+   ],
+   "facts": [
+    [
+     "Feeds",
+     "mini PC 2 and monitor 2 (audience view)"
+    ],
+    [
+     "Check",
+     "that the mini PC accepts USB-C PD input (many take a barrel jack) (UNVERIFIED)"
+    ],
+    [
+     "Cost",
+     "$90–120 (range; plan line \"USB-C PD charger, Ethernet switch, cables\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "plug",
+     "name": "Socket plug",
+     "desc": "Fits the second 12 V socket."
+    },
+    {
+     "id": "pcb",
+     "name": "PD controller board",
+     "desc": "Negotiates USB Power Delivery voltage with each device."
+    },
+    {
+     "id": "head",
+     "name": "Head with two USB-C PD ports",
+     "desc": "Feeds mini PC 2 and monitor 2."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Plug",
+     "parts": [
+      "plug"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Board",
+     "parts": [
+      "pcb"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Head",
+     "parts": [
+      "head"
+     ],
+     "text": "Two USB-C PD ports."
+    }
+   ]
+  },
+  "ethSwitch": {
+   "id": "ethSwitch",
+   "name": "Gigabit Ethernet switch, 5 ports",
+   "category": "network",
+   "desc": "A small gigabit switch that links the Jetson to the passenger-side mini PC, which shows the audience view on the second monitor.",
+   "working": "Link LEDs light for the two used ports and blink with traffic.",
+   "mount": "centre of the underside; LEDs face +X, ports -X",
+   "size": [
+    0.07,
+    0.024,
+    0.1
+   ],
+   "facts": [
+    [
+     "Role",
+     "Ethernet link from the Jetson to mini PC 2 for the audience view"
+    ],
+    [
+     "Stream",
+     "MJPEG over HTTP at 15 Hz (the J401 has one HDMI port, used by the panel)"
+    ],
+    [
+     "Power",
+     "USB or 12 V from the PD charger side of the wiring"
+    ],
+    [
+     "Cost",
+     "$90–120 (range; plan line \"USB-C PD charger, Ethernet switch, cables\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "bottom",
+     "name": "Lower shell",
+     "desc": "Lower case half."
+    },
+    {
+     "id": "pcb",
+     "name": "Switch board with ports",
+     "desc": "Five gigabit ports: Jetson, mini PC 2 and spares."
+    },
+    {
+     "id": "top",
+     "name": "Upper shell",
+     "desc": "Upper case half with the port legend."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Lower shell",
+     "parts": [
+      "bottom"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Board",
+     "parts": [
+      "pcb"
+     ],
+     "text": "Switch chip, magnetics, five RJ45 ports and the DC jack."
+    },
+    {
+     "title": "Close",
+     "parts": [
+      "top"
+     ],
+     "text": "Jetson on port 1, mini PC 2 on port 2."
+    }
+   ]
+  },
+  "miniPC": {
+   "id": "miniPC",
+   "name": "ACEMAGIC mini PC (unit 2, audience view)",
+   "category": "compute",
+   "desc": "One of the two owned x86 mini PCs. In the car, unit 2 receives the Jetson's audience stream over Ethernet and shows it on the passenger-side monitor; on the bench, it renders recorded logs for regression clips.",
+   "working": "Power LED on, fan spinning, receiving the audience stream.",
+   "mount": "centre of the underside; front ports face +X",
+   "size": [
+    0.128,
+    0.041,
+    0.128
+   ],
+   "facts": [
+    [
+     "Unit 1",
+     "x86 renderer bench and CI: topic replay, hudd from logs, clip tool, unit tests"
+    ],
+    [
+     "Unit 2",
+     "audience view in the car (Ethernet stream to monitor 2) and nightly clip regressions"
+    ],
+    [
+     "GPU",
+     "no CUDA: no perception on these"
+    ],
+    [
+     "Cost",
+     "owned (two units)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "base",
+     "name": "Bottom cover",
+     "desc": ""
+    },
+    {
+     "id": "mainboard",
+     "name": "Mainboard with RAM and ports",
+     "desc": "x86 board; no CUDA, so it runs the renderer bench and the audience view only."
+    },
+    {
+     "id": "cooler",
+     "name": "CPU cooler and fan",
+     "desc": ""
+    },
+    {
+     "id": "shell",
+     "name": "Case walls",
+     "desc": ""
+    },
+    {
+     "id": "lid",
+     "name": "Top cover",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Bottom cover",
+     "parts": [
+      "base"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Mainboard",
+     "parts": [
+      "mainboard"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Cooler",
+     "parts": [
+      "cooler"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Case",
+     "parts": [
+      "shell",
+      "lid"
+     ],
+     "text": ""
+    }
+   ]
+  },
+  "monitor": {
+   "id": "monitor",
+   "name": "YODOIT 16-inch 3840 × 2400 monitor (unit 2)",
+   "category": "display",
+   "desc": "One of the two owned 16-inch 4K monitors. Unit 2 shows the audience view: the rendered HUD frame, the driver camera with the eye point, and live registration, age and contrast numbers.",
+   "working": "The screen shows the audience view layout; the app can feed it the live frame.",
+   "mount": "centre of the screen; the screen faces +X",
+   "size": [
+    0.03,
+    0.26,
+    0.36
+   ],
+   "facts": [
+    [
+     "Panel",
+     "16-inch 3840 × 2400, 277 ppi, 1,200 cd/m² peak"
+    ],
+    [
+     "Unit 1",
+     "Stage 0/1 picture generator (80 × 40 mm crop), Phase 3 footwell display"
+    ],
+    [
+     "Unit 2",
+     "audience and debug display on the passenger side"
+    ],
+    [
+     "Through a 30% combiner",
+     "360 cd/m² at the eye (24% of the sky target)"
+    ],
+    [
+     "Cost",
+     "owned (two units)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "back",
+     "name": "Rear shell with USB-C and mini-HDMI",
+     "desc": ""
+    },
+    {
+     "id": "panel",
+     "name": "IPS panel and bezel",
+     "desc": "3840 × 2400, 277 ppi, 1,200 cd/m² peak."
+    },
+    {
+     "id": "bracket",
+     "name": "Headrest bracket",
+     "desc": "Clamps to the passenger headrest posts; faces the rear-seat audience. Removable without tools."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Bracket",
+     "parts": [
+      "bracket"
+     ],
+     "text": "Clamp the holder to the headrest posts."
+    },
+    {
+     "title": "Monitor",
+     "parts": [
+      "back",
+      "panel"
+     ],
+     "text": "Seat the monitor; USB-C power from the PD charger, video from mini PC 2."
+    }
+   ]
+  },
+  "stage0Rig": {
+   "id": "stage0Rig",
+   "name": "Stage 0 bench rig (weeks 1–3)",
+   "category": "stage",
+   "desc": "The first optics are a desk rig for software: the panel lies face-up in a black enclosure under a 70/30 teleprompter beamsplitter at 45°. A camera or the developer's eye looks through the glass and sees the panel reflected, floating over whatever is behind. There is no virtual distance and no windshield; it tests the renderer, colours and latency, not the optics.",
+   "working": "Light from the panel goes up, 30% reflects off the beamsplitter toward the camera, and appears to come from a virtual copy of the panel behind the glass, about 0.6 m from the camera.",
+   "mount": "centre of the enclosure base on the bench",
+   "size": [
+    0.95,
+    0.45,
+    0.4
+   ],
+   "facts": [
+    [
+     "Beamsplitter",
+     "70/30 teleprompter glass at 45°; the first number is usually the transmitted share (verify with the vendor)"
+    ],
+    [
+     "Virtual image",
+     "about 0.6 m from the camera (no magnification)"
+    ],
+    [
+     "Purpose",
+     "projection maths, colour and alpha, latency instrumentation"
+    ],
+    [
+     "Luminance through it",
+     "360 cd/m² from the 1,200-nit monitor (24% of the sky target)"
+    ],
+    [
+     "Price",
+     "$110–1,030 (range)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "base",
+     "name": "Black enclosure base",
+     "desc": ""
+    },
+    {
+     "id": "panel",
+     "name": "Panel, face up",
+     "desc": "The 5.5-inch kit (or the monitor) showing the HUD frame."
+    },
+    {
+     "id": "cheeks",
+     "name": "Side cheeks",
+     "desc": "Hold the glass at 45°."
+    },
+    {
+     "id": "beamsplitter",
+     "name": "70/30 beamsplitter",
+     "desc": "Teleprompter glass: about 30% reflected toward the viewer."
+    },
+    {
+     "id": "hood",
+     "name": "Black backdrop",
+     "desc": "A dark background behind the glass."
+    },
+    {
+     "id": "camera",
+     "name": "Camera at the eye position",
+     "desc": "Records what the eye would see."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Enclosure",
+     "parts": [
+      "base"
+     ],
+     "text": "A black enclosure base on the bench."
+    },
+    {
+     "title": "Panel face-up",
+     "parts": [
+      "panel"
+     ],
+     "text": "The panel lies face-up in the well."
+    },
+    {
+     "title": "Cheeks",
+     "parts": [
+      "cheeks"
+     ],
+     "text": "Two cheeks carry the glass."
+    },
+    {
+     "title": "Beamsplitter at 45°",
+     "parts": [
+      "beamsplitter"
+     ],
+     "text": "The 70/30 glass sits at 45° above the panel."
+    },
+    {
+     "title": "Backdrop",
+     "parts": [
+      "hood"
+     ],
+     "text": "A black backdrop behind the glass."
+    },
+    {
+     "title": "Camera",
+     "parts": [
+      "camera"
+     ],
+     "text": "The camera (or the developer) looks through the glass from the far side."
+    }
+   ]
+  },
+  "stage1Rig": {
+   "id": "stage1Rig",
+   "name": "Stage 1 in-car rig: Fresnel magnifier and combiner (weeks 4–8)",
+   "category": "stage",
+   "desc": "Before the custom mirror exists, a 300 mm Fresnel lens makes the virtual image: the panel sits 280 mm below it, inside its 300 mm focal length, like an object under a magnifying glass. A free-standing combiner glass above the dash folds the light to the driver. It tests registration at a 4.2 m image at night and in overcast light.",
+   "working": "Rays from the 80 × 40 mm crop pass the Fresnel, fold off the combiner into the eye, and appear to come from a 1.2 × 0.6 m image about 4.2 m ahead.",
+   "mount": "centre of the enclosure base on the dash top; the eye marker is the driver's eye",
+   "size": [
+    1,
+    0.65,
+    0.42
+   ],
+   "facts": [
+    [
+     "Lens",
+     "Fresnel, 300 mm square, f = 300 mm; panel at u = 280 mm"
+    ],
+    [
+     "Virtual image",
+     "v = 4.2 m on the panel side; M = 15"
+    ],
+    [
+     "Image",
+     "1.2 m × 0.6 m, 16° × 8°, 54 px/deg on the monitor"
+    ],
+    [
+     "Combiner",
+     "70/30 teleprompter glass above the dash (30% reflected)"
+    ],
+    [
+     "Luminance",
+     "360 cd/m² from the monitor: night and overcast only"
+    ],
+    [
+     "Price",
+     "Fresnel $160–320 (range)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "enclosure",
+     "name": "Dash enclosure",
+     "desc": "Black box on the dash top; 280 mm deep."
+    },
+    {
+     "id": "monitor",
+     "name": "Monitor face up (PGU)",
+     "desc": "YODOIT 16-inch 1,200 nit; only an 80 × 40 mm crop lit."
+    },
+    {
+     "id": "fresnel",
+     "name": "Fresnel lens f = 300 mm",
+     "desc": "300 mm square; the panel is 280 mm below, inside f."
+    },
+    {
+     "id": "combiner",
+     "name": "Free-standing combiner",
+     "desc": "70/30 glass above the dash."
+    },
+    {
+     "id": "eye",
+     "name": "Driver's eye (reference)",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Enclosure on the dash",
+     "parts": [
+      "enclosure"
+     ],
+     "text": "A 280 mm deep black box sits on the dash top."
+    },
+    {
+     "title": "Monitor face up",
+     "parts": [
+      "monitor"
+     ],
+     "text": "The monitor lies face-up at the bottom; an 80 × 40 mm crop is drawn."
+    },
+    {
+     "title": "Fresnel lens",
+     "parts": [
+      "fresnel"
+     ],
+     "text": "The 300 mm Fresnel closes the top, grooves down, 280 mm above the panel."
+    },
+    {
+     "title": "Combiner",
+     "parts": [
+      "combiner"
+     ],
+     "text": "The combiner glass stands above the lens, tilted to reach the eye."
+    },
+    {
+     "title": "Eye point",
+     "parts": [
+      "eye"
+     ],
+     "text": "The design eye point the image is aimed at."
+    }
+   ]
+  },
+  "latencyProbe": {
+   "id": "latencyProbe",
+   "name": "Latency probe (LED + photodiode + Pico)",
+   "category": "instrument",
+   "desc": "Measures motion-to-photon latency end to end. The Pico flashes an LED in front of the road camera; perception sees it, hudd flips a test marker, and a photodiode on the panel catches the change. The time between is the latency the age compensation must cover.",
+   "working": "The LED flashes; after the measured delay the photodiode fires; the timeline (slowed 10×) shows each stage against the 90 ms target.",
+   "mount": "centre of the timing board underside",
+   "size": [
+    0.12,
+    0.08,
+    0.22
+   ],
+   "facts": [
+    [
+     "Method",
+     "flash an LED at the road camera; time the panel change with a photodiode"
+    ],
+    [
+     "Target",
+     "whole chain ≤ 90 ms; estimate 37–99 ms uncompensated"
+    ],
+    [
+     "Bench mode",
+     "a synthetic lanes step measures renderer + panel alone"
+    ],
+    [
+     "Cross-check",
+     "the age hudd reports in hudStats"
+    ],
+    [
+     "Why",
+     "replay has no live latency: only this test measures the real chain"
+    ],
+    [
+     "Cost",
+     "$300 (estimate; plan line \"Latency probe, rangefinder, target board\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "board",
+     "name": "Timing board",
+     "desc": ""
+    },
+    {
+     "id": "pico",
+     "name": "Raspberry Pi Pico (timer)",
+     "desc": "Flashes the LED and timestamps the photodiode edge with microsecond resolution."
+    },
+    {
+     "id": "ledHead",
+     "name": "Bright LED aimed at the road camera",
+     "desc": "Its flash is the \"event\" the whole chain must react to."
+    },
+    {
+     "id": "photodiode",
+     "name": "Photodiode in a suction cup (on the panel)",
+     "desc": "Sees the panel change when the rendered marker flips."
+    },
+    {
+     "id": "wires",
+     "name": "Leads",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Timing board",
+     "parts": [
+      "board",
+      "pico"
+     ],
+     "text": "A Pico times the chain; the controller's Pico can do this job."
+    },
+    {
+     "title": "LED and photodiode",
+     "parts": [
+      "ledHead",
+      "photodiode",
+      "wires"
+     ],
+     "text": "LED in front of the road camera; photodiode on the panel where hudd draws a test marker."
+    }
+   ]
+  },
+  "lumMeter": {
+   "id": "lumMeter",
+   "name": "Spot luminance meter (Konica Minolta LS-150 class) on a tripod",
+   "category": "instrument",
+   "desc": "Proves the contrast criterion. From the eye point it reads the luminance of a white patch in the virtual image and of the sky or road behind it; the ratio must reach 1.15 at noon.",
+   "working": "The 1° measuring spot reaches out toward the image; the display alternates between the design value at the eye and the sky target.",
+   "mount": "centre of the tripod feet on the ground; the meter looks along +X at eye height",
+   "size": [
+    0.9,
+    1.35,
+    0.9
+   ],
+   "facts": [
+    [
+     "Instrument",
+     "Konica Minolta LS-150: 1° spot, focus 1 m to ∞, ≈ $3,900 (assumed instrument)"
+    ],
+    [
+     "Budget option",
+     "Sekonic L-858D, $689, 1° spot, if it can focus on a virtual image (UNVERIFIED)"
+    ],
+    [
+     "Sky target",
+     "≥ 1,500 cd/m² at the eye at noon (contrast 1.15 vs 10,000)"
+    ],
+    [
+     "Road target",
+     "≥ 750 cd/m² against sunlit asphalt (5,000 ASSUMED)"
+    ],
+    [
+     "Design",
+     "1,944 cd/m² at the eye: 10,000 at the panel × 19.4% path"
+    ],
+    [
+     "Night",
+     "white ≤ 50 cd/m²; unlit window ≤ 0.1 cd/m²"
+    ],
+    [
+     "Last resort",
+     "a calibrated camera, within about 20% above 5,000 cd/m²"
+    ],
+    [
+     "Cost",
+     "$690–4,000 (range; plan line \"Luminance meter (spot meter to lab meter)\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "tripod",
+     "name": "Tripod",
+     "desc": "Holds the meter at the design eye point."
+    },
+    {
+     "id": "head",
+     "name": "Pan-tilt head",
+     "desc": ""
+    },
+    {
+     "id": "body",
+     "name": "Meter body, display and grip",
+     "desc": ""
+    },
+    {
+     "id": "objective",
+     "name": "Objective lens (focus 1 m to infinity)",
+     "desc": "Focuses on the 7.5 m virtual image."
+    },
+    {
+     "id": "eyepiece",
+     "name": "Viewfinder eyepiece with the 1° spot circle",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Tripod",
+     "parts": [
+      "tripod",
+      "head"
+     ],
+     "text": "Set the head at the eye point."
+    },
+    {
+     "title": "Meter",
+     "parts": [
+      "body",
+      "objective",
+      "eyepiece"
+     ],
+     "text": "Focus on the virtual image; read the white patch, then the background in the same direction."
+    }
+   ]
+  },
+  "targetBoard": {
+   "id": "targetBoard",
+   "name": "30 m registration target board",
+   "category": "instrument",
+   "desc": "A surveyed target set 30 m in front of the car. The road camera detects its rings while a camera at the eye point photographs the rendered markers over them; the difference is the registration error.",
+   "working": "Detected and surveyed markers sit over each ring target; their gap is what the calibration removes.",
+   "mount": "ground centre under the board; the target face looks toward -X (the car)",
+   "size": [
+    0.5,
+    1.3,
+    1.3
+   ],
+   "facts": [
+    [
+     "Use",
+     "refines the nominal eye point (calibration step 1) and checks static registration"
+    ],
+    [
+     "Criterion",
+     "static registration at 30 m ≤ 0.5°; ≤ 0.3° under ±75 mm head motion"
+    ],
+    [
+     "Method",
+     "camera at the eye point vs the surveyed board; marker from the road camera's detection and from the survey"
+    ],
+    [
+     "Before demos",
+     "target check for camera-mount drift"
+    ],
+    [
+     "Cost",
+     "$300 (estimate; plan line \"Latency probe, rangefinder, target board\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "feet",
+     "name": "Feet",
+     "desc": ""
+    },
+    {
+     "id": "legs",
+     "name": "Uprights and crossbar",
+     "desc": ""
+    },
+    {
+     "id": "board",
+     "name": "Target panel",
+     "desc": "Matte panel with a checker border and a ruled centre cross."
+    },
+    {
+     "id": "targets",
+     "name": "Ring targets",
+     "desc": "Each centre is surveyed; the road camera detects them too, which separates perception error from optics error."
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Stand",
+     "parts": [
+      "feet",
+      "legs"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Panel and targets",
+     "parts": [
+      "board",
+      "targets"
+     ],
+     "text": "Set at 30 m on the car's axis; survey each target with the rangefinder."
+    }
+   ]
+  },
+  "rangefinder": {
+   "id": "rangefinder",
+   "name": "Handheld laser rangefinder",
+   "category": "instrument",
+   "desc": "Surveys distances for calibration: the target board at 30 m and the reference ranges the stereo depth is scored against.",
+   "working": "The laser spot lands on the target and the range reads out.",
+   "mount": "centre of the body; it looks along +X",
+   "size": [
+    0.12,
+    0.05,
+    0.045
+   ],
+   "facts": [
+    [
+     "Use",
+     "surveys the 30 m target board and range checks for the stereo depth"
+    ],
+    [
+     "Plan check",
+     "range within 10% of the stereo median (Phase 1 score)"
+    ],
+    [
+     "Cost",
+     "$300 (estimate; plan line \"Latency probe, rangefinder, target board\", last seen 2026-10-21)"
+    ]
+   ],
+   "parts": [
+    {
+     "id": "body",
+     "name": "Body with buttons",
+     "desc": ""
+    },
+    {
+     "id": "optics",
+     "name": "Objective and laser emitter",
+     "desc": ""
+    },
+    {
+     "id": "eyepiece",
+     "name": "Eyepiece with in-view display",
+     "desc": ""
+    }
+   ],
+   "assembly": [
+    {
+     "title": "Body",
+     "parts": [
+      "body"
+     ],
+     "text": ""
+    },
+    {
+     "title": "Optics",
+     "parts": [
+      "optics",
+      "eyepiece"
+     ],
+     "text": "Survey the target board and the nominal eye point."
+    }
+   ]
+  }
+ },
+ "mounts": {
+  "hudUnit": {
+   "pos": [
+    0,
+    0,
+    0
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "dash top, in front of the driver, removable without tools"
+  },
+  "zed2i": {
+   "pos": [
+    0.428751,
+    1.3,
+    0.31
+   ],
+   "quat": [
+    0,
+    0,
+    -0.017452,
+    0.999848
+   ],
+   "note": "high on the windshield centreline, clamped to the mirror stalk"
+  },
+  "oakdPro": {
+   "pos": [
+    0.56458,
+    0.909304,
+    0
+   ],
+   "quat": [
+    0.248898,
+    0.96853,
+    0,
+    0
+   ],
+   "note": "column shroud, aimed at the driver"
+  },
+  "gnssAntenna": {
+   "pos": [
+    1.325903,
+    0.795,
+    0.79
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "dash top near the glass, passenger side"
+  },
+  "zedF9r": {
+   "pos": [
+    0.62,
+    0.135,
+    0.72
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "passenger footwell, beside the Jetson"
+  },
+  "jetson": {
+   "pos": [
+    0.62,
+    0.135,
+    0.89
+   ],
+   "quat": [
+    0,
+    0.707107,
+    0,
+    0.707107
+   ],
+   "note": "passenger footwell bracket"
+  },
+  "dcdc": {
+   "pos": [
+    0.48,
+    0.135,
+    0.67
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "under the dash, centre"
+  },
+  "ethSwitch": {
+   "pos": [
+    0.3,
+    0.135,
+    0.92
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "passenger footwell"
+  },
+  "fuseTap": {
+   "pos": [
+    0.42,
+    0.5,
+    0.35
+   ],
+   "quat": [
+    0,
+    0,
+    -0.382683,
+    0.92388
+   ],
+   "note": "centre-console 12 V accessory socket, fused"
+  },
+  "pdCharger": {
+   "pos": [
+    -0.47,
+    0.42,
+    0.37
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "second accessory socket"
+  },
+  "miniPC": {
+   "pos": [
+    -0.55,
+    0.135,
+    0.77
+   ],
+   "quat": [
+    0,
+    1,
+    0,
+    0
+   ],
+   "note": "behind the passenger seat"
+  },
+  "monitor": {
+   "pos": [
+    -0.355,
+    0.875,
+    0.74
+   ],
+   "quat": [
+    0,
+    1,
+    0,
+    0
+   ],
+   "note": "back of the passenger headrest, for the audience"
+  },
+  "controller": {
+   "pos": [
+    0.76,
+    0.795,
+    -0.26
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "beside the housing, ambient sensor at the dust cover"
+  },
+  "ledDriver": {
+   "pos": [
+    0.8,
+    0.795,
+    0.245
+   ],
+   "quat": [
+    0,
+    0,
+    0,
+    1
+   ],
+   "note": "behind the housing"
+  }
+ },
+ "cables": [
+  {
+   "id": "usbZed",
+   "kind": "usb",
+   "label": "ZED 2i USB 3 to the Jetson",
+   "pts": [
+    [
+     0.408751,
+     1.3,
+     0.46
+    ],
+    [
+     0.348751,
+     1.365,
+     0.62
+    ],
+    [
+     0.253889,
+     1.355,
+     0.92
+    ],
+    [
+     0.293889,
+     1.355,
+     1.07
+    ],
+    [
+     0.794002,
+     1.0875,
+     1.1
+    ],
+    [
+     1.294114,
+     0.82,
+     1.11
+    ],
+    [
+     0.95,
+     0.55,
+     1.07
+    ],
+    [
+     0.75,
+     0.3,
+     0.99
+    ],
+    [
+     0.66,
+     0.165,
+     0.82
+    ]
+   ],
+   "length": 2.831
+  },
+  {
+   "id": "usbOak",
+   "kind": "usb",
+   "label": "OAK-D Pro USB 3 to the Jetson",
+   "pts": [
+    [
+     0.59458,
+     0.889304,
+     0
+    ],
+    [
+     0.55,
+     0.74,
+     0
+    ],
+    [
+     0.6,
+     0.55,
+     0.06
+    ],
+    [
+     0.62,
+     0.32,
+     0.25
+    ],
+    [
+     0.62,
+     0.22,
+     0.57
+    ],
+    [
+     0.6,
+     0.165,
+     0.82
+    ]
+   ],
+   "length": 1.26
+  },
+  {
+   "id": "rfGnss",
+   "kind": "rf",
+   "label": "GNSS antenna coax to the ZED-F9R",
+   "pts": [
+    [
+     1.325903,
+     0.795,
+     0.79
+    ],
+    [
+     1.245903,
+     0.765,
+     0.89
+    ],
+    [
+     1,
+     0.62,
+     0.99
+    ],
+    [
+     0.8,
+     0.3,
+     0.79
+    ],
+    [
+     0.62,
+     0.155,
+     0.72
+    ]
+   ],
+   "length": 1.114
+  },
+  {
+   "id": "usbGnss",
+   "kind": "usb",
+   "label": "ZED-F9R USB to the Jetson",
+   "pts": [
+    [
+     0.6,
+     0.155,
+     0.74
+    ],
+    [
+     0.6,
+     0.195,
+     0.79
+    ],
+    [
+     0.56,
+     0.165,
+     0.82
+    ]
+   ],
+   "length": 0.125
+  },
+  {
+   "id": "hdmi",
+   "kind": "hdmi",
+   "label": "HDMI, Jetson to the panel board (1920 × 1080 at 60 Hz)",
+   "pts": [
+    [
+     0.62,
+     0.185,
+     0.82
+    ],
+    [
+     0.55,
+     0.38,
+     0.49
+    ],
+    [
+     0.62,
+     0.62,
+     0.1
+    ],
+    [
+     0.597191,
+     0.78,
+     0.06
+    ],
+    [
+     0.637191,
+     0.83,
+     0.06
+    ]
+   ],
+   "length": 1.092
+  },
+  {
+   "id": "serial",
+   "kind": "serial",
+   "label": "USB serial, Jetson to the HUD controller",
+   "pts": [
+    [
+     0.64,
+     0.195,
+     0.82
+    ],
+    [
+     0.55,
+     0.4,
+     0.42
+    ],
+    [
+     0.62,
+     0.66,
+     -0.1
+    ],
+    [
+     0.7,
+     0.78,
+     -0.26
+    ],
+    [
+     0.73,
+     0.805,
+     -0.26
+    ]
+   ],
+   "length": 1.304
+  },
+  {
+   "id": "p12",
+   "kind": "power",
+   "label": "12 V accessory feed, fused, to the DC-DC converter",
+   "pts": [
+    [
+     0.229081,
+     0.690919,
+     0.35
+    ],
+    [
+     0.37,
+     0.3,
+     0.41
+    ],
+    [
+     0.43,
+     0.155,
+     0.63
+    ],
+    [
+     0.44,
+     0.145,
+     0.67
+    ]
+   ],
+   "length": 0.739
+  },
+  {
+   "id": "pJetson",
+   "kind": "power",
+   "label": "Converter output to the Jetson (9–19 V input)",
+   "pts": [
+    [
+     0.52,
+     0.145,
+     0.67
+    ],
+    [
+     0.54,
+     0.18,
+     0.79
+    ],
+    [
+     0.67,
+     0.135,
+     0.82
+    ]
+   ],
+   "length": 0.272
+  },
+  {
+   "id": "pLed",
+   "kind": "power",
+   "label": "Converter output to the LED driver",
+   "pts": [
+    [
+     0.48,
+     0.165,
+     0.64
+    ],
+    [
+     0.55,
+     0.45,
+     0.2
+    ],
+    [
+     0.62,
+     0.7,
+     0.12
+    ],
+    [
+     0.78,
+     0.805,
+     0.245
+    ]
+   ],
+   "length": 1.043
+  },
+  {
+   "id": "eth",
+   "kind": "eth",
+   "label": "Ethernet, Jetson to the switch to mini PC 2 (audience stream)",
+   "pts": [
+    [
+     0.59,
+     0.185,
+     0.82
+    ],
+    [
+     0.34,
+     0.155,
+     0.92
+    ],
+    [
+     0,
+     0.12,
+     0.92
+    ],
+    [
+     -0.4,
+     0.14,
+     0.82
+    ],
+    [
+     -0.49,
+     0.135,
+     0.77
+    ]
+   ],
+   "length": 1.132
+  },
+  {
+   "id": "pdPC",
+   "kind": "power",
+   "label": "USB-C PD to mini PC 2 and monitor 2",
+   "pts": [
+    [
+     -0.47,
+     0.42,
+     0.37
+    ],
+    [
+     0.1,
+     0.3,
+     0.49
+    ],
+    [
+     -0.3,
+     0.18,
+     0.62
+    ],
+    [
+     -0.49,
+     0.155,
+     0.74
+    ]
+   ],
+   "length": 1.274
+  },
+  {
+   "id": "video",
+   "kind": "usb",
+   "label": "USB-C video, mini PC 2 to monitor 2",
+   "pts": [
+    [
+     -0.55,
+     0.165,
+     0.77
+    ],
+    [
+     -0.5,
+     0.65,
+     0.77
+    ],
+    [
+     -0.335,
+     0.755,
+     0.74
+    ]
+   ],
+   "length": 0.692
+  }
+ ],
+ "optics": {
+  "EYE": [
+   0,
+   1.22,
+   0
+  ],
+  "G": [
+   0.747146,
+   1.154633,
+   0
+  ],
+  "GLASS_N": [
+   0.469472,
+   0.882948,
+   0
+  ],
+  "MIRROR_C": [
+   0.942235,
+   0.913718,
+   0
+  ],
+  "MIRROR_N": [
+   -0.814116,
+   0.580703,
+   0
+  ],
+  "FOLD_C": [
+   0.692191,
+   1.004727,
+   0
+  ],
+  "FOLD_N": [
+   0.573576,
+   -0.819152,
+   0
+  ],
+  "PANEL_C": [
+   0.692191,
+   0.954727,
+   0
+  ],
+  "LOOK": [
+   0.996195,
+   -0.087156,
+   0
+  ],
+  "VIMG_C": [
+   7.47146,
+   0.566332,
+   0
+  ],
+  "VIMG_UP": [
+   0.087156,
+   0.996195,
+   0
+  ],
+  "IMG_W": 1.4236363636363638,
+  "IMG_H": 0.7118181818181819,
+  "VID": 7.5,
+  "EYEBOX_W": 0.13,
+  "EYEBOX_H": 0.07,
+  "RAKE_DEG": 28,
+  "LOOKDOWN_DEG": 5,
+  "CAR_CENTER_Z": 0.37,
+  "ROAD_CAM": [
+   0.428751,
+   1.3,
+   0.31
+  ],
+  "HOUSING": {
+   "xMin": 0.6171906991483533,
+   "xMax": 1.002235344794259,
+   "floor": 0.8,
+   "zMin": -0.185,
+   "zMax": 0.185,
+   "topRear": 1.0647267531403453,
+   "topFront": 1.0069997949275602
+  },
+  "rays": [
+   {
+    "eye": [
+     0,
+     0
+    ],
+    "field": [
+     0,
+     0
+    ],
+    "pts": [
+     [
+      0,
+      1.22,
+      0
+     ],
+     [
+      0.747146,
+      1.154633,
+      0
+     ],
+     [
+      0.942235,
+      0.913718,
+      0
+     ],
+     [
+      0.692191,
+      1.004727,
+      0
+     ],
+     [
+      0.692191,
+      0.954727,
+      0
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     0,
+     0
+    ],
+    "field": [
+     -1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.22,
+      0
+     ],
+     [
+      0.674807,
+      1.193096,
+      -0.064024
+     ],
+     [
+      0.905403,
+      0.878984,
+      -0.100966
+     ],
+     [
+      0.671,
+      0.989889,
+      -0.045667
+     ],
+     [
+      0.674275,
+      0.954727,
+      -0.038136
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     0,
+     0
+    ],
+    "field": [
+     1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.22,
+      0
+     ],
+     [
+      0.674807,
+      1.193096,
+      0.064024
+     ],
+     [
+      0.905403,
+      0.878984,
+      0.100966
+     ],
+     [
+      0.671,
+      0.989889,
+      0.045667
+     ],
+     [
+      0.674275,
+      0.954727,
+      0.038136
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     0,
+     0
+    ],
+    "field": [
+     -1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.22,
+      0
+     ],
+     [
+      0.837695,
+      1.106487,
+      -0.080141
+     ],
+     [
+      0.965527,
+      0.963097,
+      -0.098353
+     ],
+     [
+      0.717579,
+      1.022504,
+      -0.047303
+     ],
+     [
+      0.709826,
+      0.954727,
+      -0.033644
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     0,
+     0
+    ],
+    "field": [
+     1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.22,
+      0
+     ],
+     [
+      0.837695,
+      1.106487,
+      0.080141
+     ],
+     [
+      0.965527,
+      0.963097,
+      0.098353
+     ],
+     [
+      0.717579,
+      1.022504,
+      0.047303
+     ],
+     [
+      0.709826,
+      0.954727,
+      0.033644
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     -1,
+     -1
+    ],
+    "field": [
+     0,
+     0
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      -0.065
+     ],
+     [
+      0.825936,
+      1.11274,
+      -0.065
+     ],
+     [
+      0.960411,
+      0.946677,
+      -0.065
+     ],
+     [
+      0.698356,
+      1.009044,
+      -0.012465
+     ],
+     [
+      0.692058,
+      0.954727,
+      -0.001801
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     -1,
+     -1
+    ],
+    "field": [
+     -1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      -0.065
+     ],
+     [
+      0.745969,
+      1.155259,
+      -0.135776
+     ],
+     [
+      0.919749,
+      0.91854,
+      -0.163615
+     ],
+     [
+      0.677833,
+      0.994674,
+      -0.06083
+     ],
+     [
+      0.676068,
+      0.954727,
+      -0.044625
+     ]
+    ],
+    "inside": false
+   },
+   {
+    "eye": [
+     -1,
+     -1
+    ],
+    "field": [
+     1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      -0.065
+     ],
+     [
+      0.745969,
+      1.155259,
+      0.005776
+     ],
+     [
+      0.932165,
+      0.901626,
+      0.035605
+     ],
+     [
+      0.67731,
+      0.994307,
+      0.032215
+     ],
+     [
+      0.677299,
+      0.954727,
+      0.03172
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     -1,
+     -1
+    ],
+    "field": [
+     -1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      -0.065
+     ],
+     [
+      0.926033,
+      1.059517,
+      -0.153593
+     ],
+     [
+      0.974665,
+      1.004967,
+      -0.160521
+     ],
+     [
+      0.728427,
+      1.030099,
+      -0.066342
+     ],
+     [
+      0.709393,
+      0.954727,
+      -0.036763
+     ]
+    ],
+    "inside": false
+   },
+   {
+    "eye": [
+     -1,
+     -1
+    ],
+    "field": [
+     1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      -0.065
+     ],
+     [
+      0.926033,
+      1.059517,
+      0.023593
+     ],
+     [
+      0.988333,
+      0.989635,
+      0.032468
+     ],
+     [
+      0.724153,
+      1.027107,
+      0.032336
+     ],
+     [
+      0.708865,
+      0.954727,
+      0.032299
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     -1
+    ],
+    "field": [
+     0,
+     0
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      0.065
+     ],
+     [
+      0.825936,
+      1.11274,
+      0.065
+     ],
+     [
+      0.960411,
+      0.946677,
+      0.065
+     ],
+     [
+      0.698356,
+      1.009044,
+      0.012465
+     ],
+     [
+      0.692058,
+      0.954727,
+      0.001801
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     -1
+    ],
+    "field": [
+     -1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      0.065
+     ],
+     [
+      0.745969,
+      1.155259,
+      -0.005776
+     ],
+     [
+      0.932165,
+      0.901626,
+      -0.035605
+     ],
+     [
+      0.67731,
+      0.994307,
+      -0.032215
+     ],
+     [
+      0.677299,
+      0.954727,
+      -0.03172
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     -1
+    ],
+    "field": [
+     1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      0.065
+     ],
+     [
+      0.745969,
+      1.155259,
+      0.135776
+     ],
+     [
+      0.919749,
+      0.91854,
+      0.163615
+     ],
+     [
+      0.677833,
+      0.994674,
+      0.06083
+     ],
+     [
+      0.676068,
+      0.954727,
+      0.044625
+     ]
+    ],
+    "inside": false
+   },
+   {
+    "eye": [
+     1,
+     -1
+    ],
+    "field": [
+     -1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      0.065
+     ],
+     [
+      0.926033,
+      1.059517,
+      -0.023593
+     ],
+     [
+      0.988333,
+      0.989635,
+      -0.032468
+     ],
+     [
+      0.724153,
+      1.027107,
+      -0.032336
+     ],
+     [
+      0.708865,
+      0.954727,
+      -0.032299
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     -1
+    ],
+    "field": [
+     1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.185,
+      0.065
+     ],
+     [
+      0.926033,
+      1.059517,
+      0.153593
+     ],
+     [
+      0.974665,
+      1.004967,
+      0.160521
+     ],
+     [
+      0.728427,
+      1.030099,
+      0.066342
+     ],
+     [
+      0.709393,
+      0.954727,
+      0.036763
+     ]
+    ],
+    "inside": false
+   },
+   {
+    "eye": [
+     -1,
+     1
+    ],
+    "field": [
+     0,
+     0
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      -0.065
+     ],
+     [
+      0.668356,
+      1.196526,
+      -0.065
+     ],
+     [
+      0.91847,
+      0.887662,
+      -0.065
+     ],
+     [
+      0.684843,
+      0.999582,
+      -0.012895
+     ],
+     [
+      0.689238,
+      0.954727,
+      -0.00383
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     -1,
+     1
+    ],
+    "field": [
+     -1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      -0.065
+     ],
+     [
+      0.603646,
+      1.230933,
+      -0.122273
+     ],
+     [
+      0.873729,
+      0.863032,
+      -0.16554
+     ],
+     [
+      0.662683,
+      0.984065,
+      -0.062425
+     ],
+     [
+      0.667768,
+      0.954727,
+      -0.049805
+     ]
+    ],
+    "inside": false
+   },
+   {
+    "eye": [
+     -1,
+     1
+    ],
+    "field": [
+     1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      -0.065
+     ],
+     [
+      0.603646,
+      1.230933,
+      -0.007727
+     ],
+     [
+      0.885966,
+      0.846363,
+      0.0375
+     ],
+     [
+      0.66362,
+      0.984721,
+      0.032206
+     ],
+     [
+      0.669937,
+      0.954727,
+      0.031586
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     -1,
+     1
+    ],
+    "field": [
+     -1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      -0.065
+     ],
+     [
+      0.749357,
+      1.153458,
+      -0.13669
+     ],
+     [
+      0.936961,
+      0.943021,
+      -0.163417
+     ],
+     [
+      0.709972,
+      1.017177,
+      -0.064804
+     ],
+     [
+      0.707892,
+      0.954727,
+      -0.039
+     ]
+    ],
+    "inside": false
+   },
+   {
+    "eye": [
+     -1,
+     1
+    ],
+    "field": [
+     1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      -0.065
+     ],
+     [
+      0.749357,
+      1.153458,
+      0.00669
+     ],
+     [
+      0.9507,
+      0.927609,
+      0.035374
+     ],
+     [
+      0.708437,
+      1.016102,
+      0.031962
+     ],
+     [
+      0.708508,
+      0.954727,
+      0.03115
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     1
+    ],
+    "field": [
+     0,
+     0
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      0.065
+     ],
+     [
+      0.668356,
+      1.196526,
+      0.065
+     ],
+     [
+      0.91847,
+      0.887662,
+      0.065
+     ],
+     [
+      0.684843,
+      0.999582,
+      0.012895
+     ],
+     [
+      0.689238,
+      0.954727,
+      0.00383
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     1
+    ],
+    "field": [
+     -1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      0.065
+     ],
+     [
+      0.603646,
+      1.230933,
+      0.007727
+     ],
+     [
+      0.885966,
+      0.846363,
+      -0.0375
+     ],
+     [
+      0.66362,
+      0.984721,
+      -0.032206
+     ],
+     [
+      0.669937,
+      0.954727,
+      -0.031586
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     1
+    ],
+    "field": [
+     1,
+     1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      0.065
+     ],
+     [
+      0.603646,
+      1.230933,
+      0.122273
+     ],
+     [
+      0.873729,
+      0.863032,
+      0.16554
+     ],
+     [
+      0.662683,
+      0.984065,
+      0.062425
+     ],
+     [
+      0.667768,
+      0.954727,
+      0.049805
+     ]
+    ],
+    "inside": false
+   },
+   {
+    "eye": [
+     1,
+     1
+    ],
+    "field": [
+     -1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      0.065
+     ],
+     [
+      0.749357,
+      1.153458,
+      -0.00669
+     ],
+     [
+      0.9507,
+      0.927609,
+      -0.035374
+     ],
+     [
+      0.708437,
+      1.016102,
+      -0.031962
+     ],
+     [
+      0.708508,
+      0.954727,
+      -0.03115
+     ]
+    ],
+    "inside": true
+   },
+   {
+    "eye": [
+     1,
+     1
+    ],
+    "field": [
+     1,
+     -1
+    ],
+    "pts": [
+     [
+      0,
+      1.255,
+      0.065
+     ],
+     [
+      0.749357,
+      1.153458,
+      0.13669
+     ],
+     [
+      0.936961,
+      0.943021,
+      0.163417
+     ],
+     [
+      0.709972,
+      1.017177,
+      0.064804
+     ],
+     [
+      0.707892,
+      0.954727,
+      0.039
+     ]
+    ],
+    "inside": false
+   }
+  ]
+ },
+ "benchIds": [
+  "stage0Rig",
+  "stage1Rig",
+  "latencyProbe",
+  "lumMeter",
+  "targetBoard",
+  "rangefinder",
+  "windshield",
+  "panelKit"
+ ],
+ "carDims": {
+  "length": 4.84,
+  "width": 1.85,
+  "height": 1.435,
+  "frontX": 2.46,
+  "rearX": -2.38,
+  "centerZ": 0.37,
+  "wheelbase": 2.85
+ }
+}

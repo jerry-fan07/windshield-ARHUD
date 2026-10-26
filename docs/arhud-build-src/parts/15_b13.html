@@ -1,0 +1,110 @@
+<section>
+  <h2 id="b13"><span class="num">B13</span>Stage 2 in the car: calibrate it, then prove it at noon (gate G6)</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Registration (2.3, 2.10), brightness against daylight (2.5), night comfort (2.11), the ghost decision (2.9)</div>
+    <div><b>Weeks</b>8–12</div>
+    <div><b>Closes</b>Gate G6: every acceptance row passes at noon</div>
+    <div><b>Needs</b>B7 (car installation), B12 (aligned unit, sun test passed), B4 and B6 (software), the luminance meter</div>
+    <div><b>Produces</b>A calibrated HUD, <code>calibration.yaml</code>, the dimming curve, a completed acceptance sheet</div>
+    <div><b>People</b>Builder, a helper for the target board, the regular driver, the safety driver for drives</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> Calibration teaches the software three facts it cannot know from the design: exactly where the road camera points relative to the car, exactly where the driver's eye sits, and exactly where each panel pixel appears to that eye through this particular mirror and this particular windshield. With those, a mark computed for a lane point lands on the lane. Then every target from Chapter 1 is measured with an instrument, at noon against the sky and the road, and at night.</p>
+
+  <h3>B13.1 Materials and instruments</h3>
+  <table class="tight">
+    <thead><tr><th style="width:38%">Item</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>30 m target board, 2.0 × 1.4 m plywood, matte white, with a printed checkerboard and five ring targets; two stands</td><td>Camera-to-car and eye calibration; static registration</td></tr>
+      <tr><td>Calibration checkerboard, A3, on a rigid board</td><td>Camera intrinsics; driver-camera pose</td></tr>
+      <tr><td>Camera at the eye point on a tripod, with a 300 mm rail for lateral moves</td><td>Grid photographs, registration and eye-box measurements</td></tr>
+      <tr><td>Laser rangefinder, 30 m tape, chalk line, string</td><td>Centreline, board survey</td></tr>
+      <tr><td>Spot luminance meter on a tripod</td><td>Luminance and contrast rows</td></tr>
+      <tr><td>Ground grid: white tape lines at 10, 15, 20 and 30 m and at ±1.85 m from the centreline</td><td>Visual check of registration on the ground</td></tr>
+      <tr><td>Anti-slip pad shaped to the dash; two webbing straps with cam buckles; a luggage scale</td><td>Restraint test of the housing</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B13.2 Put the unit on the dash</h3>
+  <ol class="steps">
+    <li>Lay the anti-slip pad on the dash footprint marked in B1. Set the housing on it, front edge toward the glass. Adjust the four levelling feet until the housing is level across the car and at the traced pitch fore-aft (angle gauge on the lid, against the ground reference), stable with no rocking, and at least 8 mm below the glass everywhere.<span class="chk">Glass clearance ≥ 8 mm at the front edge</span></li>
+    <li>Restrain it so it cannot move in a hard stop. Pull the housing horizontally with the luggage scale, forward, backward and sideways: it must not slide at 1.5 times its own weight (a 5 kg unit: about 75 N). Add the straps to anchor points agreed with the car's owner if it does; never to an airbag cover, never across the passenger airbag's door or the steering wheel's path, and never by screws into the dash.<span class="chk">No movement at 1.5 × weight in four directions</span></li>
+    <li>Mount the LED driver and the controller beside or behind the housing (B7.6); connect the HDMI, LED, fan, thermistor, servo, light-sensor and USB leads per Appendix A. Tie every cable so nothing can reach the pedals or the steering wheel.</li>
+    <li>Power up; open the shutter; show the alignment pattern. From the nominal eye point, fine-tune the three adjusters until the window is centred on the line of sight 5° down. Push the three access plugs into the front wall.</li>
+  </ol>
+
+  <h3>B13.3 Calibrate: the three transforms</h3>
+  <p>The plan's projection chain is <code>D @ K_eye @ view_from_eye @ eye_from_car</code>; this guide replaces <code>D @ K_eye</code> by a lookup table from the ray trace corrected by photographs (the design-basis box explains why). All results go into <code>config/calibration.yaml</code> (Appendix C), and calibration is redone for every car, every windshield change, and every time the road camera is remounted.</p>
+  <figure>[[FIG g_target]]<figcaption><b>Figure B13.1.</b> The 30 m set-up and the board's face.</figcaption></figure>
+  <h4>A. The road camera in the car frame</h4>
+  <ol class="steps">
+    <li>Park on level ground with 35 m clear ahead. Snap a chalk line for the car's centreline from two points on the car's axis (front badge and rear-window centre, both found with a plumb bob), extended 32 m ahead.</li>
+    <li>Stand the board 30.0 m from the road camera's left lens along the centreline, square to it (check that both lower rings are the same distance from the lens with the rangefinder). Survey each ring's centre: distance, height above the ground, and lateral offset from the chalk line.</li>
+    <li>Run <code>tools/calib_camera.py</code>: it detects the checkerboard in the ZED's left image, solves its pose, and combines it with the survey to give the camera's rotation (pitch, yaw, roll) and position in the car frame. The camera's height comes from the ground-plane fit at rest. Save it.</li>
+    <li>Check: the ring centres projected through the new extrinsics land within 2 pixels of their detected positions in the camera image.<span class="chk">Ring reprojection ≤ 2 px</span></li>
+  </ol>
+  <h4>B. The driver camera in the car frame</h4>
+  <ol class="steps">
+    <li>Hold the A3 checkerboard at the nominal eye point (taped to a stand on the driver's seat, its centre at the eye point, square to the car's axis). Measure its position from the datums of B1.3.</li>
+    <li>Run <code>tools/calib_drivercam.py</code>: the OAK-D Pro sees the board, solves its pose; the measured board position gives the camera's pose in the car frame. Save it.</li>
+    <li>Check: with the driver seated, <code>eyePose</code> reports the eye midpoint within 20 mm of the taped nominal point.<span class="chk">Tracked eye within 20 mm of the nominal point</span></li>
+  </ol>
+  <h4>C. The eye and the panel: lookup table and photographs</h4>
+  <ol class="steps">
+    <li>Calibrate the eye-point camera's own lens first (checkerboard, 20 views) so each of its pixels is a known direction.</li>
+    <li>Put the camera at the nominal eye point (lens entrance pupil there, within 5 mm), level, looking straight ahead. Show the panel grid: crosses at known panel pixels across the crop. Photograph it with the board and the road in the background.</li>
+    <li>Run <code>tools/calib_hud.py</code>: it finds each cross, converts its image position into a direction from the eye, compares it with the direction the trace's lookup table predicts for that panel pixel, and fits a smooth correction (a low-order 2-D polynomial or a thin-plate spline). Residual after the fit should be under about 2 arcminutes.</li>
+    <li>Repeat from five eye positions on the rail and tripod: centre, ±50 mm left and right, ±30 mm up and down. The correction is interpolated between them, so the projection stays right as the head tracker moves the eye.</li>
+    <li>Refine the nominal eye point: show the five ring targets as HUD marks computed from their survey; adjust the eye-point offset in the file until the marks sit on the rings from the camera at the eye point.</li>
+    <li>Commit <code>calibration.yaml</code>.</li>
+  </ol>
+
+  <h3>B13.4 Measure everything: the acceptance sheet</h3>
+  <p>Measure each row with the instrument named; record the value, the conditions (time, sky, sun elevation, temperature), and pass or fail. The plan's gate G6 is every row passing at noon. Rows marked † are the guide's additions.</p>
+  <table class="tight">
+    <thead><tr><th style="width:24%">Quantity</th><th style="width:20%">Requirement</th><th>How to measure</th><th style="width:9%">Result</th></tr></thead>
+    <tbody>
+      <tr><td>Virtual image distance</td><td>≥ 6 m, target 7.5 m</td><td>Camera-focus method (focus the eye-point camera on the HUD cross, then find the real target at the same focus) or the parallax method of Figure B12.1, at the centre and four corners</td><td></td></tr>
+      <tr><td>Field of view</td><td>10.8° × 5.4° (10° × 4° to 13° × 5°)</td><td>Window border photographed from the eye point; angles from the calibrated camera. Expect the traced value (about 8.7–9.1° wide); record it, and note if it falls outside the band</td><td></td></tr>
+      <tr><td>Eye box</td><td>≥ 120 × 60 mm untracked</td><td>Camera on the rail: the whole border visible at every position of a 5 × 3 grid over 130 × 70 mm</td><td></td></tr>
+      <tr><td>Luminance, sky behind, noon</td><td>≥ 1,500 cd/m²; ratio (overlay + background) / background ≥ 1.15 against 10,000</td><td>Spot meter at the eye point on a full-white patch against the sky; then the sky alone in the same direction with the patch off</td><td></td></tr>
+      <tr><td>Luminance, sunlit road behind</td><td>≥ 750 cd/m² (ratio 1.15 against 5,000)</td><td>Same, lower part of the window against the road; reported separately</td><td></td></tr>
+      <tr><td>Night</td><td>White ≤ 50 cd/m² at the night setting (guide: start at 3); unlit window ≤ 0.1</td><td>Same meter at the night setting; then a black frame with the backlight at the night setting</td><td></td></tr>
+      <tr><td>Panel luminance and uniformity</td><td>≥ {{need_panel_day}} cd/m²; ±20% over the crop</td><td>From B9 (G5); re-check one point</td><td></td></tr>
+      <tr><td>Static registration at 30 m</td><td>≤ 0.5°</td><td>Camera at the eye point; HUD marks for the surveyed rings against the rings; marks also drawn from the road camera's own detection, to separate perception from optics error</td><td></td></tr>
+      <tr><td>Registration with head motion</td><td>≤ 0.3° over ±75 mm</td><td>Same, camera moved on the rail with the head tracker following a face target fixed above the camera (or the camera's position fed in), tracker on</td><td></td></tr>
+      <tr><td>Motion to photon</td><td>≤ 90 ms; compensated error ≤ 0.3°</td><td>Latency probe (B6) re-run in the car; <code>hudStats</code> ages cross-checked</td><td></td></tr>
+      <tr><td>Ghost image</td><td>Separation within 2× the predicted {{ghost_7_5}}′; acceptable on the demo graphics at three eye heights</td><td>Photograph a thin cross from the eye point at the nominal height and ±35 mm; measure the copies' separation</td><td></td></tr>
+      <tr><td>Sun focus</td><td>Under the cell rating for 10 min, shutter open, worst sun; sun-watch closes inside the patch</td><td>B12.4 result; then a logged drive with sun-watch events</td><td></td></tr>
+      <tr><td>Cell temperature</td><td>Under the rating after 30 min at full backlight in a 40 °C box</td><td>B9 (G5) result</td><td></td></tr>
+      <tr><td>Speed shown</td><td>Within 1 m/s of a reference GNSS trace while moving; dash without a fix</td><td>Logged drive against a phone's GNSS log</td><td></td></tr>
+      <tr><td>Installation</td><td>Checklist signed</td><td>Appendix F</td><td></td></tr>
+      <tr><td>Lane-line stability †</td><td>No visible wobble on a straight road</td><td>Video from the eye point at 25 m/s; lines' frame-to-frame lateral jitter under 1 arcminute</td><td></td></tr>
+      <tr><td>Ribbon visible at noon †</td><td>Contrast ≥ 1.15</td><td>Meter on the ribbon against the road beside it</td><td></td></tr>
+    </tbody>
+  </table>
+
+  <h3>B13.5 Tune the dimming curve</h3>
+  <ol class="steps">
+    <li>At dusk, drive the course (passenger operating the laptop) with the controller logging lux and duty. At each light level, the passenger adjusts the duty until the driver calls the white "clearly visible, not glaring". Record pairs of lux and duty from full daylight to full dark.</li>
+    <li>Fit a smooth curve through them (piecewise linear in log lux is enough), from the night level to full duty at 10,000 lux or more; store it in <code>config/dimming.yaml</code> and in the controller's firmware table (B5). Update once a second with a one-second ramp; give the driver a one-step offset either way.</li>
+    <li>At night on a dark stretch, check the grey rectangle of the black level. If it is visible, lower the night duty; if it is still visible at a white level the driver finds too dim, the VA-cell panel is the alternative (plan, 6.6).</li>
+  </ol>
+
+  <h3>B13.6 Decide on the windshield</h3>
+  <p>Look at the three ghost photographs with the demo graphics (lines at least 6 px, filled ribbon, heavy text). If the ghost is objectionable to the driver and to two other viewers, order the wedge-PVB windshield for this car ($600–1,500 installed) and repeat B1's measurements and B13 for the new glass. Otherwise record "stock windshield accepted".</p>
+
+  <h3>B13.7 Gate G6</h3>
+  <p>Every row of the B13.4 table passes at noon, with the results and conditions in the log. If a row fails, the demo format falls back to dusk (luminance rows) or the gate returns to the stage that owns the failing part.</p>
+
+  <h3>B13.8 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Static error larger at the edges of the window than the centre</td><td>The lookup-table correction is too stiff or was fitted from too few crosses; use more crosses and a higher-order fit, and check the eye-point camera's own lens calibration.</td></tr>
+      <tr><td>Error grows with head motion</td><td>Driver-camera pose wrong (B13.3 B) or the correction not interpolated across eye positions (B13.3 C, step 4).</td></tr>
+      <tr><td>Error differs between the camera-detection marks and the survey marks</td><td>That difference is perception error: road-camera extrinsics or the plane fit (B13.3 A).</td></tr>
+      <tr><td>Sky contrast below 1.15</td><td>Check polarisation (the image should vanish through a polariser with its axis vertical), the backlight at full duty, the cell's temperature derating; then films or collimation (plan, 6.6), or a dusk demo.</td></tr>
+      <tr><td>Window glows at night</td><td>Night duty too high; black-level leak; VA cell.</td></tr>
+    </tbody>
+  </table>
+</section>

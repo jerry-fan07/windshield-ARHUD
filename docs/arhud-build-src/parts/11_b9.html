@@ -1,0 +1,107 @@
+<section>
+  <h2 id="b9"><span class="num">B9</span>The picture generator: measure the panel, build the backlight (gate G5)</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Daylight brightness (2.5), heat (2.6), polarisation (2.8)</div>
+    <div><b>Weeks</b>4–8; must be finished before the mirror arrives</div>
+    <div><b>Closes</b>Gate G5: ≥ {{need_panel_day}} cd/m² on axis (guide: aim for 13,000), ±20% over the crop, cell under its limit after 30 min at 40 °C, polarisation oriented, input lag measured</div>
+    <div><b>Needs</b>B5 (LED driver and controller), the luminance meter, the reference polariser</div>
+    <div><b>Produces</b>The finished PGU: cell on a custom backlight, with thermistor, retarder if needed, and its HDMI board</div>
+    <div><b>People</b>Builder</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> The liquid-crystal panel is a stencil, not a lamp: it passes only a few per cent of the light behind it. Its own backlight is a thin light guide lit from one edge, made for indoor viewing. This stage measures exactly how much the stencil passes, throws the stock light away, and builds a small, very bright lamp behind just the 60 × 30 mm patch the optics use: eight LEDs in a white box that blends them into one even glow, a diffuser, two prism films that aim the light toward the eye box instead of wasting it sideways, and a heat path to the outside.</p>
+  <figure>[[FIG g_stack]]<figcaption><b>Figure B9.1.</b> The PGU stack in assembly order. The hot-mirror plate sits in front of the cell, where the sun arrives (design basis); a plain cover glass seals the cavity.</figcaption></figure>
+
+  <h3>B9.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:32%">Item</th><th style="width:6%">Qty</th><th>Specification and notes</th></tr></thead>
+    <tbody>
+      <tr><td>Wisecoco 5.5-inch 1920 × 1080 IPS HDMI kit</td><td>2</td><td>One stays stock (Stage 0, spare, reference); one is taken apart. $95 each (plan)</td></tr>
+      <tr><td>High-power white LEDs</td><td>8 (+4 spare)</td><td>Cree XP-G4 or Lumileds LUXEON HL2X class, 5,000–5,700 K, on 20 mm star boards or one custom aluminium-core board (Figure B9.2); see B5 for the drive current and string layout</td></tr>
+      <tr><td>Heat sink</td><td>1</td><td>Finned aluminium, about 80 × 50 mm base, 25–30 mm fins; the CAD bay holds it on four posts between its outer fins</td></tr>
+      <tr><td>Fan</td><td>1</td><td>40 mm, 12 V (or 5 V), low noise; blows down through the bay floor</td></tr>
+      <tr><td>Thermal interface</td><td>1</td><td>Thermal pad 0.5 mm or thin thermal paste; M3 screws with nylon washers for the LED board</td></tr>
+      <tr><td>Mixing cavity walls</td><td>1 set</td><td>A printed frame 22 mm tall with a 60 × 30 mm inner opening, lined with high-reflectance white diffuse film (the stock backlight's white reflector sheet can be reused)</td></tr>
+      <tr><td>Diffuser plate</td><td>1</td><td>2 mm opal (light-diffusing) acrylic, high transmission, cut to the cavity's outer size; or the stock diffuser sheet over clear acrylic</td></tr>
+      <tr><td>Prism films</td><td>2</td><td>The two prism sheets salvaged from the stock backlight, or 3M BEF-class film; cut to the cavity; handle by the edges</td></tr>
+      <tr><td>Cover glass</td><td>1</td><td>1–2 mm clear glass, cavity size</td></tr>
+      <tr><td>Half-wave retarder film</td><td>1 piece</td><td>Only if the axis measurement calls for it; cut 70 × 40 mm from the sheet (plan: Edmund WP280, American Polarizers, Knight Optical)</td></tr>
+      <tr><td>NTC thermistor</td><td>1</td><td>10 kΩ at 25 °C, B ≈ 3950, glass bead with leads; Kapton tape</td></tr>
+      <tr><td>Insulated test box, heater, thermostat</td><td>1</td><td>For the 40 °C thermal run (Chapter 5)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B9.2 Measure the stock panel (before taking anything apart)</h3>
+  <ol class="steps">
+    <li>Power the stock kit from the Jetson or mini PC at 1920 × 1080. Show full white. Put the luminance meter 1 m away on axis, focused on the panel. Read nine points (3 × 3 grid) over the area the crop will use. The vendor says 450 cd/m².<span class="chk">Stock luminance and uniformity recorded</span></li>
+    <li><b>Polarisation axis.</b> Hold the reference polariser in front of the meter's lens and rotate it until the reading is highest; read the polariser's axis angle against the panel's long edge with the angle gauge. Note it with the panel's orientation (which edge will face forward in the car).<span class="chk">Axis angle recorded</span></li>
+    <li><b>Contrast.</b> Read full black at the same points, in a dark room. Contrast = white / black. The plan assumes 1,000:1 for IPS.</li>
+    <li><b>Input lag.</b> With the latency probe (B6.6), measure the HDMI board's lag from command to light.</li>
+  </ol>
+
+  <h3>B9.3 Take the second panel apart</h3>
+  <div class="box warn">
+    <p class="h">ESD and the flex</p>
+    <p>Wrist strap on. The cell's driver chips and flexible circuit are the fragile parts. Never lift the cell by the flex, never fold the flex near the glass, never press on the front polariser.</p>
+  </div>
+  <ol class="steps">
+    <li>Unplug the panel's flex from the HDMI board's connector (lift the connector's latch first).</li>
+    <li>The cell and backlight are held in a metal frame by clips or tape. Release the clips around the frame with a plastic pry tool; work around the edge slowly. If the cell is taped to the backlight frame, warm the tape gently with a hair dryer and lift the cell from one corner with a plastic card, never a blade.</li>
+    <li>Lift the cell out with both polarisers attached, flex supported, and set it face down on a clean lint-free cloth.</li>
+    <li>Lift out the stock optical sheets (diffuser, two prism sheets) by their edges and keep them flat between paper: they can be reused. Keep the white reflector sheet. The light guide and the LED strip are not needed.</li>
+    <li><b>Transmittance.</b> Reassemble the stock backlight on its own (light guide, LED strip, sheets) and connect it to the board, with the cell set aside but still connected so the board runs. Read the bare backlight's luminance at the same points. The cell's transmittance is the stock panel's white reading divided by this. It replaces the plan's assumed {{t_lcd}}: a 450 cd/m² panel over a {{stock_bl_example}} cd/m² backlight would confirm it. Recompute the backlight target with the measured value.<span class="chk">Transmittance measured; backlight target recomputed</span></li>
+  </ol>
+
+  <h3>B9.4 Build the backlight, bottom up</h3>
+  <figure>[[FIG g_ledboard]]<figcaption><b>Figure B9.2.</b> The LED board behind the crop: eight LEDs on a 15 mm grid in two strings.</figcaption></figure>
+  <ol class="steps">
+    <li><b>Heat sink and fan.</b> Screw the 40 mm fan to the heat sink's fin side so it blows away from the fins (down, out of the housing's floor in the car). Run the fan once to check its direction.</li>
+    <li><b>LED board.</b> Clean the heat sink's face and the LED board's back with alcohol. Lay the thermal pad (or a thin, even layer of paste). Screw the board down with M3 screws and nylon washers, tightening alternately; the board must sit flat.</li>
+    <li><b>Leads.</b> Solder the two strings' leads (B5 gives the wiring: string A and string B to separate driver channels), strain-relieve them, and check each string's polarity with the multimeter's diode test: each LED should glow faintly.</li>
+    <li><b>Cavity.</b> Line the printed 22 mm frame's inner walls with the white reflector film, reflective side in. Place the frame over the LEDs, centred so the 60 × 30 mm opening is over the LED grid with 7.5 mm from the outer LED centres to the walls.</li>
+    <li><b>Diffuser, films, cover.</b> Lay the diffuser plate on the frame. Lay prism film 1 on it, prisms up, ridges running across the short side; lay prism film 2 on top with its ridges at 90° to film 1. Lay the cover glass on top. Tape the stack's edges together with black Kapton or aluminium tape, leaving the opening clear.</li>
+    <li><b>First light, low current.</b> Connect the strings to a current-limited bench supply (or the driver at its lowest duty) and bring each string up slowly; never look into the bare cavity at power (welding glass). Check every LED lights and the cavity glows evenly.</li>
+    <li><b>Uniformity before the cell.</b> Read the cover glass's luminance on a 5 × 3 grid at moderate current. Corners more than 20% below the centre: move the outer LEDs outward, raise the cavity, or use a stronger diffuser. Repeat until even.<span class="chk">Bare uniformity within ±20%</span></li>
+  </ol>
+
+  <h3>B9.5 Put the cell back, and fix the polarisation</h3>
+  <ol class="steps">
+    <li>Tape the NTC bead to the back of the cell, just outside the crop on its warmer side (above the LED grid's edge), with Kapton tape; lead its wires away flat.</li>
+    <li>Lay the cell on the cover glass (in the housing, the carrier holds it 0.5 mm above), the crop over the cavity. Reconnect the flex.</li>
+    <li><b>Find the crop in pixels.</b> In <code>hudd</code>, draw a one-pixel border at the intended crop coordinates. Move it in the configuration until it sits exactly on the cavity's lit edge; record the crop's pixel origin and size (946 × 473 px nominal) in <code>calibration.yaml</code>. Mark the crop's corners on the cell's frame with a fine pen for B12.</li>
+    <li><b>Decide on the retarder.</b> The light must leave the panel polarised across the car (90° from the car's fore-aft axis) once the panel is in its car orientation. If B9.2 measured that, no retarder. Otherwise, a half-wave film turns an input angle a into 2f − a: for a panel at 45°, set the film's fast axis at 67.5° (Figure 2.8). Cut the film 70 × 40 mm with its fast axis marked, lay it over the crop, and confirm with the reference polariser that the output is now across.<span class="chk">Output polarisation across the car (after the retarder if fitted)</span></li>
+  </ol>
+
+  <h3>B9.6 Measure the finished PGU</h3>
+  <ol class="steps">
+    <li>Full white, controller at full duty. Read the on-axis luminance at the crop's centre and on a 5 × 3 grid. Target: at least {{need_panel_day}} cd/m², and about 13,000 to cover the cover-glass, polariser, IR-cut and retarder losses (B10.1). Uniformity within ±20%.</li>
+    <li>Read the luminance at ±15° horizontally and ±10° vertically: at least 50% of the on-axis value at ±15° horizontally (the eye box needs about ±{{cone_h}}° × ±{{cone_v}}°).</li>
+    <li>Record the LED current, voltage and power at full duty, and the duty-to-luminance curve at ten steps; the controller's dimming table uses it.</li>
+  </ol>
+
+  <h3>B9.7 Thermal test: 30 minutes at 40 °C</h3>
+  <ol class="steps">
+    <li>Put the PGU in the insulated box with the heater and thermostat set to 40 °C, the fan running and its air path open to the box. Thermocouple on the front of the cell in the crop (black-taped bead), the NTC read by the controller, a second thermocouple for the box air.</li>
+    <li>Run full white at full duty for 30 minutes, logging all three at 1 Hz.</li>
+    <li>The cell must stay under its rating. The kit's rating is not published: use 70 °C (the industrial modules' operating limit) unless a datasheet says otherwise. Set the controller's derate threshold (half duty) and cut-off threshold (backlight off, shutter closed) from the curve, for example 55 °C and 62 °C at the NTC if the cell front runs 5 °C hotter than the NTC reads; record the offset you measured.<span class="chk">Cell under its limit after 30 min; thresholds set</span></li>
+  </ol>
+
+  <h3>B9.8 Gate G5</h3>
+  <ul class="cl">
+    <li>On-axis luminance ≥ {{need_panel_day}} cd/m² (record against the guide's 13,000 aim), uniform within ±20% over the crop.</li>
+    <li>Cell under its limit after 30 minutes at full power in the 40 °C box.</li>
+    <li>Polarisation oriented across the car.</li>
+    <li>HDMI board input lag measured.</li>
+  </ul>
+
+  <h3>B9.9 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Short of the luminance target</td><td>Check the films' orientation (crossed, prisms up); raise the drive current within the LEDs' rating; add a reflective polariser film (DBEF class) above the prism films, its pass axis matching the cell's rear polariser (3M quotes about 2.8 for such a stack); move toward a collimated design (plan, 6.6); or the HUD-grade module experiment.</td></tr>
+      <tr><td>Hot spots over each LED</td><td>Cavity too shallow for the pitch: raise it, add a second diffuser sheet, or use more, weaker LEDs.</td></tr>
+      <tr><td>Cell over temperature</td><td>Improve the fan's air path (the bay's grilles must be open), add a small fan across the cell's back, lower full duty and accept a lower daylight margin, or move to a collimated backlight (less light wasted means less heat for the same luminance).</td></tr>
+      <tr><td>Colour shift with temperature or a dark patch that grows</td><td>The liquid crystal is near its clearing point: stop and lower the thresholds.</td></tr>
+      <tr><td>Visible pixel grid of the films (moiré)</td><td>Rotate one film a few degrees; add the diffuser sheet above the films.</td></tr>
+    </tbody>
+  </table>
+</section>

@@ -1,0 +1,144 @@
+{
+ "generated": "2026-10-21 22:53",
+ "blender": "5.2.3 LTS Release Candidate",
+ "size": [
+  512,
+  256
+ ],
+ "convention": "equirectangular, row 0 = zenith, columns = azimuth; sunU is the sun's column (0..1) in the image",
+ "maps": [
+  {
+   "file": "sky_e2p3.exr.txt",
+   "scale": 1.1639814376831055,
+   "sunU": 0.4990234375,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 2.3,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e8.exr.txt",
+   "scale": 2.585603952407837,
+   "sunU": 0.5009765625,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 8,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e15.exr.txt",
+   "scale": 3.4538426399230957,
+   "sunU": 0.4990234375,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 15,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e25.exr.txt",
+   "scale": 4.028772830963135,
+   "sunU": 0.4990234375,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 25,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e35.exr.txt",
+   "scale": 4.406083106994629,
+   "sunU": 0.5009765625,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 35,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e45.exr.txt",
+   "scale": 4.7153778076171875,
+   "sunU": 0.5009765625,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 45,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e55.exr.txt",
+   "scale": 4.986003875732422,
+   "sunU": 0.4990234375,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 55,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e65.exr.txt",
+   "scale": 5.237506866455078,
+   "sunU": 0.4990234375,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 65,
+   "aerosol": 0.6
+  },
+  {
+   "file": "sky_e76.exr.txt",
+   "scale": 5.530766487121582,
+   "sunU": 0.5009765625,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "sky",
+   "elevation": 76,
+   "aerosol": 0.6
+  },
+  {
+   "file": "overcast.exr.txt",
+   "scale": 0.7247946858406067,
+   "sunU": null,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "overcast",
+   "elevation": null,
+   "model": "CIE overcast"
+  },
+  {
+   "file": "night.exr.txt",
+   "scale": 0.4517253339290619,
+   "sunU": null,
+   "size": [
+    512,
+    256
+   ],
+   "kind": "night",
+   "elevation": null,
+   "model": "synthetic moonless"
+  }
+ ],
+ "encoding": "each map is a half-float ZIP EXR; the .exr.txt beside it is the same bytes in base64, because the artifact host serves text but not EXR"
+}

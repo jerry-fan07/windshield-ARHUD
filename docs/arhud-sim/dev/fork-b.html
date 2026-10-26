@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World and ego car (dev)</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+  html, body { margin: 0; height: 100%; background: #111; overflow: hidden; font: 12px "Helvetica Neue", Helvetica, Arial, sans-serif; color: #e8eef5; }
+  #hud { position: fixed; left: 8px; top: 8px; background: rgba(0,0,0,0.55); padding: 6px 8px; border-radius: 4px; white-space: pre; font-variant-numeric: tabular-nums; }
+  #err { position: fixed; left: 8px; bottom: 8px; right: 8px; color: #ff8080; white-space: pre-wrap; background: rgba(0,0,0,0.7); }
+  #err:empty { display: none; }
+</style>
+</head>
+<body>
+<div id="hud"></div>
+<div id="err"></div>
+<script>
+  const errEl = document.getElementById('err');
+  const show = (m) => { errEl.textContent += m + '\n'; };
+  window.addEventListener('error', (e) => show('error: ' + e.message + ' @ ' + (e.filename || '').split('/').pop() + ':' + e.lineno));
+  window.addEventListener('unhandledrejection', (e) => show('rejection: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason)));
+  const ce = console.error; console.error = (...a) => { show('console.error: ' + a.join(' ')); ce(...a); };
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { World } from '../js/world.js';
+import { buildEgoCar } from '../js/car.js';
+import * as G from '../js/geom.js';
+
+const hash = new URLSearchParams(location.hash.slice(1).replace(/#/g, '&'));
+const mode = hash.has('cabin') ? 'cabin' : hash.has('front') ? 'front' : hash.has('cutaway') ? 'cutaway' : hash.has('xray') ? 'xray' : hash.has('top') ? 'top' : hash.has('window') ? 'window' : 'chase';
+const envName = hash.get('env') || 'day';
+const T = parseFloat(hash.get('t') || '0');
+const speed = parseFloat(hash.get('v') || '25');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+document.body.appendChild(renderer.domElement);
+
+const t0 = performance.now();
+const world = new World();
+const tBuild = performance.now() - t0;
+world.scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const env = world.setEnvironment(envName);
+if (hash.has('noground')) world.ground.visible = false;
+if (hash.has('noroad')) world.roadMesh.visible = false;
+if (hash.has('noenv')) world.scene.environment = null;
+renderer.toneMappingExposure = env.exposure;
+
+const car = buildEgoCar();
+world.scene.add(car.group);
+car.setHeadlights(envName === 'night' || envName === 'dusk');
+if (mode === 'cutaway') car.setCutaway('side');
+if (mode === 'xray') car.setCutaway('xray');
+
+const camera = new THREE.PerspectiveCamera(mode === 'cabin' ? 55 : mode === 'window' ? 14 : 45, innerWidth / innerHeight, 0.05, 20000);
+const controls = new OrbitControls(camera, renderer.domElement); controls.enableDamping = true;
+
+const ego = { s: parseFloat(hash.get('s') || '120'), offset: world.lanes.ego.center, speed };
+const pose = { position: new THREE.Vector3(), quaternion: new THREE.Quaternion() };
+function step(dt) {
+  ego.s = world.wrap(ego.s + ego.speed * dt);
+  world.egoPose(ego.s, ego.offset, pose);
+  car.group.position.copy(pose.position); car.group.quaternion.copy(pose.quaternion);
+  const k = world.sample(ego.s + 2).curvature;
+  car.update(dt, ego.speed, Math.atan(2.85 * k));
+  world.update(dt, ego);
+  world.followTarget(car.group.position);
+}
+for (let t = 0; t < T; t += 1 / 30) step(1 / 30);
+step(0);
+
+if (mode === 'cabin' || mode === 'window') car.driver.head.visible = false;
+const camOffsets = { front: [6.0, 1.7, -3.8], chase: [-9, 3.2, 0.37], cutaway: [1.2, 1.5, -3.6], xray: [-3.5, 3.0, -4.5], top: [0, 1600, 0] };
+function placeCamera(first) {
+  car.group.updateMatrixWorld();
+  if (mode === 'cabin' || mode === 'window') {
+    const eye = car.group.localToWorld(G.EYE.clone());
+    const tgt = car.group.localToWorld(G.EYE.clone().addScaledVector(G.LOOK, 10));
+    camera.position.copy(eye); camera.up.set(0, 1, 0); camera.lookAt(tgt);
+    return;
+  }
+  if (mode === 'top') {
+    const b = world.bounds; camera.position.set((b.minX + b.maxX) / 2, 2600, (b.minZ + b.maxZ) / 2 + 1); camera.lookAt((b.minX + b.maxX) / 2, 0, (b.minZ + b.maxZ) / 2);
+    return;
+  }
+  if (first) {
+    const o = camOffsets[mode];
+    camera.position.copy(car.group.localToWorld(new THREE.Vector3(...o)));
+    controls.target.copy(car.group.localToWorld(new THREE.Vector3(mode === 'chase' ? 6 : 0.6, mode === 'chase' ? 1.0 : 0.9, 0.37)));
+  }
+}
+placeCamera(true);
+let last = performance.now(), frames = 0, fps = 0, acc = 0;
+const hud = document.getElementById('hud');
+const prevCarPos = new THREE.Vector3();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  prevCarPos.copy(car.group.position);
+  if (!hash.has('freeze')) step(dt);
+  if (mode === 'chase' || mode === 'cutaway' || mode === 'xray' || mode === 'front') {
+    const d = car.group.position.clone().sub(prevCarPos);
+    camera.position.add(d); controls.target.add(d);
+  }
+  placeCamera(false);
+  if (mode !== 'cabin' && mode !== 'window' && mode !== 'top') controls.update();
+  renderer.render(world.scene, camera);
+  frames++; acc += dt; if (acc > 0.5) { fps = frames / acc; frames = 0; acc = 0; }
+  const lead = world.lead;
+  hud.textContent = `mode ${mode}  env ${envName}  fps ${fps.toFixed(0)}  build ${tBuild.toFixed(0)} ms\n` +
+    `loop ${world.road.length.toFixed(0)} m  s ${ego.s.toFixed(0)}  trees ${world.treeCount}  signs ${world.signs.length}\n` +
+    `crosser ${world.crosser.state} ${world.crosser.offset.toFixed(1)}  lead gap ${lead.gap?.toFixed(1)} m  braking ${lead.braking}  calls ${renderer.info.render.calls}  tris ${(renderer.info.render.triangles / 1000).toFixed(0)}k\n` +
+    `sun el ${world.sunElevation.toFixed(1)} az ${world.sunAzimuth.toFixed(0)}  L_road ${env.L_road}  town ${world.town.s0.toFixed(0)}-${world.town.s1.toFixed(0)} cw ${world.crosswalkS.toFixed(0)}`;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+window.__world = world; window.__car = car;
+if (hash.has('check')) {
+  // Line-of-sight check: rays from the nominal eye through the HUD window must hit nothing in the car but the windshield.
+  car.group.updateMatrixWorld(true);
+  const rc = new THREE.Raycaster(); const hits = [];
+  const targets = []; car.group.traverse((o) => { if (o.isMesh && o.visible && o.name !== 'windshield' && !o.parent?.name?.startsWith('head')) targets.push(o); });
+  const fritless = targets.filter((o) => o.material && o.material.color && !(o.geometry.type === 'ShapeGeometry' && o.material.color.getHex() === 0x050506));
+  const eyeW = car.group.localToWorld(G.EYE.clone());
+  for (let az = -6; az <= 6; az += 1) for (let el = 2.3; el <= 7.7; el += 0.6) {
+    const dLocal = new THREE.Vector3(Math.cos(el * Math.PI / 180), -Math.sin(el * Math.PI / 180), 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), -az * Math.PI / 180);
+    const d = dLocal.clone().transformDirection(car.group.matrixWorld);
+    rc.set(eyeW, d); rc.far = 3;
+    const h = rc.intersectObjects(fritless, false);
+    if (h.length) hits.push(`${az},${el.toFixed(1)}: ${h[0].object.name || h[0].object.parent?.name || h[0].object.geometry.type} @${h[0].distance.toFixed(2)}`);
+  }
+  const msg = 'LOS check: ' + (hits.length ? hits.length + ' blocked\n' + hits.slice(0, 12).join('\n') : 'clear');
+  document.getElementById('err').textContent += msg + '\n';
+  // dash top under the housing
+  const H = G.HOUSING; let maxY = -1;
+  for (let x = H.xMin; x <= H.xMax; x += 0.02) for (let z = H.zMin; z <= H.zMax; z += 0.02) { const y = car.dashTopY(x, z); if (y > maxY) maxY = y; }
+  document.getElementById('err').textContent += `dash top under housing max ${maxY.toFixed(3)} (floor ${H.floor})\n` + `driverCam anchor ${car.anchors.driverCam.position.toArray().map((v) => v.toFixed(3))}\n`;
+}
+</script>
+</body>
+</html>

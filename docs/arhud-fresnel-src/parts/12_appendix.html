@@ -1,0 +1,71 @@
+<h2 id="appendix"><span class="num">A</span>Appendix: how the numbers were made</h2>
+<h3>A.1 Inputs</h3>
+<table>
+  <thead><tr><th>Quantity</th><th>Value</th><th>Source</th></tr></thead>
+  <tbody>
+    <tr><td>Focal length f, panel distance u</td><td>{{f}} mm, {{u}} mm</td><td>Plan, <code>calc.py</code> F1 and U1 (Stage 1)</td></tr>
+    <tr><td>Crop</td><td>80 × 40 mm</td><td>Plan, section 5</td></tr>
+    <tr><td>Lens size, thickness, groove pitch, material</td><td>300 × 300 mm, {{t}} mm, {{pitch}} mm, PMMA</td><td>Knight Optical LFQ300300 stock listing</td></tr>
+    <tr><td>Focal-length tolerance</td><td>±2% precision, ±5% standard</td><td>Knight Optical (Photonics.com listing, 2017)</td></tr>
+    <tr><td>PMMA refractive index</td><td>{{n_d}} at 587.6 nm; {{n_b}} / {{n_g}} / {{n_r}} at 450 / 530 / 620 nm</td><td>Szczurowski (2012) dispersion formula</td></tr>
+    <tr><td>PMMA expansion and dn/dT</td><td>{{alpha}} ppm/K, {{dndt}} × 10<sup>−4</sup>/K</td><td>Typical values; approximate</td></tr>
+    <tr><td>Eye to lens along the light path</td><td>{{eye_z}} mm ({{eye_comb}} + {{comb_lens}})</td><td>ASSUMED</td></tr>
+    <tr><td>Design conjugate of the stock lens</td><td>parallel light on the grooved side</td><td>ASSUMED (standard for stock lenses)</td></tr>
+    <tr><td>Windshield and combiner transmission</td><td>70% each</td><td>Plan (windshield ASSUMED there); combiner 70/30</td></tr>
+    <tr><td>Groove and draft loss near the centre</td><td>{{draft_loss}}</td><td>ASSUMED; the trace gives 0–{{dim_edge}} across the field</td></tr>
+  </tbody>
+</table>
+
+<h3>A.2 The lens model and the ray trace</h3>
+<p>The sheet is modelled with its flat face at z = −T and its grooved face collapsed onto z = 0: at each radius the grooved face has the slope of the facet there but no height. For each radius from 0 to 230 mm (0.05 mm steps), the facet slope is found by bisection so that a ray parallel to the axis, arriving on the grooved side, refracts through both surfaces and crosses the axis at the back focal point, f − T/n beyond the flat face. Integrating the slopes gives the solid asphere of Figure [[N collapse]]. All surfaces are traced exactly with the vector form of Snell's law; Fresnel transmission is computed for both polarisations at every surface.</p>
+<p>Stage 1 is then traced backward from the eye: a ray leaves the eye point in a chosen direction, refracts at the grooved face (using the facet normal at the radius it hits), crosses the sheet, refracts at the flat face and lands on the panel. This gives the map from viewing direction to panel point, which is the distortion of section 6 and the field of view. Image distance at a field point comes from launching two rays from the panel point, a hair apart in the tangential and then the sagittal direction, tracing them forward and finding where their extensions cross. The on-axis result reproduces the thin-lens value, −{{v}} mm, to better than 0.1 mm, which checks the facet solution, the principal-plane offset and the tracer together.</p>
+
+<h3>A.3 The groove-level trace</h3>
+<p>For sections 5, 7 and 8 the real profile is built in a plane through the axis: in each 0.5 mm zone the facet runs from its tip down to the valley, following the asphere with 20 points, and a vertical draft wall rises to the next tip. Rays are followed through every surface they meet, refracting or, past the critical angle, reflecting, until they leave the sheet. Partial Fresnel reflections are not followed (the Cycles renders include them). Sight lines from the eye give the shares in Figure [[N stray]]; rays from the panel's centre give the orientation comparison of Figure [[N orientchart]]. With straight (conical) facets the same trace gives the image steps of section 5.</p>
+
+<h3>A.4 The Cycles renders</h3>
+<p>The lens is built in Blender as real geometry: every tooth out to r = 160 mm, 1,024 segments around, {{n_grooves_edge}}+ zones, about 1.3 million vertices, with exact asphere normals on each facet (or plain flat facets for the comparison). The material is Cycles' glass shader, which includes surface reflection, at PMMA's index for each colour. The panel is an emitting rectangle showing the HUD test frame at {{u}} mm from the lens's principal plane, inside a matte black box. Each picture merges three renders made at 620, 530 and 450 nm, each emitting only that colour of the test frame. The "eye" camera has a 4 mm aperture focused at {{d_eye_img}} m; the pinhole camera has none. Ghost levels were measured on the linear render data. Scripts: <code>blender/through_lens.py</code>, <code>blender/measure_ghosts.py</code>.</p>
+
+<h3>A.5 Formulas</h3>
+<div class="formula">Lens equation (u from H, v from H′):      1/v = 1/f − 1/u        v = −uf / (f − u)
+Magnification:                              M = |v| / u = f / (f − u)
+Sensitivity:                                dv/du = M²            in dioptres: d(1/v)/du = 1/u²
+Parallax error for head offset e:           e × |1/D_true − 1/D_assumed|   (radians)
+Pupil footprint on the lens:                pupil × D_image / (D_image + eye distance)
+Diffraction across a groove (FWHM):         0.886 λ / pitch
+Flat-facet image step:                      ≈ pitch / f   (traced: {{flat_blur}}′)
+Combiner ghost offset:                      2 t tan θ_t cos θ_i,  with sin θ_t = sin θ_i / n
+Luminance at the eye:                       L_panel × T_lens × (1 − groove loss) × R_combiner</div>
+
+<h3>A.6 Glossary</h3>
+<div class="glossary">
+  <div><dt>Abbe number.</dt> <dd>A material's resistance to splitting colours; higher means less colour fringing.</dd></div>
+  <div><dt>Astigmatism.</dt> <dd>Lines in two directions coming into focus at different distances.</dd></div>
+  <div><dt>Combiner.</dt> <dd>A partly reflective glass sheet that shows the HUD image and the road together.</dd></div>
+  <div><dt>Critical angle.</dt> <dd>The angle inside a material beyond which light cannot leave and reflects completely; {{crit}}° for PMMA.</dd></div>
+  <div><dt>Dioptre (D).</dt> <dd>One over a distance in metres; the unit the eye focuses in.</dd></div>
+  <div><dt>Draft wall.</dt> <dd>The near-vertical step between two teeth of a Fresnel lens.</dd></div>
+  <div><dt>Eye box.</dt> <dd>The region the eye can move in and still see the whole image.</dd></div>
+  <div><dt>Facet.</dt> <dd>The slanted face of a tooth, which does the bending.</dd></div>
+  <div><dt>Field curvature.</dt> <dd>An image that lies on a curved surface instead of a plane.</dd></div>
+  <div><dt>Focal length.</dt> <dd>The distance at which a lens brings parallel light to a point.</dd></div>
+  <div><dt>Ghost.</dt> <dd>A faint extra copy of an image from an unwanted reflection.</dd></div>
+  <div><dt>Lateral colour.</dt> <dd>Red, green and blue images of different sizes, so edges show colour fringes toward the edge of the field.</dd></div>
+  <div><dt>Parallax.</dt> <dd>Two objects at different distances shifting against each other when the viewpoint moves.</dd></div>
+  <div><dt>Pitch.</dt> <dd>The spacing of the grooves.</dd></div>
+  <div><dt>PMMA.</dt> <dd>Poly(methyl methacrylate), acrylic: the clear plastic most Fresnel lenses are made of.</dd></div>
+  <div><dt>Principal plane.</dt> <dd>The reference plane from which a thick lens's distances are measured.</dd></div>
+  <div><dt>s and p polarisation.</dt> <dd>Light vibrating parallel to a surface (s) or in the plane of incidence (p); surfaces reflect s more.</dd></div>
+  <div><dt>Virtual image.</dt> <dd>The place light appears to come from after a lens or mirror, where no light actually is.</dd></div>
+</div>
+
+<h3>Sources</h3>
+<ul class="small">
+  <li>Windshield AR HUD plan, TFT LCD edition (<code>docs/ARHUD-PLAN-TFT.pdf</code>), sections 5, 6.8, 7.5 and the gates; numbers from <code>docs/arhud-plan-tft-src/calc.py</code>.</li>
+  <li>Knight Optical, Fresnel lenses, stock listing (LFQ300300: 300 mm focal length, 300 × 300 mm, 2 mm thick, 0.5 mm facet width, precision grade), knightoptical.com/stock/lenses/fresnel-lenses; capabilities sheet (PMMA standard, glass to order).</li>
+  <li>Photonics.com product listing for Knight Optical Fresnel lenses (2017): focal-length tolerance ±2% precision, ±5% standard; AR coatings available.</li>
+  <li>Edmund Optics, Fresnel lenses: acrylic, n = 1.49, about 92% transmission 400–1100 nm; grooved side toward the longer conjugate; total internal reflection limits the aperture near f/1 with the flat side toward the longer conjugate; high distortion. edmundoptics.com/c/fresnel-lenses/730/</li>
+  <li>N. Sultanova et al. (2009) and M. Szczurowski (2012), PMMA and polycarbonate dispersion, via refractiveindex.info; Schott BK7.</li>
+  <li>SpecialChem, maximum continuous service temperature (PMMA 65–95 °C); MakeItFrom, PMMA properties (heat deflection 96 °C); US 10,043,930 B2 (acrylic service temperature, dn/dT of PMMA).</li>
+  <li>Texas Instruments DLPA096 and DLPA057 (production HUD sun load and virtual-image distance), as cited in the plan.</li>
+</ul>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>arhud-xray export</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+</head><body><pre id="log">starting</pre>
+<script type="module">
+// Exports the simulator's installed car (car body, interior, every installed component, the cable runs) and the bench
+// items as GLB, plus a layout/metadata JSON, for docs/arhud-xray/build_scene.py. Reads docs/arhud-sim/js without
+// modifying it. Serve docs/ with tools/serve.py and open /arhud-xray/tools/export.html.
+import * as THREE from 'three';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import * as GM from '../../arhud-sim/js/geom.js';
+import { REGISTRY, CATEGORIES, loadModules, build, loadErrors } from '../../arhud-sim/js/registry.js';
+import { Garage } from '../../arhud-sim/js/install.js';
+
+const logEl = document.getElementById('log');
+const log = (s) => { logEl.textContent += '\n' + s; console.log(s); fetch('/__save/export-log.txt', { method: 'POST', body: logEl.textContent }).catch(() => {}); };
+const v = (p) => [+p.x.toFixed(6), +p.y.toFixed(6), +p.z.toFixed(6)];
+const q = (o) => [+o.x.toFixed(6), +o.y.toFixed(6), +o.z.toFixed(6), +o.w.toFixed(6)];
+
+async function save(name, data) {
+  const r = await fetch('/__save/' + name, { method: 'POST', body: data });
+  if (!r.ok) throw new Error('save failed ' + name);
+  log(`saved ${name} (${(data.byteLength ?? data.length).toLocaleString()} bytes)`);
+}
+
+// Strip what glTF cannot carry or the display does not want: sprites, points, lines, lights, hidden helpers.
+function clean(root) {
+  const drop = [];
+  root.traverse((o) => {
+    if (o.isSprite || o.isPoints || o.isLine || o.isLight || o.isCamera) drop.push(o);
+    else if (o !== root && o.visible === false) drop.push(o);
+  });
+  for (const o of drop) o.parent && o.parent.remove(o);
+  root.traverse((o) => {
+    const keep = {};
+    if (o.userData && typeof o.userData.pickId === 'string') keep.pickId = o.userData.pickId;
+    o.userData = keep;
+    if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; }
+  });
+  return drop.length;
+}
+
+async function glb(obj) {
+  const ex = new GLTFExporter();
+  return ex.parseAsync(obj, { binary: true, onlyVisible: true, maxTextureSize: 2048 });
+}
+
+function meta(c) {
+  return {
+    id: c.id, name: c.name, category: c.category, desc: c.desc, working: c.working, mount: c.mount, size: c.size,
+    facts: c.facts, parts: c.parts.map((p) => ({ id: p.id, name: p.name, desc: p.desc })),
+    assembly: (c.assembly || []).map((s) => ({ title: s.title, parts: s.parts, text: s.text })),
+  };
+}
+
+try {
+  await loadModules();
+  if (loadErrors.length) log('module errors: ' + loadErrors.join('; '));
+
+  // ---- metadata for every registry component, built standalone ----
+  const comps = {};
+  for (const r of REGISTRY) {
+    try { const c = build(r.id); c.setWorking(false); comps[r.id] = meta(c); }
+    catch (e) { log(`meta ${r.id}: ${e.message}`); }
+  }
+  log(`meta for ${Object.keys(comps).length} components`);
+
+  // ---- the installed car ----
+  const g = new Garage({});
+  await g.init();
+  const car = g.carGroup;
+  car.parent && car.parent.remove(car);
+  car.position.set(0, 0, 0); car.quaternion.identity(); car.updateMatrixWorld(true);
+  for (const [, v2] of Object.entries(g.installed)) v2.comp.setWorking(false);
+  if (g.car.setCutaway) g.car.setCutaway('none');
+  if (g.vimg) g.vimg.parent.remove(g.vimg);
+  if (g.workLights) g.workLights.parent.remove(g.workLights);
+  const mounts = {};
+  for (const [id, it] of Object.entries(g.installed)) mounts[id] = { pos: v(it.holder.position), quat: q(it.holder.quaternion), note: it.mount.note || '' };
+  const cables = g.cables.map((c) => ({ id: c.id, kind: c.kind, label: c.label, pts: c.pts.map(v), length: +c.length.toFixed(3) }));
+  const dropped = clean(car);
+  log(`car cleaned, dropped ${dropped} helpers`);
+  await save('installed.glb', await glb(car));
+
+  // ---- bench items (not installed in the car) ----
+  const benchIds = ['stage0Rig', 'stage1Rig', 'latencyProbe', 'lumMeter', 'targetBoard', 'rangefinder', 'windshield', 'panelKit'];
+  const bench = new THREE.Group(); bench.name = 'bench';
+  for (const id of benchIds) {
+    try {
+      const c = build(id); c.setWorking(false);
+      const h = new THREE.Group(); h.name = 'bench:' + id; h.userData.pickId = id; h.add(c.group); bench.add(h);
+    } catch (e) { log(`bench ${id}: ${e.message}`); }
+  }
+  clean(bench);
+  await save('bench.glb', await glb(bench));
+
+  // ---- optics: key points and the traced light path ----
+  const rays = [];
+  for (const [ex, ey] of [[0, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]]) for (const [fx, fy] of [[0, 0], [-1, 1], [1, 1], [-1, -1], [1, -1]]) {
+    const e = GM.EYE.clone().add(new THREE.Vector3(0, ey * GM.EYEBOX_H / 2, ex * GM.EYEBOX_W / 2));
+    const r = GM.traceFromEye(e, GM.fieldDir(fx * GM.FOV_W / 2, fy * GM.FOV_H / 2));
+    if (r) rays.push({ eye: [ex, ey], field: [fx, fy], pts: r.pts.map(v), inside: r.mirror.inside });
+  }
+  const optics = {
+    EYE: v(GM.EYE), G: v(GM.G), GLASS_N: v(GM.GLASS_N), MIRROR_C: v(GM.MIRROR_C), MIRROR_N: v(GM.MIRROR_N),
+    FOLD_C: v(GM.FOLD_C), FOLD_N: v(GM.FOLD_N), PANEL_C: v(GM.PANEL_C), LOOK: v(GM.LOOK), VIMG_C: v(GM.VIMG_C),
+    VIMG_UP: v(GM.VIMG_UP), IMG_W: GM.IMG_W, IMG_H: GM.IMG_H, VID: GM.VID, EYEBOX_W: GM.EYEBOX_W, EYEBOX_H: GM.EYEBOX_H,
+    RAKE_DEG: GM.RAKE * 180 / Math.PI, LOOKDOWN_DEG: GM.LOOKDOWN * 180 / Math.PI, CAR_CENTER_Z: GM.CAR_CENTER_Z,
+    ROAD_CAM: v(GM.ROAD_CAM), HOUSING: GM.HOUSING, rays,
+  };
+  const layout = {
+    generated: new Date().toISOString(),
+    frame: 'simulation car frame: X forward, Y up, Z right, metres; origin on the road under the nominal eye',
+    categories: CATEGORIES, registry: REGISTRY.map((r) => ({ id: r.id, cat: r.cat, name: r.name })),
+    components: comps, mounts, cables, optics, benchIds, carDims: g.car.dims || null,
+  };
+  await save('layout.json', new TextEncoder().encode(JSON.stringify(layout, null, 1)));
+  log('DONE');
+  document.body.dataset.done = 'ok';
+} catch (e) {
+  log('ERROR ' + (e.stack || e.message));
+  document.body.dataset.done = 'error';
+}
+</script></body></html>

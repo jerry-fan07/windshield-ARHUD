@@ -1,0 +1,119 @@
+<section>
+  <h2 id="b7"><span class="num">B7</span>Install in the car and drive with the overlay on a monitor (gate G3)</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Safe power and shutdown (2.12), the audience view (2.13), the first live test of perception, compensation and calibration (2.2–2.4)</div>
+    <div><b>Weeks</b>3–5</div>
+    <div><b>Closes</b>Gate G3: overlay within 0.5° of the paint and the lead car for 20 min at up to 25 m/s with prediction on; GNSS speed within 1 m/s of a phone</div>
+    <div><b>Needs</b>B3 (sensors mounted), B4 (perception), B5 (controller), B6 (renderer, G2 passed)</div>
+    <div><b>Produces</b>The permanent power chain and footwell installation, the audience view, the camera and eye calibration, a passing G3 drive</div>
+    <div><b>People</b>Builder, driver, safety driver, a passenger watching the monitor</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> Everything except the optics goes into the car now, wired the way it will stay. The overlay is first drawn onto the road camera's own picture on a monitor in the passenger footwell: if the lines sit on the paint in that picture, perception, timing and compensation all work, and any error later in Stage 1 or Stage 2 belongs to the optics or the eye calibration. Nobody in the driver's seat watches the monitor.</p>
+  <figure>[[FIG g_cabin]]<figcaption><b>Figure B7.1.</b> Where everything goes, seen from above.</figcaption></figure>
+
+  <h3>B7.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:36%">Item</th><th style="width:6%">Qty</th><th>Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Mini-Box DCDC-USB-200</td><td>1</td><td>Input 6–34 V, output 5–24 V set by jumpers or USB, 160 W peak; input and output on 4-pin Mini-Fit Jr connectors; deep-discharge cut-off at 11.2 V</td></tr>
+      <tr><td>12 V accessory plugs with inline blade-fuse holders</td><td>3</td><td>Feed 1 (always-live), the ignition-sense lead, feed 2 (audience side); 10 A fuses on feeds 1 and 2, 1 A on the ignition lead</td></tr>
+      <tr><td>Wire</td><td>—</td><td>1.5 mm² (16 AWG) for 12 V in; 1.0 mm² for 16 V to the Jetson; 0.5 mm² for the LED drivers' 16 V and the 5 V buck; red and black; ferrules</td></tr>
+      <tr><td>DC plug 5.5 × 2.5 mm with lead</td><td>1</td><td>For the Jetson (check against the unit's own adaptor: distributors list 12 V 5 A, 5.5/2.5 mm) <span class="tag">verify</span></td></tr>
+      <tr><td>Two-wire lead with a 2-pin connector</td><td>1</td><td>DC-DC's J8 pulse output to the Jetson's button header (pin 1 power button, pin 2 ground)</td></tr>
+      <tr><td>OAK-D Pro Y-adapter</td><td>1</td><td>Luxonis's USB-C Y-adapter: data to the Jetson, power from the 5 V buck (the camera draws 4–7.5 W, more than a 900 mA port supplies)</td></tr>
+      <tr><td>Gigabit switch (12 V or USB powered), Ethernet cables ×2</td><td>1</td><td>Audience link</td></tr>
+      <tr><td>USB-C PD car charger, 100 W</td><td>1</td><td>Feed 2: mini PC 2 and monitor 2</td></tr>
+      <tr><td>Headrest monitor bracket</td><td>1</td><td>Clamps to the passenger headrest's posts</td></tr>
+      <tr><td>Monitor 1 and a small stand</td><td>1</td><td>In the passenger footwell for gate G3 only</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B7.2 Find the right sockets</h3>
+  <p>The converter can only shut the Jetson down cleanly after the key is turned off if its input stays live after the key is turned off. Many cars switch their front accessory socket with the ignition; some have a socket that is always live (often in the boot or the centre console), and some keep sockets live for a few minutes after key-off.</p>
+  <ol class="steps">
+    <li>With a multimeter, test every socket: key out, key in accessory position, engine running, and for ten minutes after key-off. Note each socket's fuse rating from the owner's manual or the fuse box lid.</li>
+    <li>Use an always-live socket for feed 1 (the converter's VIN) and any switched socket for the ignition-sense lead. Use a third socket (or the switched one, if its fuse allows) for feed 2.</li>
+    <li>If no socket stays live after key-off, the converter loses its input with the key: then shut the HUD down from the laptop (or a button that runs <code>poweroff</code>) before turning the key, and set the converter's off delay to 0 so it never waits on a missing input. Record which applies.</li>
+  </ol>
+
+  <h3>B7.3 Configure the converter</h3>
+  <p>Set the DCDC-USB-200's jumpers on its configuration header (J7), with the converter unpowered, then power-cycle it. The manual's table and its USB tool agree on these settings; the product page differs on one output step, so confirm the output with the meter before connecting anything.</p>
+  <table class="tight">
+    <thead><tr><th style="width:24%">Setting</th><th style="width:22%">Jumpers on J7</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Output 16 V</td><td>positions 5 and 3</td><td>Inside the Jetson's 9–19 V range, and enough headroom for four LEDs in series on the RCD-24 (B5.2)</td></tr>
+      <tr><td>Automotive mode</td><td>position 7</td><td>Uses the ignition input; pulses J8 at ignition-on and after the off delay</td></tr>
+      <tr><td>Off delay 1 min, hard off 1 min</td><td>positions 2 and 1</td><td>A short stop does not reboot the HUD; after a real key-off the Jetson gets the shutdown pulse after a minute and power is cut a minute later</td></tr>
+    </tbody>
+  </table>
+  <ol class="steps">
+    <li>On the bench, power the converter's VIN from the bench supply at 12.5 V and its ignition input from the same supply through a switch. With no load, measure 16.0 V ± 0.3 V on the output; fine-tune over USB with Mini-Box's tool in 0.25 V steps if needed.<span class="chk">Output 16 V measured</span></li>
+    <li>On the Jetson, make the power button shut the system down: in <code>/etc/systemd/logind.conf</code> set <code>HandlePowerKey=poweroff</code> and restart <code>systemd-logind</code>. Wire J8 to the J401 button header's pin 1 (power button) and pin 2 (ground).</li>
+    <li>Bench test the sequence: ignition on (the Jetson boots); ignition off; after one minute the Jetson shuts down cleanly; a minute after the pulse the output turns off. Then ignition on again. The pulse at ignition-on must not shut a running or booting Jetson down; if it does, use the converter's USB tool to change the pulse behaviour or remove the J8 lead and rely on the hard-off delay plus a <code>poweroff</code> from the Jetson's own watchdog script <span class="tag">verify</span>.<span class="chk">Key-off leads to a clean shutdown, then power off</span></li>
+  </ol>
+
+  <h3>B7.4 Power budget and fuses</h3>
+  <table class="tight">
+    <thead><tr><th style="width:44%">Load (16 V rail unless stated)</th><th class="num" style="width:16%">Typical</th><th class="num" style="width:16%">Peak</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td>Jetson J4012 at MAXN with ZED 2i and GNSS on its USB</td><td class="num">15–20 W</td><td class="num">about 35 W</td><td>Measure with the meter in B7.8 <span class="tag">assumed</span></td></tr>
+      <tr><td>LED channels A and B (8 LEDs, 0.5 A, about 95% efficient)</td><td class="num">0–11 W</td><td class="num">about 12 W</td><td>Full only in daylight</td></tr>
+      <tr><td>5 V buck: panel board (5 V, up to 2 A), OAK-D (up to 7.5 W), Pico, servo, fan</td><td class="num">8–12 W</td><td class="num">about 22 W</td><td>Through a 90% buck</td></tr>
+      <tr><td><b>Converter output</b></td><td class="num"><b>25–45 W</b></td><td class="num"><b>about 70 W</b></td><td>Above 60 W the converter needs forced air: mount it in the Jetson fan's airflow</td></tr>
+      <tr><td><b>Feed 1 at 12.5 V</b></td><td class="num"><b>2–4 A</b></td><td class="num"><b>about 6 A</b></td><td>10 A fuse; 1.5 mm² wire</td></tr>
+      <tr><td>Feed 2: PD charger, mini PC 2 and monitor 2</td><td class="num">40–60 W</td><td class="num">about 100 W</td><td>Its own socket and 10 A fuse; check the socket's own fuse rating</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B7.5 Install the footwell plate</h3>
+  <ol class="steps">
+    <li>Fix the base plate in the passenger footwell so it cannot move (B3.1): the GNSS board's dead reckoning needs it rigid. Leave the area under the passenger's feet free if someone will ride there.</li>
+    <li>Mount on it: the Jetson (vents unobstructed, fan side open), the DC-DC converter in the Jetson fan's airflow, the GNSS board (already square to the car from B3.4), the switch, and the 5 V buck.</li>
+    <li>Wire feed 1: accessory plug, 10 A fuse within 150 mm of the plug, 1.5 mm² to the converter's VIN; ignition lead with its 1 A fuse to the converter's ignition pin (follow the board's silkscreen labels, not wire colours: the manual's colours disagree). Common ground.</li>
+    <li>Converter output (16 V) to: the Jetson's DC plug (centre positive: check with the meter before plugging in), the LED drivers' 2 A fused feed (run to the dash beside the HUD housing), and the 5 V buck.</li>
+    <li>5 V buck outputs to: the panel board's USB power input (the Wisecoco kit is powered by 5 V over USB; its connector differs by board revision), the controller's 5 V terminal, the OAK-D's Y-adapter power leg, and the housing fan.</li>
+    <li>Data: ZED 2i and GNSS board to the Jetson's USB 3 ports; OAK-D's data leg to a third; controller's USB to the fourth; HDMI from the Jetson to the panel board (or to monitor 1 for gate G3); Ethernet from the Jetson to the switch, switch to mini PC 2.</li>
+    <li>Tie every cable to the plate or along the trim with clips; nothing loose near the pedals or the seat rails; no cable across the passenger's airbag door.<span class="chk">Cables secured; nothing near the pedals</span></li>
+  </ol>
+
+  <h3>B7.6 The audience view</h3>
+  <ol class="steps">
+    <li>Clamp the headrest bracket to the passenger headrest's posts and mount monitor 2 facing the rear seats; mount mini PC 2 behind it. Power both from the PD charger on feed 2.</li>
+    <li>Give mini PC 2 the static address 192.168.50.3/24. On the Jetson, <code>audienced</code> serves the MJPEG stream (the rendered HUD frame, the driver camera with the eye point, and the live numbers); mini PC 2 opens it full screen in a browser in kiosk mode at boot.</li>
+  </ol>
+
+  <figure>[[FIG g_power2]]<figcaption><b>Figure B7.2.</b> Power and data wiring. Appendix A lists every cable with its wire size, fuse and route.</figcaption></figure>
+
+  <h3>B7.7 Calibrate the camera and the eye point</h3>
+  <ol class="steps">
+    <li>Road camera in the car frame: the 30 m target board procedure (B13.3 A). It is the same procedure as Stage 2's, done now so G3 measures perception with the final camera geometry.</li>
+    <li>Driver camera pose and the nominal eye point (B13.3 B and B1.3).</li>
+    <li>Write <code>calibration.yaml</code> and commit it.</li>
+  </ol>
+
+  <h3>B7.8 Drive with the overlay on the monitor</h3>
+  <ol class="steps">
+    <li>Sign the installation checklist (Appendix F).</li>
+    <li>Set monitor 1 on its stand in the passenger footwell, facing the passenger. Run <code>hudd</code> in camera-overlay mode on it: the road camera's live image with the ribbon, lines and chevron drawn on it by the full pipeline, with prediction on.</li>
+    <li>Measure the converter's input current with a clamp meter at idle, driving, and with the backlight at full (when it exists) and update B7.4.</li>
+    <li>Drive the course for 20 minutes at up to 25 m/s. The passenger watches the overlay against the paint and the lead car and logs any excursion; <code>hudStats</code> logs the residuals and ages. A phone records its own GNSS speed for comparison.</li>
+  </ol>
+
+  <h3>B7.9 Gate G3</h3>
+  <ul class="cl">
+    <li>Over 20 minutes at up to 25 m/s with prediction on, the overlay stays within 0.5° of the lane paint and the lead vehicle in the camera image.</li>
+    <li>GNSS speed agrees with the phone's within 1 m/s while moving.</li>
+    <li>Key-off shutdown works in the car, and the checklist is signed.</li>
+  </ul>
+
+  <h3>B7.10 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Jetson resets when cranking the engine</td><td>Battery voltage dips below the converter's input range; with the always-live feed the converter rides through short dips; otherwise start the engine before booting.</td></tr>
+      <tr><td>Overlay lags in curves</td><td>Compensation sign or yaw-rate axis (B6.5); GNSS or IMU timestamps off.</td></tr>
+      <tr><td>Overlay offset by a constant angle</td><td>Road-camera extrinsics: repeat the board calibration; check the camera did not move.</td></tr>
+      <tr><td>Fuse blows</td><td>Measure the current; check for a short in the LED or 5 V wiring before replacing it with the same rating, never a larger one.</td></tr>
+    </tbody>
+  </table>
+</section>

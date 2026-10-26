@@ -1,0 +1,2841 @@
+{
+ "generated": "2026-10-22",
+ "source": "docs/arhud-cad (build123d 0.13.0)",
+ "frame": "X forward, Y up, Z right, metres; origin on the road under the nominal eye (the simulator's frame)",
+ "material": "ASA, matte black",
+ "bed": [
+  250.0,
+  250.0,
+  250.0
+ ],
+ "summary": {
+  "sizeMm": [
+   459,
+   300,
+   370
+  ],
+  "printedPieces": 39,
+  "printedParts": 32,
+  "printedMassG": 3979,
+  "printHoursRough": 248,
+  "fasteners": 196,
+  "triangles": 65684,
+  "glbBytes": 2092752
+ },
+ "hardware": {
+  "M3 x 10 button": 39,
+  "M3 x 16 button": 4,
+  "M3 x 20 button": 2,
+  "M3 x 3 heat-set insert (short)": 30,
+  "M3 x 5.7 heat-set insert": 53,
+  "M3 x 6 button": 16,
+  "M3 x 6 csk": 7,
+  "M3 x 8 button": 29,
+  "M4 x 30 socket": 3,
+  "M4 x 8.1 heat-set insert": 3,
+  "M5 x 9.5 heat-set insert": 4,
+  "RTV silicone bonding pad, 25 mm x 1 mm": 3,
+  "compression spring 9 x 15 mm, music wire": 3
+ },
+ "steps": [
+  {
+   "id": "inserts",
+   "title": "Heat-set inserts",
+   "text": "Print the four body quarters (side wall down, no supports) and press the brass inserts into every boss with a soldering iron at 245 \u00b0C: seams, cap tabs, feet, bay and stand mounts.",
+   "parts": [
+    "bodyRearLeft",
+    "bodyRearRight",
+    "bodyFrontLeft",
+    "bodyFrontRight",
+    "hwShell0",
+    "hwShell2",
+    "hwShell4"
+   ]
+  },
+  {
+   "id": "body",
+   "title": "Join the body",
+   "text": "Bolt the quarters together along the internal seam strips: M3 button screws into the inserts. The rear quarters' front strip is the stray-light baffle; the continuous strips also keep light out of the seams.",
+   "parts": [
+    "hwShell1",
+    "hwShell3"
+   ]
+  },
+  {
+   "id": "feet",
+   "title": "Levelling feet",
+   "text": "Four M5 rubber levelling feet screw into the floor. Set them so the housing sits level and still on this dash, with 14 mm under the floor for the fan's air.",
+   "parts": [
+    "feet",
+    "hwFeet0"
+   ]
+  },
+  {
+   "id": "bay",
+   "title": "PGU bay",
+   "text": "The sealed bay for the backlight's heat sink, fan and HDMI board bolts to the floor over the floor opening. The fan blows out through the grille in the duct; fresh air comes in through the slots fore and aft.",
+   "parts": [
+    "bay",
+    "hwBay0",
+    "hwBay1",
+    "hwBay2",
+    "hwBay3"
+   ]
+  },
+  {
+   "id": "grommets",
+   "title": "Cable grommets and access plugs",
+   "text": "TPU grommets seal the HDMI and LED lead exits in the bay floor and the sensor-lead port in the left wall. Three plugs close the front-wall holes that a ball-end key uses to reach the mirror adjusters.",
+   "parts": [
+    "grommetWall",
+    "grommetHdmi",
+    "grommetLed",
+    "accessPlug1",
+    "accessPlug2",
+    "accessPlug3"
+   ]
+  },
+  {
+   "id": "carrier",
+   "title": "Panel carrier",
+   "text": "The carrier closes the bay. Its pocket holds the cell by the edges at the traced height, 0.5 mm over the backlight's IR-cut glass.",
+   "parts": [
+    "carrier"
+   ]
+  },
+  {
+   "id": "mask",
+   "title": "Panel mask",
+   "text": "The mask clamps the cell's edges. Its opening is the traced footprint on the panel plus 3 mm, so it never clips a ray from the eye box.",
+   "parts": [
+    "mask",
+    "hwPanel0",
+    "hwPanel1"
+   ]
+  },
+  {
+   "id": "fold",
+   "title": "Fold bracket",
+   "text": "The bracket holds the cold mirror 50 mm over the panel at 35\u00b0 incidence. Its cheeks stand on the carrier and share the bay's corner screws, so panel and fold are one rigid module.",
+   "parts": [
+    "foldBracket",
+    "hwPanel2",
+    "hwPanel3"
+   ]
+  },
+  {
+   "id": "stand",
+   "title": "Mirror stand",
+   "text": "The stand screws to the front floor across the centre seam. Its legs sit outboard of the adjusters so a key can reach every screw head.",
+   "parts": [
+    "mirrorStand",
+    "hwMirrorA1"
+   ]
+  },
+  {
+   "id": "strongback",
+   "title": "Strongback and adjusters",
+   "text": "The mirror is bonded to the ribbed strongback on three RTV pads. Three M4 screws with springs, bed-levelling style, pull it against the stand and set its tilt during calibration.",
+   "parts": [
+    "strongback",
+    "hwMirrorA0",
+    "hwMirrorB0",
+    "hwMirrorB2"
+   ]
+  },
+  {
+   "id": "clips",
+   "title": "Mirror edge clips",
+   "text": "Two clips catch the mirror's bottom edge, outside the traced footprint, in case the bond lets go.",
+   "parts": [
+    "mirrorClipL",
+    "mirrorClipR",
+    "hwMirrorB1",
+    "hwMirrorB3"
+   ]
+  },
+  {
+   "id": "vanes",
+   "title": "Light-trap vanes",
+   "text": "Saw-tooth vanes on the side walls of the mirror bay trap sunlight that would otherwise light the walls the driver sees round the mirror.",
+   "parts": [
+    "vaneL",
+    "vaneR"
+   ]
+  },
+  {
+   "id": "lid",
+   "title": "Lid pieces",
+   "text": "The four lid pieces print face down. They join with half laps and countersunk screws, so the underside the shutter runs on stays flat.",
+   "parts": [
+    "capRearLeft",
+    "capRearRight",
+    "capFrontLeft",
+    "capFrontRight",
+    "hwShell6",
+    "hwShell7",
+    "hwShell8",
+    "hwShell9",
+    "hwShell10",
+    "hwShutter5"
+   ]
+  },
+  {
+   "id": "rails",
+   "title": "Shutter rails and brackets",
+   "text": "Two rails per side screw under the lid, with a slot for each leaf. The servo hangs from a bracket under the right rail; the spring's anchor post sits under the front rim.",
+   "parts": [
+    "railLeftRear",
+    "railLeftFront",
+    "railRightRear",
+    "railRightFront",
+    "servoBracket",
+    "springAnchor",
+    "hwShutter0",
+    "hwShutter1",
+    "hwShutter2",
+    "hwShutter3",
+    "hwShutter4"
+   ]
+  },
+  {
+   "id": "leaves",
+   "title": "Shutter leaves",
+   "text": "Two 0.5 mm black-anodised aluminium leaves, laser cut, slide into the rails. The front leaf carries the slot the servo's lever pin drives.",
+   "parts": [
+    "leafRear",
+    "leafFront"
+   ]
+  },
+  {
+   "id": "capOn",
+   "title": "Lid onto the body",
+   "text": "The lid's spigot tabs drop inside the body walls; M3 button screws through the walls hold it. No tools are needed to lift the housing off the dash, only to open it.",
+   "parts": [
+    "hwShell5"
+   ]
+  },
+  {
+   "id": "glass",
+   "title": "Dust-cover glass",
+   "text": "3 mm glass with the s-pass polariser laminated underneath sits in the lid's rebate on a foam gasket, flush with the top. Eight clamps hold its edges.",
+   "parts": [
+    "coverGlass",
+    "clamps",
+    "hwClamps0"
+   ]
+  },
+  {
+   "id": "als",
+   "title": "Light-sensor pod",
+   "text": "The ambient-light sensor's pod sits on the lid behind the glass; its lead runs down the left wall's channel.",
+   "parts": [
+    "alsPod"
+   ]
+  }
+ ],
+ "parts": [
+  {
+   "id": "bodyRearLeft",
+   "name": "Body, rear left quarter",
+   "kind": "printed",
+   "material": "asa",
+   "step": "inserts",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    -0.06,
+    -0.02,
+    -0.07
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Floor, walls and seam strips; prints on its side wall.",
+   "bboxMm": [
+    228.6,
+    247.2,
+    185.0
+   ],
+   "volumeCm3": 506.8,
+   "massG": 542.0,
+   "print": {
+    "file": "stl/bodyRearLeft.stl",
+    "bedMm": [
+     228.6,
+     247.2,
+     185.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "offsetM": [
+     -0.56743,
+     -0.806,
+     0.185
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "bodyRearRight",
+   "name": "Body, rear right quarter",
+   "kind": "printed",
+   "material": "asa",
+   "step": "inserts",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    -0.06,
+    -0.02,
+    0.07
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Floor, walls and seam strips; prints on its side wall.",
+   "bboxMm": [
+    228.6,
+    247.2,
+    185.0
+   ],
+   "volumeCm3": 502.1,
+   "massG": 537.0,
+   "print": {
+    "file": "stl/bodyRearRight.stl",
+    "bedMm": [
+     228.6,
+     247.2,
+     185.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "offsetM": [
+     -0.56743,
+     1.05321,
+     0.185
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "bodyFrontLeft",
+   "name": "Body, front left quarter",
+   "kind": "printed",
+   "material": "asa",
+   "step": "inserts",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.06,
+    -0.02,
+    -0.07
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Floor, walls and seam strips; prints on its side wall.",
+   "bboxMm": [
+    230.1,
+    196.4,
+    185.0
+   ],
+   "volumeCm3": 389.7,
+   "massG": 417.0,
+   "print": {
+    "file": "stl/bodyFrontLeft.stl",
+    "bedMm": [
+     230.1,
+     196.4,
+     185.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "offsetM": [
+     -0.796,
+     -0.806,
+     0.185
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "bodyFrontRight",
+   "name": "Body, front right quarter",
+   "kind": "printed",
+   "material": "asa",
+   "step": "inserts",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.06,
+    -0.02,
+    0.07
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Floor, walls and seam strips; prints on its side wall.",
+   "bboxMm": [
+    230.1,
+    196.4,
+    185.0
+   ],
+   "volumeCm3": 385.6,
+   "massG": 413.0,
+   "print": {
+    "file": "stl/bodyFrontRight.stl",
+    "bedMm": [
+     196.4,
+     230.1,
+     185.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7071067811865476,
+     0.7071067811865475,
+     0.0,
+     0.0
+    ],
+    "offsetM": [
+     -0.806,
+     -0.796,
+     0.185
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "capRearLeft",
+   "name": "Lid, rear left",
+   "kind": "printed",
+   "material": "asa",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    -0.05,
+    0.3,
+    -0.06
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Lid with the glass rebate, skirt and spigot tabs; prints face down.",
+   "bboxMm": [
+    241.4,
+    112.0,
+    227.0
+   ],
+   "volumeCm3": 290.9,
+   "massG": 311.0,
+   "print": {
+    "file": "stl/capRearLeft.stl",
+    "bedMm": [
+     247.1,
+     227.0,
+     70.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.31413,
+     0.185,
+     1.20586
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "capRearRight",
+   "name": "Lid, rear right",
+   "kind": "printed",
+   "material": "asa",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    -0.05,
+    0.3,
+    0.06
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Lid with the glass rebate, skirt and spigot tabs; prints face down.",
+   "bboxMm": [
+    241.4,
+    112.0,
+    155.0
+   ],
+   "volumeCm3": 220.5,
+   "massG": 236.0,
+   "print": {
+    "file": "stl/capRearRight.stl",
+    "bedMm": [
+     247.1,
+     155.0,
+     70.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.31413,
+     -0.03,
+     1.20586
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "capFrontLeft",
+   "name": "Lid, front left",
+   "kind": "printed",
+   "material": "asa",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.05,
+    0.3,
+    -0.06
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Lid with the glass rebate, skirt and spigot tabs; prints face down.",
+   "bboxMm": [
+    229.3,
+    118.3,
+    227.0
+   ],
+   "volumeCm3": 178.2,
+   "massG": 191.0,
+   "print": {
+    "file": "stl/capFrontLeft.stl",
+    "bedMm": [
+     246.5,
+     227.0,
+     70.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.54898,
+     0.185,
+     1.20586
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "capFrontRight",
+   "name": "Lid, front right",
+   "kind": "printed",
+   "material": "asa",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.05,
+    0.3,
+    0.06
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Lid with the glass rebate, skirt and spigot tabs; prints face down.",
+   "bboxMm": [
+    229.3,
+    118.3,
+    155.0
+   ],
+   "volumeCm3": 152.9,
+   "massG": 164.0,
+   "print": {
+    "file": "stl/capFrontRight.stl",
+    "bedMm": [
+     246.5,
+     155.0,
+     70.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.54898,
+     -0.03,
+     1.20586
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "hwShell0",
+   "name": "Inserts: floor mounts",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "inserts",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 8,
+   "spec": "8 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    299.9,
+    5.7,
+    240.6
+   ],
+   "volumeCm3": 0.8
+  },
+  {
+   "id": "hwShell1",
+   "name": "Fixings: body z seam",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "body",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 7,
+   "spec": "7 x M3 x 10 button",
+   "desc": "",
+   "bboxMm": [
+    448.3,
+    195.8,
+    11.7
+   ],
+   "volumeCm3": 0.7
+  },
+  {
+   "id": "hwShell2",
+   "name": "Inserts: body z seam",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "inserts",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 7,
+   "spec": "7 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    447.2,
+    194.7,
+    5.7
+   ],
+   "volumeCm3": 0.7
+  },
+  {
+   "id": "hwShell3",
+   "name": "Fixings: body x seam",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "body",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 14,
+   "spec": "14 x M3 x 10 button",
+   "desc": "",
+   "bboxMm": [
+    11.7,
+    175.1,
+    359.7
+   ],
+   "volumeCm3": 1.4
+  },
+  {
+   "id": "hwShell4",
+   "name": "Inserts: body x seam",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "inserts",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 14,
+   "spec": "14 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    5.7,
+    174.0,
+    358.6
+   ],
+   "volumeCm3": 1.3
+  },
+  {
+   "id": "hwShell5",
+   "name": "Fixings: cap to body",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "capOn",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 12,
+   "spec": "12 x M3 x 8 button",
+   "desc": "",
+   "bboxMm": [
+    462.0,
+    107.6,
+    373.4
+   ],
+   "volumeCm3": 1.1
+  },
+  {
+   "id": "hwShell6",
+   "name": "Inserts: cap to body",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 12,
+   "spec": "12 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    452.6,
+    106.5,
+    364.0
+   ],
+   "volumeCm3": 1.1
+  },
+  {
+   "id": "hwShell7",
+   "name": "Inserts: shutter rail",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 14,
+   "spec": "14 x M3 x 3 heat-set insert (short)",
+   "desc": "",
+   "bboxMm": [
+    385.9,
+    88.5,
+    293.1
+   ],
+   "volumeCm3": 0.7
+  },
+  {
+   "id": "hwShell8",
+   "name": "Inserts: glass clamp",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 8,
+   "spec": "8 x M3 x 3 heat-set insert (short)",
+   "desc": "",
+   "bboxMm": [
+    234.6,
+    54.9,
+    285.1
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "hwShell9",
+   "name": "Fixings: lid lap",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 7,
+   "spec": "7 x M3 x 6 csk",
+   "desc": "",
+   "bboxMm": [
+    405.9,
+    95.7,
+    364.0
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "hwShell10",
+   "name": "Inserts: lid lap",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.02,
+    0.0
+   ],
+   "qty": 7,
+   "spec": "7 x M3 x 3 heat-set insert (short)",
+   "desc": "",
+   "bboxMm": [
+    405.1,
+    92.8,
+    362.6
+   ],
+   "volumeCm3": 0.3
+  },
+  {
+   "id": "bay",
+   "name": "PGU bay",
+   "kind": "printed",
+   "material": "asa",
+   "step": "bay",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.12,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Sealed tub for heat sink, fan and HDMI board; duct and grilles to the floor.",
+   "bboxMm": [
+    86.5,
+    135.0,
+    208.0
+   ],
+   "volumeCm3": 309.2,
+   "massG": 331.0,
+   "print": {
+    "file": "stl/bay.stl",
+    "bedMm": [
+     86.5,
+     208.0,
+     135.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7071067811865475,
+     0.0,
+     0.0,
+     0.7071067811865476
+    ],
+    "offsetM": [
+     -0.6455,
+     0.104,
+     -0.813
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "carrier",
+   "name": "Panel carrier",
+   "kind": "printed",
+   "material": "asa",
+   "step": "carrier",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.2,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Holds the cell by its edges over the backlight.",
+   "bboxMm": [
+    86.5,
+    6.8,
+    190.0
+   ],
+   "volumeCm3": 65.6,
+   "massG": 70.0,
+   "print": {
+    "file": "stl/carrier.stl",
+    "bedMm": [
+     86.5,
+     190.0,
+     6.8
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7071067811865475,
+     0.0,
+     0.0,
+     0.7071067811865476
+    ],
+    "offsetM": [
+     -0.6455,
+     0.095,
+     -0.948
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "mask",
+   "name": "Panel mask",
+   "kind": "printed",
+   "material": "asa",
+   "step": "mask",
+   "hud": "pgu",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.26,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Clamps the cell; opening = traced footprint + 3 mm.",
+   "bboxMm": [
+    84.6,
+    2.0,
+    140.0
+   ],
+   "volumeCm3": 13.8,
+   "massG": 15.0,
+   "print": {
+    "file": "stl/mask.stl",
+    "bedMm": [
+     84.6,
+     140.0,
+     2.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7071067811865475,
+     0.0,
+     0.0,
+     0.7071067811865476
+    ],
+    "offsetM": [
+     -0.64564,
+     0.07,
+     -0.9548
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "foldBracket",
+   "name": "Fold bracket",
+   "kind": "printed",
+   "material": "asa",
+   "step": "fold",
+   "hud": "coldMirror",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.34,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Cheeks, side rails with lips, absorber tabs; 35\u00b0 incidence, 50 mm over the panel.",
+   "bboxMm": [
+    81.5,
+    84.5,
+    190.0
+   ],
+   "volumeCm3": 76.5,
+   "massG": 82.0,
+   "print": {
+    "file": "stl/foldBracket.stl",
+    "bedMm": [
+     81.5,
+     190.0,
+     84.5
+    ],
+    "fits": true,
+    "supports": "tree supports under the bottom rail",
+    "quat": [
+     0.7071067811865475,
+     0.0,
+     0.0,
+     0.7071067811865476
+    ],
+    "offsetM": [
+     -0.64482,
+     0.095,
+     -0.9548
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "hwBay0",
+   "name": "Inserts: bay top",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "bay",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.12,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    28.1,
+    5.7,
+    180.6
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "hwBay1",
+   "name": "Fixings: bay to floor",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "bay",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.12,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 8 button",
+   "desc": "",
+   "bboxMm": [
+    65.7,
+    9.7,
+    203.7
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "hwBay2",
+   "name": "Fixings: heat sink to posts (self-tapping)",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "bay",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.12,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 10 button",
+   "desc": "",
+   "bboxMm": [
+    51.7,
+    11.7,
+    77.2
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "hwBay3",
+   "name": "Fixings: HDMI board (M2.5 self-tapping)",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "bay",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.12,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 6 button",
+   "desc": "",
+   "bboxMm": [
+    49.7,
+    43.7,
+    7.7
+   ],
+   "volumeCm3": 0.3
+  },
+  {
+   "id": "hwPanel0",
+   "name": "Inserts: mask",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "mask",
+   "hud": "pgu",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.26,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    54.1,
+    5.7,
+    139.6
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "hwPanel1",
+   "name": "Fixings: mask",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "mask",
+   "hud": "pgu",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.26,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 6 button",
+   "desc": "",
+   "bboxMm": [
+    55.2,
+    7.7,
+    140.7
+   ],
+   "volumeCm3": 0.3
+  },
+  {
+   "id": "hwPanel2",
+   "name": "Fixings: fold bracket and carrier to bay",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "fold",
+   "hud": "coldMirror",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.26,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 16 button",
+   "desc": "",
+   "bboxMm": [
+    29.2,
+    17.7,
+    181.7
+   ],
+   "volumeCm3": 0.6
+  },
+  {
+   "id": "hwPanel3",
+   "name": "Fixings: absorber to bracket (with nut)",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "fold",
+   "hud": "coldMirror",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.26,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 8 button",
+   "desc": "",
+   "bboxMm": [
+    45.9,
+    36.2,
+    144.7
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "mirrorStand",
+   "name": "Mirror stand",
+   "kind": "printed",
+   "material": "asa",
+   "step": "stand",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.1,
+    0.0,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Triangle of adjuster bosses on two outboard legs.",
+   "bboxMm": [
+    92.4,
+    133.0,
+    254.0
+   ],
+   "volumeCm3": 56.6,
+   "massG": 61.0,
+   "print": {
+    "file": "stl/mirrorStand.stl",
+    "bedMm": [
+     134.1,
+     249.0,
+     133.0
+    ],
+    "fits": true,
+    "supports": "tree supports under the triangle",
+    "quat": [
+     0.6941152380128942,
+     0.13492233454214742,
+     0.13492233454214742,
+     0.6941152380128943
+    ],
+    "offsetM": [
+     -0.81221,
+     -0.22962,
+     -0.813
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "strongback",
+   "name": "Mirror strongback",
+   "kind": "printed",
+   "material": "asa",
+   "step": "strongback",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.0651,
+    -0.0465,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Ribbed plate bonded to the mirror's back; M4 inserts for the adjusters.",
+   "bboxMm": [
+    96.8,
+    127.8,
+    240.0
+   ],
+   "volumeCm3": 250.3,
+   "massG": 268.0,
+   "print": {
+    "file": "stl/strongback.stl",
+    "bedMm": [
+     150.0,
+     240.0,
+     14.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.6286300493356446,
+     -0.32376575030763377,
+     -0.32376575030763377,
+     0.6286300493356446
+    ],
+    "offsetM": [
+     -1.21603,
+     0.12,
+     -0.24949
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "mirrorClipL",
+   "name": "Mirror edge clip, left",
+   "kind": "printed",
+   "material": "asa",
+   "step": "clips",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    -0.029,
+    -0.0407,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Catches the mirror's bottom edge outside the traced footprint.",
+   "bboxMm": [
+    56.6,
+    37.6,
+    16.0
+   ],
+   "volumeCm3": 4.3,
+   "massG": 5.0,
+   "print": {
+    "file": "stl/mirrorClipL.stl",
+    "bedMm": [
+     44.3,
+     38.2,
+     16.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.8910065241883679,
+     0.4539904997395468,
+     0.0,
+     0.0
+    ],
+    "offsetM": [
+     -1.18891,
+     -0.20988,
+     -0.072
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "mirrorClipR",
+   "name": "Mirror edge clip, right",
+   "kind": "printed",
+   "material": "asa",
+   "step": "clips",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    -0.029,
+    -0.0407,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Catches the mirror's bottom edge outside the traced footprint.",
+   "bboxMm": [
+    56.6,
+    37.6,
+    16.0
+   ],
+   "volumeCm3": 4.3,
+   "massG": 5.0,
+   "print": {
+    "file": "stl/mirrorClipR.stl",
+    "bedMm": [
+     44.3,
+     38.2,
+     16.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.8910065241883679,
+     0.4539904997395468,
+     0.0,
+     0.0
+    ],
+    "offsetM": [
+     -1.18891,
+     -0.20988,
+     0.088
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "hwMirrorA0",
+   "name": "Fixings: mirror adjuster",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "strongback",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.1,
+    0.0,
+    0.0
+   ],
+   "qty": 6,
+   "spec": "3 x M4 x 30 socket; 3 x compression spring 9 x 15 mm, music wire",
+   "desc": "",
+   "bboxMm": [
+    97.5,
+    117.6,
+    199.0
+   ],
+   "volumeCm3": 2.2
+  },
+  {
+   "id": "hwMirrorA1",
+   "name": "Fixings: mirror stand to floor",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "stand",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.1,
+    0.0,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M3 x 8 button",
+   "desc": "",
+   "bboxMm": [
+    29.7,
+    9.7,
+    241.7
+   ],
+   "volumeCm3": 0.4
+  },
+  {
+   "id": "hwMirrorB0",
+   "name": "Inserts: mirror adjuster",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "strongback",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.0651,
+    -0.0465,
+    -0.0
+   ],
+   "qty": 3,
+   "spec": "3 x M4 x 8.1 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    76.9,
+    103.2,
+    196.0
+   ],
+   "volumeCm3": 0.7
+  },
+  {
+   "id": "hwMirrorB1",
+   "name": "Inserts: mirror clip",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "clips",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.0651,
+    -0.0465,
+    -0.0
+   ],
+   "qty": 2,
+   "spec": "2 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    7.3,
+    7.1,
+    164.6
+   ],
+   "volumeCm3": 0.2
+  },
+  {
+   "id": "hwMirrorB2",
+   "name": "Fixings: mirror bond",
+   "kind": "hardware",
+   "material": "rtv",
+   "step": "strongback",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.0651,
+    -0.0465,
+    -0.0
+   ],
+   "qty": 3,
+   "spec": "3 x RTV silicone bonding pad, 25 mm x 1 mm",
+   "desc": "",
+   "bboxMm": [
+    75.4,
+    105.2,
+    196.0
+   ],
+   "volumeCm3": 1.5
+  },
+  {
+   "id": "hwMirrorB3",
+   "name": "Fixings: mirror clip",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "clips",
+   "hud": "concaveMirror",
+   "unit": true,
+   "explode": [
+    0.0651,
+    -0.0465,
+    -0.0
+   ],
+   "qty": 2,
+   "spec": "2 x M3 x 8 button",
+   "desc": "",
+   "bboxMm": [
+    10.4,
+    9.1,
+    165.7
+   ],
+   "volumeCm3": 0.2
+  },
+  {
+   "id": "vaneL",
+   "name": "Light-trap vanes, left",
+   "kind": "printed",
+   "material": "asa",
+   "step": "vanes",
+   "hud": "baffles",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.05,
+    -0.08
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Saw-tooth light trap, held by VHB tape.",
+   "bboxMm": [
+    206.0,
+    108.0,
+    6.5
+   ],
+   "volumeCm3": 89.0,
+   "massG": 95.0,
+   "print": {
+    "file": "stl/vaneL.stl",
+    "bedMm": [
+     206.0,
+     108.0,
+     6.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.0,
+     0.0,
+     0.0,
+     1.0
+    ],
+    "offsetM": [
+     -0.806,
+     -0.823,
+     0.182
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "vaneR",
+   "name": "Light-trap vanes, right",
+   "kind": "printed",
+   "material": "asa",
+   "step": "vanes",
+   "hud": "baffles",
+   "unit": true,
+   "explode": [
+    0.0,
+    0.05,
+    0.08
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Saw-tooth light trap, held by VHB tape.",
+   "bboxMm": [
+    206.0,
+    108.0,
+    6.5
+   ],
+   "volumeCm3": 89.0,
+   "massG": 95.0,
+   "print": {
+    "file": "stl/vaneR.stl",
+    "bedMm": [
+     206.0,
+     108.0,
+     6.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     1.0,
+     0.0,
+     0.0,
+     0.0
+    ],
+    "offsetM": [
+     -0.806,
+     0.931,
+     0.182
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "grommetWall",
+   "name": "Grommet, left wall",
+   "kind": "printed",
+   "material": "tpu",
+   "step": "grommets",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    -0.04,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "TPU 95A, slit for the cable.",
+   "bboxMm": [
+    20.0,
+    20.0,
+    6.0
+   ],
+   "volumeCm3": 1.2,
+   "massG": 1.0,
+   "print": {
+    "file": "stl/grommetWall.stl",
+    "bedMm": [
+     20.0,
+     6.0,
+     19.9
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7071067811865475,
+     0.0,
+     0.0,
+     0.7071067811865476
+    ],
+    "offsetM": [
+     -0.75002,
+     -0.1805,
+     -0.83805
+    ],
+    "material": "TPU 95A"
+   }
+  },
+  {
+   "id": "grommetHdmi",
+   "name": "Grommet, HDMI exit",
+   "kind": "printed",
+   "material": "tpu",
+   "step": "grommets",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    -0.04,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "TPU 95A, slit for the cable.",
+   "bboxMm": [
+    26.0,
+    4.5,
+    22.7
+   ],
+   "volumeCm3": 1.6,
+   "massG": 2.0,
+   "print": {
+    "file": "stl/grommetHdmi.stl",
+    "bedMm": [
+     26.0,
+     22.7,
+     4.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7071067811865475,
+     0.0,
+     0.0,
+     0.7071067811865476
+    ],
+    "offsetM": [
+     -0.68919,
+     0.0923,
+     -0.813
+    ],
+    "material": "TPU 95A"
+   }
+  },
+  {
+   "id": "grommetLed",
+   "name": "Grommet, LED and fan leads",
+   "kind": "printed",
+   "material": "tpu",
+   "step": "grommets",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    -0.04,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "TPU 95A, slit for the cable.",
+   "bboxMm": [
+    12.0,
+    4.5,
+    12.0
+   ],
+   "volumeCm3": 0.3,
+   "massG": 0.0,
+   "print": {
+    "file": "stl/grommetLed.stl",
+    "bedMm": [
+     11.9,
+     12.0,
+     4.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7071067811865475,
+     0.0,
+     0.0,
+     0.7071067811865476
+    ],
+    "offsetM": [
+     -0.69623,
+     -0.064,
+     -0.813
+    ],
+    "material": "TPU 95A"
+   }
+  },
+  {
+   "id": "accessPlug1",
+   "name": "Adjuster access plug 1",
+   "kind": "printed",
+   "material": "tpu",
+   "step": "grommets",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0492,
+    -0.0091,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Closes a front-wall hole the ball-end key uses.",
+   "bboxMm": [
+    5.1,
+    13.1,
+    13.1
+   ],
+   "volumeCm3": 0.4,
+   "massG": 0.0,
+   "print": {
+    "file": "stl/accessPlug1.stl",
+    "bedMm": [
+     13.0,
+     13.1,
+     5.4
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.543653273119032,
+     0.45215165445562966,
+     -0.45215165445562966,
+     0.5436532731190321
+    ],
+    "offsetM": [
+     -0.99235,
+     -0.08847,
+     0.86081
+    ],
+    "material": "TPU 95A"
+   }
+  },
+  {
+   "id": "accessPlug2",
+   "name": "Adjuster access plug 2",
+   "kind": "printed",
+   "material": "tpu",
+   "step": "grommets",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0492,
+    -0.0091,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Closes a front-wall hole the ball-end key uses.",
+   "bboxMm": [
+    5.1,
+    13.1,
+    13.1
+   ],
+   "volumeCm3": 0.4,
+   "massG": 0.0,
+   "print": {
+    "file": "stl/accessPlug2.stl",
+    "bedMm": [
+     13.0,
+     13.1,
+     5.4
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.543653273119032,
+     0.45215165445562966,
+     -0.45215165445562966,
+     0.5436532731190321
+    ],
+    "offsetM": [
+     -0.99235,
+     0.10153,
+     0.86081
+    ],
+    "material": "TPU 95A"
+   }
+  },
+  {
+   "id": "accessPlug3",
+   "name": "Adjuster access plug 3",
+   "kind": "printed",
+   "material": "tpu",
+   "step": "grommets",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0407,
+    -0.029,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Closes a front-wall hole the ball-end key uses.",
+   "bboxMm": [
+    7.5,
+    12.7,
+    12.7
+   ],
+   "volumeCm3": 0.3,
+   "massG": 0.0,
+   "print": {
+    "file": "stl/accessPlug3.stl",
+    "bedMm": [
+     10.9,
+     12.7,
+     8.3
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.6286300493356446,
+     0.32376575030763377,
+     -0.32376575030763377,
+     0.6286300493356446
+    ],
+    "offsetM": [
+     -1.34592,
+     0.00633,
+     0.3013
+    ],
+    "material": "TPU 95A"
+   }
+  },
+  {
+   "id": "feet",
+   "name": "Levelling feet (4)",
+   "kind": "bought",
+   "material": "rubber",
+   "step": "feet",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    -0.05,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "M5 threaded rubber levelling foot, 20 mm pad",
+   "desc": "",
+   "bboxMm": [
+    352.0,
+    23.0,
+    320.0
+   ],
+   "volumeCm3": 8.3
+  },
+  {
+   "id": "hwFeet0",
+   "name": "Inserts: foot",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "feet",
+   "hud": "housingBase",
+   "unit": true,
+   "explode": [
+    0.0,
+    -0.05,
+    0.0
+   ],
+   "qty": 4,
+   "spec": "4 x M5 x 9.5 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    339.0,
+    9.5,
+    307.0
+   ],
+   "volumeCm3": 1.5
+  },
+  {
+   "id": "railLeftRear",
+   "name": "Shutter rail, left rear",
+   "kind": "printed",
+   "material": "asa",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.03
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Two leaf slots; screws to the lid from below.",
+   "bboxMm": [
+    231.7,
+    59.4,
+    18.0
+   ],
+   "volumeCm3": 30.3,
+   "massG": 32.0,
+   "print": {
+    "file": "stl/railLeftRear.stl",
+    "bedMm": [
+     235.5,
+     18.0,
+     8.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.32289,
+     0.14975,
+     1.20001
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "railLeftFront",
+   "name": "Shutter rail, left front",
+   "kind": "printed",
+   "material": "asa",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.03
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Two leaf slots; screws to the lid from below.",
+   "bboxMm": [
+    174.2,
+    46.6,
+    18.0
+   ],
+   "volumeCm3": 22.7,
+   "massG": 24.0,
+   "print": {
+    "file": "stl/railLeftFront.stl",
+    "bedMm": [
+     176.6,
+     18.0,
+     8.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.55839,
+     0.14975,
+     1.20001
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "railRightRear",
+   "name": "Shutter rail, right rear",
+   "kind": "printed",
+   "material": "asa",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    0.03
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Two leaf slots; screws to the lid from below.",
+   "bboxMm": [
+    231.7,
+    59.4,
+    22.0
+   ],
+   "volumeCm3": 38.2,
+   "massG": 41.0,
+   "print": {
+    "file": "stl/railRightRear.stl",
+    "bedMm": [
+     235.5,
+     22.0,
+     8.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.32289,
+     -0.13175,
+     1.20001
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "railRightFront",
+   "name": "Shutter rail, right front",
+   "kind": "printed",
+   "material": "asa",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    0.03
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Two leaf slots; screws to the lid from below.",
+   "bboxMm": [
+    174.2,
+    46.6,
+    22.0
+   ],
+   "volumeCm3": 28.7,
+   "massG": 31.0,
+   "print": {
+    "file": "stl/railRightFront.stl",
+    "bedMm": [
+     176.6,
+     22.0,
+     8.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.55839,
+     -0.13175,
+     1.20001
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "servoBracket",
+   "name": "Servo bracket",
+   "kind": "printed",
+   "material": "asa",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.013,
+    -0.0586,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Holds the SG90 under the right rail.",
+   "bboxMm": [
+    50.6,
+    27.2,
+    32.9
+   ],
+   "volumeCm3": 5.0,
+   "massG": 5.0,
+   "print": {
+    "file": "stl/servoBracket.stl",
+    "bedMm": [
+     48.0,
+     32.9,
+     17.3
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7028874975016726,
+     -0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.43743,
+     0.15275,
+     -1.17426
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "springAnchor",
+   "name": "Spring anchor post",
+   "kind": "printed",
+   "material": "asa",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0108,
+    -0.0488,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "Holds the constant-force spring's end.",
+   "bboxMm": [
+    9.0,
+    7.1,
+    8.0
+   ],
+   "volumeCm3": 0.3,
+   "massG": 0.0,
+   "print": {
+    "file": "stl/springAnchor.stl",
+    "bedMm": [
+     8.0,
+     8.0,
+     5.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     -0.7028874975016726,
+     0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.73999,
+     0.12925,
+     1.20001
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "hwShutter0",
+   "name": "Fixings: shutter rail",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.0
+   ],
+   "qty": 14,
+   "spec": "14 x M3 x 10 button",
+   "desc": "",
+   "bboxMm": [
+    387.4,
+    96.9,
+    294.2
+   ],
+   "volumeCm3": 1.4
+  },
+  {
+   "id": "hwShutter1",
+   "name": "Inserts: servo bracket",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.0
+   ],
+   "qty": 2,
+   "spec": "2 x M3 x 5.7 heat-set insert",
+   "desc": "",
+   "bboxMm": [
+    44.8,
+    15.2,
+    4.6
+   ],
+   "volumeCm3": 0.2
+  },
+  {
+   "id": "hwShutter2",
+   "name": "Fixings: servo bracket",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.0
+   ],
+   "qty": 2,
+   "spec": "2 x M3 x 20 button",
+   "desc": "",
+   "bboxMm": [
+    47.9,
+    30.8,
+    5.7
+   ],
+   "volumeCm3": 0.3
+  },
+  {
+   "id": "hwShutter3",
+   "name": "Fixings: servo tabs (M2 self-tapping)",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.0
+   ],
+   "qty": 2,
+   "spec": "2 x M3 x 8 button",
+   "desc": "",
+   "bboxMm": [
+    33.2,
+    16.4,
+    5.7
+   ],
+   "volumeCm3": 0.2
+  },
+  {
+   "id": "hwShutter4",
+   "name": "Fixings: spring anchor",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "rails",
+   "hud": "shutter",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "1 x M3 x 8 button",
+   "desc": "",
+   "bboxMm": [
+    6.2,
+    10.4,
+    5.7
+   ],
+   "volumeCm3": 0.1
+  },
+  {
+   "id": "hwShutter5",
+   "name": "Inserts: spring anchor",
+   "kind": "hardware",
+   "material": "brass",
+   "step": "lid",
+   "hud": "lid",
+   "unit": true,
+   "explode": [
+    -0.0087,
+    -0.039,
+    -0.0
+   ],
+   "qty": 1,
+   "spec": "1 x M3 x 3 heat-set insert (short)",
+   "desc": "",
+   "bboxMm": [
+    5.1,
+    3.9,
+    4.6
+   ],
+   "volumeCm3": 0.0
+  },
+  {
+   "id": "leafRear",
+   "name": "Shutter leaf, rear",
+   "kind": "sheet",
+   "material": "alu",
+   "step": "leaves",
+   "hud": "shutter",
+   "unit": false,
+   "explode": [
+    0.0065,
+    0.0293,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "0.5 mm aluminium 5052, black anodised, laser cut",
+   "desc": "Runs in the rails; DXF in out/.",
+   "bboxMm": [
+    137.8,
+    31.1,
+    277.9
+   ],
+   "volumeCm3": 19.6
+  },
+  {
+   "id": "leafFront",
+   "name": "Shutter leaf, front",
+   "kind": "sheet",
+   "material": "alu",
+   "step": "leaves",
+   "hud": "shutter",
+   "unit": false,
+   "explode": [
+    0.0108,
+    0.0488,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "0.5 mm aluminium 5052, black anodised, laser cut",
+   "desc": "Runs in the rails; DXF in out/.",
+   "bboxMm": [
+    137.8,
+    31.1,
+    277.9
+   ],
+   "volumeCm3": 19.3
+  },
+  {
+   "id": "coverGlass",
+   "name": "Dust-cover glass",
+   "kind": "bought",
+   "material": "glass",
+   "step": "glass",
+   "hud": "dustCover",
+   "unit": false,
+   "explode": [
+    0.0217,
+    0.0976,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "3 mm float glass, 270 x 270 mm, arrised edges, s-pass polariser laminated underneath",
+   "desc": "",
+   "bboxMm": [
+    264.3,
+    61.5,
+    270.5
+   ],
+   "volumeCm3": 219.2
+  },
+  {
+   "id": "clamps",
+   "name": "Glass clamps (8)",
+   "kind": "printed",
+   "material": "asa",
+   "step": "glass",
+   "hud": "dustCover",
+   "unit": true,
+   "explode": [
+    0.0282,
+    0.1269,
+    0.0
+   ],
+   "qty": 8,
+   "spec": "",
+   "desc": "Hold the glass edges on its gasket.",
+   "bboxMm": [
+    243.7,
+    56.5,
+    292.5
+   ],
+   "volumeCm3": 0.6,
+   "massG": 1.0,
+   "print": {
+    "file": "stl/clamps.stl",
+    "bedMm": [
+     16.0,
+     15.0,
+     2.5
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7028874975016726,
+     -0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.49193,
+     -0.13125,
+     -1.20601
+    ],
+    "material": "ASA, matte black"
+   }
+  },
+  {
+   "id": "hwClamps0",
+   "name": "Fixings: glass clamp",
+   "kind": "hardware",
+   "material": "steel",
+   "step": "glass",
+   "hud": "dustCover",
+   "unit": true,
+   "explode": [
+    0.0282,
+    0.1269,
+    0.0
+   ],
+   "qty": 8,
+   "spec": "8 x M3 x 6 button",
+   "desc": "",
+   "bboxMm": [
+    235.4,
+    59.4,
+    286.2
+   ],
+   "volumeCm3": 0.6
+  },
+  {
+   "id": "alsPod",
+   "name": "Light-sensor pod",
+   "kind": "printed",
+   "material": "asa",
+   "step": "als",
+   "hud": "dustCover",
+   "unit": true,
+   "explode": [
+    0.0173,
+    0.0781,
+    0.0
+   ],
+   "qty": 1,
+   "spec": "",
+   "desc": "TSL2591 board under a 6 mm window.",
+   "bboxMm": [
+    31.7,
+    17.2,
+    28.0
+   ],
+   "volumeCm3": 3.6,
+   "massG": 4.0,
+   "print": {
+    "file": "stl/alsPod.stl",
+    "bedMm": [
+     30.0,
+     28.0,
+     11.0
+    ],
+    "fits": true,
+    "supports": "none",
+    "quat": [
+     0.7028874975016726,
+     -0.07713083595966179,
+     0.07713083595966179,
+     0.7028874975016726
+    ],
+    "offsetM": [
+     -0.41993,
+     -0.153,
+     -1.20601
+    ],
+    "material": "ASA, matte black"
+   }
+  }
+ ],
+ "checks": {
+  "beam": {
+   "rays": 690,
+   "blocked": 0,
+   "by": {},
+   "nearest": {
+    "capFrontLeft": 1.817133208167596,
+    "capFrontRight": 1.817133208167596,
+    "carrier": 2.2954139156016757,
+    "bay": 2.995379893547894,
+    "mask": 3.1090373258217823,
+    "hwPanel1": 3.1325746567693105,
+    "railLeftFront": 3.551937926513268,
+    "railRightFront": 3.551937926513268
+   },
+   "panel": 42,
+   "panelRays": [
+    [
+     [
+      -1,
+      1
+     ],
+     [
+      -0.5,
+      1
+     ]
+    ],
+    [
+     [
+      -1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    [
+     [
+      -1,
+      1
+     ],
+     [
+      0.5,
+      1
+     ]
+    ],
+    [
+     [
+      -1,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    [
+     [
+      -0.5,
+      1
+     ],
+     [
+      -0.5,
+      1
+     ]
+    ],
+    [
+     [
+      -0.5,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    [
+     [
+      -0.5,
+      1
+     ],
+     [
+      0.5,
+      1
+     ]
+    ],
+    [
+     [
+      -0.5,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    [
+     [
+      0,
+      1
+     ],
+     [
+      -1,
+      1
+     ]
+    ],
+    [
+     [
+      0,
+      1
+     ],
+     [
+      -0.5,
+      1
+     ]
+    ],
+    [
+     [
+      0,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    [
+     [
+      0,
+      1
+     ],
+     [
+      0.5,
+      1
+     ]
+    ],
+    [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    [
+     [
+      0.5,
+      1
+     ],
+     [
+      -1,
+      1
+     ]
+    ],
+    [
+     [
+      0.5,
+      1
+     ],
+     [
+      -0.5,
+      1
+     ]
+    ],
+    [
+     [
+      0.5,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    [
+     [
+      0.5,
+      1
+     ],
+     [
+      0.5,
+      1
+     ]
+    ],
+    [
+     [
+      1,
+      1
+     ],
+     [
+      -1,
+      1
+     ]
+    ],
+    [
+     [
+      1,
+      1
+     ],
+     [
+      -0.5,
+      1
+     ]
+    ],
+    [
+     [
+      1,
+      1
+     ],
+     [
+      0,
+      1
+     ]
+    ],
+    [
+     [
+      1,
+      1
+     ],
+     [
+      0.5,
+      1
+     ]
+    ]
+   ]
+  },
+  "envelope": {
+   "glassClearMm": 7.97,
+   "glassClearPart": "hwClamps0",
+   "hoodClearMm": 5.0,
+   "hoodClearPart": "bodyRearLeft",
+   "dashClearMm": 11.0,
+   "dashClearPart": "bodyRearLeft"
+  },
+  "fits": {
+   "pairs": [],
+   "refHits": [],
+   "mirror": {}
+  },
+  "printer": {
+   "parts": 32,
+   "notFitting": []
+  }
+ },
+ "shutter": {
+  "sc": -0.00343,
+  "L": 0.26207,
+  "W": 0.2625,
+  "pivotZ": 0.12925
+ },
+ "glass": {
+  "sc": -0.00343,
+  "L": 0.27007,
+  "W": 0.2705,
+  "n0": 0.0029
+ },
+ "board": {
+  "c": [
+   0.68819,
+   0.852,
+   0.0815
+  ],
+  "note": "HDMI board stood on edge against the bay's right wall, HDMI facing the floor"
+ },
+ "layout": {
+  "floorBot": 0.809,
+  "stepX": 0.64,
+  "overBot": 0.962,
+  "xSeam": 0.796,
+  "aperture": {
+   "s0": -0.13446,
+   "s1": 0.12761,
+   "z0": -0.13125,
+   "z1": 0.13125
+  }
+ }
+}

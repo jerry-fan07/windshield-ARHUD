@@ -1,0 +1,78 @@
+<section>
+  <h2 id="b2"><span class="num">B2</span>Prepare the Jetson</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>The one computer every software stage runs on (Figure 2.1, problems 1–4)</div>
+    <div><b>Weeks</b>1</div>
+    <div><b>Closes</b>No gate; its GPU measurement feeds G1</div>
+    <div><b>Needs</b>The Jetson (owned), an Ubuntu 22.04 x86 host, an NVMe drive</div>
+    <div><b>Produces</b>JetPack 6.2 on NVMe, the ZED SDK and DepthAI installed, TensorRT engines, a Python environment, remote access</div>
+    <div><b>People</b>Software builder</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> The Jetson was last seen running JetPack 5.1.3, whose TensorRT 8.5 cannot run the networks the plan chose and for which the current ZED SDK is not built. This stage moves it to JetPack 6.2 (Ubuntu 22.04, Python 3.10, TensorRT 10), installs the camera kits, and measures what the GPU can actually do, because the whole perception design rests on that number.</p>
+
+  <h3>B2.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Item</th><th>Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Seeed reComputer J4012</td><td>Owned: Orin NX 16 GB on the J401 carrier; one HDMI 2.1, four USB 3.2, one gigabit Ethernet port, an M.2 slot for an NVMe drive, 9–19 V input</td></tr>
+      <tr><td>NVMe SSD, M.2 2280</td><td>1 TB or more (recordings of the course at 1080p, logs); if the unit's drive is smaller, replace it now</td></tr>
+      <tr><td>Host PC</td><td>A physical x86 machine running Ubuntu 20.04 or 22.04 (Seeed: no virtual machine, no ARM host) with 50 GB free; mini PC 1 works</td></tr>
+      <tr><td>USB-C data cable</td><td>For recovery-mode flashing (a charge-only cable will not enumerate)</td></tr>
+      <tr><td>Bench supply or the unit's adaptor</td><td>9–19 V; the kit's adaptor is listed as 12 V 5 A with a 5.5 × 2.5 mm plug</td></tr>
+      <tr><td>HDMI monitor, keyboard, mouse, Ethernet</td><td>For first boot (monitor 1 works)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B2.2 Check the board before touching it</h3>
+  <ol class="steps">
+    <li>Try <code>ssh jetson</code> (or <code>jetson-desktop.local</code>). If it answers, record <code>cat /etc/nv_tegra_release</code>, <code>df -h</code> and <code>sudo nvpmodel -q</code>, and copy anything worth keeping in the home directory to the host. The plan notes the board was unreachable on 2026-10-21.</li>
+    <li>Open the case (screws on the underside), check the module is seated, the fan's connector is on its header, and note the NVMe drive's size. Fit the new drive if needed: M.2 key M, one screw.</li>
+  </ol>
+
+  <h3>B2.3 Flash JetPack 6.2</h3>
+  <ol class="steps">
+    <li>This unit is the J4012 <i>Classic</i> ("Super Mode NOT Supported" on Seeed's product page). Instructions for the "reComputer Super J4012" (a reset switch, <code>mfi_recomputer-super-…</code> images) do not apply.</li>
+    <li>On the host: <code>sudo apt install qemu-user-static sshpass abootimg nfs-kernel-server libxml2-utils binutils -y</code>.</li>
+    <li>Download Seeed's JetPack 6.2 (L4T 36.4.3) image for the Orin NX 16 GB from the Seeed wiki page "reComputer J4012 Flash JetPack" and check it with <code>sha256sum</code> against the wiki's value. Extract it with <code>sudo tar xpf mfi_….tar.gz</code> where there are 50 GB free.</li>
+    <li><b>Force recovery.</b> With the power off, fit a jumper between FC REC (pin 3) and GND (pin 2) on the J401's 12-pin button header (pins: 1 PWR BTN, 2 GND, 3 FC REC, 4 GND, 5 SYS RET, 6 GND, 7 AUTO ON, 8 DIS, 9 UART TXD, 10 UART RXD, 11 LED+, 12 LED−). Connect the USB-C port to the host with a data cable, then apply DC power.</li>
+    <li>On the host, <code>lsusb</code> must show <code>0955:7323 NVidia Corp</code> (the Orin NX 16 GB in recovery). If it does not, the board is not in recovery or the cable is charge-only.</li>
+    <li>Flash from inside the extracted folder: <code>sudo ./tools/kernel_flash/l4t_initrd_flash.sh --flash-only --massflash 1 --network usb0 --showlogs</code>. It writes the NVMe drive in 2–10 minutes; do not interrupt it.</li>
+    <li>Power off, remove the recovery jumper, power on, and complete the first-boot set-up on the monitor: user name, host name (for example <code>hud-jetson</code>), time zone, network.</li>
+  </ol>
+
+  <h3>B2.4 Configure</h3>
+  <div class="term">cat /etc/nv_tegra_release            # record the L4T release; the ZED SDK installer must match it
+sudo apt update &amp;&amp; sudo apt full-upgrade
+sudo apt install nvidia-jetpack        # CUDA, cuDNN, TensorRT, if the image does not already have them
+sudo nvpmodel -q --verbose             # list the modes; on the standard configuration 0 = MAXN, 1 = 10 W, 2 = 15 W, 3 = 25 W
+sudo nvpmodel -m 0                     # MAXN (confirm the id from the list first)
+sudo pip3 install -U jetson-stats      # jtop; reboot afterwards
+sudo apt install python3-venv git build-essential cmake</div>
+  <p>Run at MAXN, never MAXN SUPER: Seeed warns that the J401 carrier's cooling is insufficient for it and that enabling it may permanently damage the unit. MAXN SUPER only exists in NVIDIA's "super" flash configurations, so if <code>nvpmodel -q --verbose</code> lists it, the wrong image was flashed. Use <code>jetson_clocks</code> only for benchmarks.</p>
+  <ol class="steps">
+    <li><b>Remote access.</b> Install an SSH key; install Tailscale if the course has internet; give the Ethernet port a static address for the audience link (for example 192.168.50.2/24; mini PC 2 will be .3).</li>
+    <li><b>Python.</b> Create one virtual environment with access to the system's TensorRT bindings: <code>python3 -m venv --system-site-packages ~/hud-venv</code>. Install <code>pyzmq msgpack numpy pyubx2 pvlib pyyaml</code>. Install PyTorch only from NVIDIA's wheels for JetPack 6 if a tool needs it (Ultralytics' export does).</li>
+    <li><b>ZED SDK.</b> Download the installer whose L4T release matches <code>/etc/nv_tegra_release</code> exactly: for Seeed's L4T 36.4.3 image, <code>ZED_SDK_Tegra_L4T36.4_v5.5.1.zstd.run</code> (the installer aborts on any mismatch). <code>chmod +x</code> it and run it; accept the Python API installation into the venv. Check the camera later with <code>ZED_Explorer</code>.</li>
+    <li><b>DepthAI.</b> <code>pip install depthai</code> in the venv (version 3.x on 2026-10-25, with aarch64 wheels for Python 3.9 and later), and add the udev rule Luxonis documents so the OAK-D enumerates without root.</li>
+    <li><b>Renderer.</b> Install raylib's Python bindings (<code>pip install raylib</code>); if no aarch64 wheel is available, build raylib from source for the desktop GL platform and use the bindings' source build <span class="tag">verify</span>.</li>
+    <li><b>Repository.</b> Clone the project; create the <code>hud/</code> package skeleton (B4.1).</li>
+  </ol>
+
+  <h3>B2.5 Build the engines and measure</h3>
+  <div class="term">yolo export model=yolo11s.pt format=engine half=True imgsz=640         # on the Jetson: engines are device-specific
+trtexec --onnx=ufldv2.onnx --fp16 --saveEngine=ufldv2.engine              # lane network, from the repo's ONNX export
+trtexec --loadEngine=ufldv2.engine --iterations=500                       # per-inference time
+tegrastats --interval 1000 --logfile b2_baseline.log                      # idle baseline</div>
+  <p>Record each engine's per-inference time. The full GPU budget with depth running is measured in B4.8 once the camera is connected.</p>
+
+  <h3>B2.6 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Host does not see the board</td><td>Not in recovery mode, charge-only cable, or a USB hub in between; connect directly to the host.</td></tr>
+      <tr><td>Flash fails part way</td><td>Run it again from recovery mode; check free space on the host; use the exact image for the 16 GB module.</td></tr>
+      <tr><td>ZED installer refuses</td><td>Its L4T version does not match <code>/etc/nv_tegra_release</code>; download the matching one.</td></tr>
+      <tr><td>Thermal throttling in <code>jtop</code></td><td>Check the fan runs; you may be in a super mode; give the unit air in the car (B7).</td></tr>
+    </tbody>
+  </table>
+</section>

@@ -1,0 +1,58 @@
+<section class="cover">
+  <div class="band"></div>
+  <div class="eyebrow">Windshield AR HUD · HUD-only TFT LCD edition</div>
+  <h1 style="margin-top:12px">Build Guide</h1>
+  <p class="sub">What the head-up display does, the problems it has to solve, the parts that solve them, and how to build, wire, calibrate and prove every stage, from an empty bench to a daylight drive.</p>
+  <figure>[[FIG g_overview]]</figure>
+  <p class="meta">Edition of 2026-10-25. Companion to <code>docs/ARHUD-PLAN-TFT.pdf</code> (the plan: requirements, derivations, sources) and its condensed specification <code>docs/ARHUD-PLAN-TFT-SPEC.md</code>. Numbers are imported from the plan's <code>calc.py</code>; housing data from <code>docs/arhud-cad</code>; optical layout from <code>docs/arhud-sim</code>. Source of this document: <code>docs/arhud-build-src</code>.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Before anything else</div>
+  <h3 style="margin-top:6px">How to use this guide</h3>
+  <p>The guide has three parts. <b>Part I</b> explains the idea: what the driver sees, the problems that stand between an ordinary display and that picture, and the component that solves each one. Read it once, end to end, before buying anything; every later instruction refers back to it. <b>Part II</b> sets up the workshop and lists every material, tool and instrument, with the build stage that first needs it. <b>Part III</b> is the build, in fourteen build stages (B1 to B14), each with the same layout: what the stage solves, what you will have at the end, materials, tools, a numbered procedure with checks, the acceptance test, and what to do when something goes wrong. The appendices hold wiring schedules, pin maps, file formats, print settings and blank test sheets.</p>
+  <p>Two words are used carefully. A <b>build stage</b> (B1 to B14) is a chapter of this guide. An <b>optical stage</b> (Stage 0, Stage 1, Stage 2) is one of the plan's three ways of making the picture: a bench beamsplitter, an in-car Fresnel magnifier and combiner, and the final relay mirror into the windshield. Gates <b>G0 to G7</b> are the plan's pass/fail tests; a build stage is finished when its gate passes, and a failed gate is recorded, not waived.</p>
+
+  <h4>Conventions</h4>
+  <table class="tight">
+    <thead><tr><th style="width:22%">Mark</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">assumed</span></td><td>A design value that a named measurement must replace. The guide says which measurement, and where in the build it happens.</td></tr>
+      <tr><td><span class="tag">verify</span></td><td>Not confirmed from a primary source or not yet tested on this hardware. Check before relying on it.</td></tr>
+      <tr><td><span class="tag solid">decision</span></td><td>A choice the builder must make at that point; the options and their consequences are given.</td></tr>
+      <tr><td><span class="chk" style="display:inline">&nbsp;</span></td><td>A check. Tick it in the printed copy; every check of a stage must be ticked before its gate is run.</td></tr>
+      <tr><td>Box with a heavy left rule</td><td>A safety warning. These are not optional.</td></tr>
+      <tr><td>Prices</td><td>US dollars, last seen on vendor pages on 2026-10-21 for the plan. They are not quotes.</td></tr>
+      <tr><td>Units and frames</td><td>Millimetres for parts, metres for the car. Car frame as in the plan: x forward, y right, z down, origin at the road camera's left lens. The simulator and CAD use x forward, y up, z right with the origin on the road under the nominal eye; the guide says which frame a number is in when it matters.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box" style="break-inside:auto">
+    <p class="h">Design basis: what this guide builds, and where it differs from the plan PDF</p>
+    <p>The guide builds the plan's design (HUD only, no driving functions, one Jetson, a TFT panel with a custom backlight, a relay mirror into the stock windshield) to the layout in the simulator (<code>docs/arhud-sim/js/geom.js</code>) and the printed housing in <code>docs/arhud-cad</code>, because those are the only geometry with print files. Where the simulations found a defect in the plan's numbers, the guide follows the simulation and says so. None of these findings has been measured on hardware yet; the real-car ray trace in B1 supersedes all of them.</p>
+    <table class="tight" style="margin-top:6px">
+      <thead><tr><th style="width:24%">Item</th><th style="width:26%">Plan PDF</th><th>This guide, and why</th></tr></thead>
+      <tbody>
+        <tr><td>Concave mirror figure</td><td>Sphere, R = {{r2}}</td><td>Not a sphere. At the {{lay_inc}}° incidence the fold needs, a sphere splits the image into two focal distances (about 52.7 m and 4.1 m, simulator). A toroid with R<sub>t</sub> {{lay_rt}} / R<sub>s</sub> {{lay_rs}} mm fixes that for a flat windshield; the Cycles cross-check then found the toroid's image surface strongly curved (about 6 to 19 m across the window), which a freeform mirror with a tilted panel flattens to 7.4 to 7.6 m. Order the figure the B1 trace produces for the chosen car.</td></tr>
+        <tr><td>Eye-to-mirror path</td><td>1 m (assumed)</td><td>1.06 m (glass to mirror {{lay_glass_mirror}} mm). At 1 m the top of a 200 mm mirror enters a 28° windshield; 1.06 m clears it by about 24 mm.</td></tr>
+        <tr><td>Fold to panel</td><td>not specified</td><td>{{lay_fold_to_panel}} mm in the CAD. The CAD's own check finds {{cad_panel_rays}} of {{cad_rays}} traced rays grazing the front edge of the panel's cell glass at this spacing; 65 to 70 mm clears it. A <span class="tag solid">decision</span> in B11, before printing.</td></tr>
+        <tr><td>Window and distance</td><td>10.8° × 5.4° at 7.5 m</td><td>Traced through the hardware: about 8.6 m and 8.7° × 4.6° for the toroid; the freeform fit gives about 9.1° × 3.6°. Calibrate to the window you measure, not to the plan's numbers.</td></tr>
+        <tr><td>Projection in the renderer</td><td>one virtual plane plus a 2-D warp</td><td>A lookup table from the ray trace (eye position to panel point), refined by the photographed grid. With head motion the single plane left 15 to 17′ of error in simulation; the lookup table left about 1.5′.</td></tr>
+        <tr><td>Night white level</td><td>≤ 50 cd/m²</td><td>Start at 3 cd/m² and tune by eye. 50 is about thirty times a headlit road; TI's guidance is under 3. Analogue dimming, one string off, and grey levels on the panel cover the range (B5.2).</td></tr>
+        <tr><td>LED dimming</td><td>PWM above 2 kHz, RCD-24 class driver</td><td>Analogue current dimming with the RCD-24, its PWM/ON/OFF pin used only as a fail-safe enable. The RCD-24's datasheet limits PWM to 1 kHz (linear only to 200 Hz), so it cannot meet the plan's 2 kHz; current dimming has no flicker at all.</td></tr>
+        <tr><td>Power at key-off</td><td>ignition-sensed converter on the accessory feed</td><td>The converter's input must come from an always-live socket, with only its ignition sense on a switched one; on a switched input the shutdown delay cannot work (B7.2).</td></tr>
+        <tr><td>Lane points</td><td>drawn per frame</td><td>Smoothed over time before drawing. Raw per-frame noise made the lane lines wobble visibly in simulation.</td></tr>
+        <tr><td>Ribbon fill</td><td>translucent</td><td>At least about 39% of white at noon; at 32% the road simulation measured a contrast of 1.01 (invisible).</td></tr>
+        <tr><td>Sun-watch patch</td><td>{{patch_w}}° × {{patch_h}}°</td><td>39° × 13.5°: the patch of sky that can focus onto any part of the cell, from the Cycles sun trace, is larger than the patch for the lit crop alone.</td></tr>
+        <tr><td>Panel luminance target</td><td>{{l_panel_design}} cd/m² (1.3× the {{need_panel_day}} needed)</td><td>About 13,000 cd/m². The plan's path omits the dust-cover glass, its polariser, the IR-cut plate and the retarder; with them the 10,000 design gives roughly 1,250–1,450 cd/m² at the eye. Measure each part's transmission (B10) and recompute.</td></tr>
+        <tr><td>IR-cut glass</td><td>text: in front of the panel; backlight figure: under the cell</td><td>A hot-mirror IR-cut plate in front of the cell, held on the panel mask. Sunlight reaches the cell from the fold side, so glass under the cell cannot protect it; a plain cover glass seals the backlight instead. White LEDs emit almost no infrared.</td></tr>
+        <tr><td>Housing</td><td>printed, matte black</td><td>{{cad_parts}} printed parts in ASA ({{cad_pieces}} pieces), each within a 250 mm cube; ASA because dash tops pass 80 °C and PETG softens near 75 °C.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section style="break-before:page">
+  <div class="eyebrow">Contents</div>
+  [[TOC]]
+</section>

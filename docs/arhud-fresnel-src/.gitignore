@@ -1,0 +1,6 @@
+# Build artefacts. out/png/ holds the Cycles renders that build.py needs: keep those.
+out/*
+!out/png/
+blender/renders/
+node_modules
+__pycache__/

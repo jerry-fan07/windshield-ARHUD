@@ -1,0 +1,85 @@
+<div class="part" data-toc="Part II · Before you start">
+  <div class="pn">Part II</div>
+  <div class="pt">Before you start</div>
+  <div class="pd">The workshop, the tools, the safety rules that apply to every stage, and every material the build consumes, with the stage that first needs it.</div>
+  <div class="pl">5&nbsp;&nbsp;Workspace, tools and safety<br>6&nbsp;&nbsp;Materials: the complete bill</div>
+</div>
+
+<section>
+  <h2 id="c5"><span class="num">5</span>Workspace, tools and safety</h2>
+  <h3>5.1 The spaces you need</h3>
+  <table>
+    <thead><tr><th style="width:24%">Space</th><th>What happens there</th><th style="width:30%">Requirements</th></tr></thead>
+    <tbody>
+      <tr><td>Electronics bench</td><td>Jetson set-up, controller board, LED driver, Stage 0 rig, renderer development</td><td>ESD mat and wrist strap, bench supply, ventilation for soldering fumes, a darkened corner for the Stage 0 rig</td></tr>
+      <tr><td>Optics bench</td><td>Panel teardown, backlight build, luminance and polarisation measurements, mirror inspection, housing alignment</td><td>Clean, low-dust table; blackout curtain or a room that can be made dark; a 2 m clear line for the meter</td></tr>
+      <tr><td>Print room</td><td>Printing {{cad_pieces}} housing pieces in ASA (about {{cad_hours}} printer hours in all)</td><td>Enclosed printer with a 250 mm cube build volume, extraction or a well-ventilated room (ASA emits styrene)</td></tr>
+      <tr><td>The car, parked</td><td>Measurements, installation, calibration</td><td>Level ground with 35 m clear ahead of the car for the target board; shade for daytime work; a socket for the bench supply</td></tr>
+      <tr><td>Closed course or private lot</td><td>Recordings, live drives, rehearsals</td><td>Agreed in B1 with the venue; a safety driver who is not the presenter</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.2 Tools</h3>
+  <p>Every tool the procedures use, grouped by trade. The stage column says where it is first needed.</p>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Tool</th><th>Specification or use</th><th style="width:9%">First in</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3"><b>Electronics</b></td></tr>
+      <tr><td>Temperature-controlled soldering station</td><td>Fine conical and 2 mm chisel tips; 60/40 or lead-free solder, flux pen</td><td>B5</td></tr>
+      <tr><td>Heat-set insert tips</td><td>For M3, M4 and M5 inserts (the CAD uses {{cad_fasteners}} fasteners; inserts are pressed at 245 °C)</td><td>B11</td></tr>
+      <tr><td>Digital multimeter</td><td>Voltage, current to 10 A, resistance, continuity, diode test</td><td>B5</td></tr>
+      <tr><td>Bench power supply</td><td>0–30 V, 0–5 A, adjustable current limit (for first LED light-up at low current)</td><td>B5</td></tr>
+      <tr><td>Oscilloscope (or a logic analyser)</td><td>To confirm the LED current is free of ripple, the dimming filter's output, and the servo pulses; a cheap two-channel scope is enough</td><td>B5</td></tr>
+      <tr><td>Wire strippers, flush cutters, ferrule crimper, JST/Dupont crimper</td><td>0.25–1.5 mm² ferrules for screw terminals</td><td>B5</td></tr>
+      <tr><td>Heat-shrink assortment and heat gun</td><td>Every joint insulated; adhesive-lined for the 12 V lead</td><td>B5</td></tr>
+      <tr><td>ESD mat and wrist strap</td><td>Panel teardown and Jetson handling</td><td>B2</td></tr>
+      <tr><td colspan="3"><b>Mechanical</b></td></tr>
+      <tr><td>Hex keys 1.5–4 mm, with a 3 mm ball-end key at least 150 mm long</td><td>M3 button heads take 2 mm; the M4 mirror adjusters take 3 mm through the front-wall access holes</td><td>B11</td></tr>
+      <tr><td>Digital calipers, 150 mm; steel rule, 300 mm; tape, 5 m</td><td>Measurement of parts and the dash</td><td>B1</td></tr>
+      <tr><td>Machinist's straightedge, 300 mm (ground edge) and feeler gauges</td><td>Windshield curvature by sagitta</td><td>B1</td></tr>
+      <tr><td>Digital angle gauge (inclinometer), 0.1° resolution</td><td>Windshield rake, camera pitch, housing level</td><td>B1</td></tr>
+      <tr><td>Contour gauge, 250 mm</td><td>Dash-top profile for the housing's feet</td><td>B1</td></tr>
+      <tr><td>Laser rangefinder, 50 m class</td><td>Surveying the 30 m target board and the eye point</td><td>B1</td></tr>
+      <tr><td>30 m tape, chalk line, string, two stakes</td><td>Car centreline and target set-up</td><td>B7</td></tr>
+      <tr><td>Deburring tool, needle files, hobby knife, flush cutters</td><td>Print clean-up</td><td>B11</td></tr>
+      <tr><td>Spring clamps and a small vice</td><td>Holding parts while inserts cool and adhesives cure</td><td>B11</td></tr>
+      <tr><td colspan="3"><b>Optics and measurement</b></td></tr>
+      <tr><td>Powder-free nitrile gloves, lint-free wipes, lens tissue, isopropyl alcohol, a hand air blower</td><td>Handling the cell, films and mirrors; never touch a first-surface coating</td><td>B9</td></tr>
+      <tr><td>Reference linear polariser (a 50 mm sheet with a marked axis)</td><td>Finding the panel's polarisation axis</td><td>B9</td></tr>
+      <tr><td>Spot luminance meter: Konica Minolta LS-150 (1° spot, focuses 1 m to infinity) or Sekonic L-858D if it focuses on a virtual image <span class="tag">verify</span></td><td>Every luminance and contrast row</td><td>B6</td></tr>
+      <tr><td>Type-K thermocouple, MAX31855 amplifier, IR thermometer</td><td>Cell temperature and the sun test</td><td>B5</td></tr>
+      <tr><td>Camera with manual focus and manual exposure (mirrorless or a phone with a manual-camera app), tripod, a 300 mm macro focusing rail or linear rail</td><td>Photographing the HUD from the eye point; eye-box sweeps; ghost photographs</td><td>B6</td></tr>
+      <tr><td>Latency probe (built in B6)</td><td>Motion-to-photon timing</td><td>B6</td></tr>
+      <tr><td>Insulated box with a 100–200 W heater and a thermostat controller</td><td>40 °C thermal test of the PGU</td><td>B9</td></tr>
+      <tr><td>Welding glass (shade 5 or darker) or an ND filter for viewing the bare backlight</td><td>The bare backlight is about {{l_bl}} cd/m²</td><td>B9</td></tr>
+      <tr><td colspan="3"><b>Computers</b></td></tr>
+      <tr><td>x86 Ubuntu 22.04 host (mini PC 1 works) with a USB-C data cable</td><td>Flashing the Jetson; renderer bench; nightly replay</td><td>B2</td></tr>
+      <tr><td>A laptop on the course</td><td>SSH to the Jetson for start-up and logs</td><td>B3</td></tr>
+    </tbody>
+  </table>
+
+  <h3>5.3 Safety rules for the whole build</h3>
+  <div class="box warn">
+    <p class="h">The concave mirror concentrates sunlight</p>
+    <p>A 300 mm concave mirror at about f/1.1 is a burning glass. Never carry it, leave it, or point it with its face toward the sun, indoors near a window or outdoors. Store it face down on a soft cloth, or with its cover on. Once installed, the shutter is closed whenever the HUD is off; never defeat the shutter's spring or wedge it open for a test in daylight. Keep hands, cables and labels out of the focal region (about 330 mm in front of the mirror) when the shutter is open outdoors.</p>
+  </div>
+  <div class="box warn">
+    <p class="h">The bare backlight is very bright</p>
+    <p>Without the cell over it, the backlight runs at up to about {{l_bl}} cd/m², around sixteen times a clear sky. Do not look at it directly at full power; view it through welding glass, or bring it up at low current first. Point the luminance meter, not your eye.</p>
+  </div>
+  <div class="box warn">
+    <p class="h">Car electrics and driving</p>
+    <p>The fuse goes within 150 mm of the power source, before anything else. Never connect anything to the OBD-II port, the CAN bus or any vehicle wiring other than the accessory socket. Recordings are made from the passenger seat or by a second person; nobody operates the laptop while driving. Every drive starts with the signed installation checklist (Appendix F). Drives happen on the agreed closed course or lot, with a safety driver who is not the presenter, until the sign-off says otherwise. No polarised sunglasses while the HUD is on.</p>
+  </div>
+  <div class="box warn">
+    <p class="h">Workshop hazards</p>
+    <p>Heat-set insert tips and soldering irons are at 245–350 °C; use a stand and keep the cable clear. ASA prints emit styrene; run the printer enclosed with extraction or in a ventilated room, and do not sleep in the same room as a running ASA print. Wear eye protection when cutting the dust-cover glass, cleaving films, or crimping. The laser rangefinder is a visible laser; never aim it at people or cars. Lithium and lead-acid sources can deliver hundreds of amps into a short: insulate every joint before connecting to the car.</p>
+  </div>
+  <div class="box warn">
+    <p class="h">Static and the LCD cell</p>
+    <p>The panel's driver chips sit on the glass ledge and its flexible circuit is fragile. Work on the ESD mat with the wrist strap, never bend the flex near the glass, and never press on the polariser surface; a fingerprint on a polariser shows in the image at 23× magnification.</p>
+  </div>
+
+  <h3>5.4 Records you keep</h3>
+  <p>Keep a bound build log (or a text file in the repository) with the date, the stage, every measurement with its instrument, every decision with its reason, and every gate result. The appendices include blank sheets for the gates (Appendix E). Commit the calibration file, the dimming curve, the ray-trace inputs and outputs, and the CAD's regenerated files to the repository after each stage, so the build can be reproduced or repaired.</p>
+</section>

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Export the ego car</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>body{margin:0;background:#111;color:#ccc;font:12px monospace} pre{white-space:pre-wrap;word-break:break-all}</style>
+</head>
+<body>
+<div id="status">building</div>
+<pre id="out"></pre>
+<script type="module">
+// Exports the procedural ego car (js/car.js) as a GLB for the Blender pass (docs/arhud-blender/car_bake.py).
+// Every mesh is named by its path under the car's groups so the baked copy can be matched back to the live car:
+//   s:<group>/<child index>/...   a static part Blender replaces (smoothed, ambient occlusion in vertex colours)
+//   o:<path>                      a part that only occludes during the bake (wheels, driver, glass, emissive parts)
+// extras carry the vertex count and local bounding box; js/car-glb.js refuses a replacement that no longer matches.
+import * as THREE from 'three';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { buildEgoCar } from '../js/car.js';
+
+const car = buildEgoCar();
+const roots = new Map([[car.body, 'body'], [car.interior, 'interior'], [car.leftSide, 'leftSide'], [car.body.getObjectByName('rightSide'), 'rightSide']]);
+const dynamic = new Set();
+for (const w of car.wheels) w.pivot.traverse((o) => dynamic.add(o));
+car.steeringWheel.traverse((o) => dynamic.add(o));
+car.driver.traverse((o) => dynamic.add(o));
+const isEmissive = (m) => { const mats = Array.isArray(m.material) ? m.material : [m.material]; return mats.some((x) => x && x.emissive && (x.emissiveMap || x.emissive.getHex() !== 0) && x.emissiveIntensity > 0); };
+const isFrit = (m) => m.material && m.material.color && m.material.color.getHex() === 0x050506;
+const pathOf = (m) => {
+  const idx = [];
+  let o = m;
+  while (o && !roots.has(o)) { const p = o.parent; if (!p) return null; idx.unshift(p.children.indexOf(o)); o = p; }
+  return o ? roots.get(o) + '/' + idx.join('/') : null;
+};
+let nStatic = 0, nOcc = 0;
+car.group.updateMatrixWorld(true);
+car.group.traverse((m) => {
+  if (!m.isMesh) return;
+  const path = pathOf(m);
+  if (!path) { m.name = 'x:'; return; }
+  const occ = dynamic.has(m) || m.name === 'windshield' || m.name === 'cluster' || isEmissive(m) || isFrit(m) || m.isSprite;
+  m.geometry.computeBoundingBox();
+  const b = m.geometry.boundingBox;
+  // the path goes in extras too: three's GLTFLoader strips ':' and '/' from node names
+  m.userData = { path, orig: m.name || '', kind: occ ? 'occluder' : 'static', verts: m.geometry.attributes.position.count, bbox: [b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z].map((v) => +v.toFixed(5)), cast: m.castShadow, receive: m.receiveShadow };
+  m.name = (occ ? 'o:' : 's:') + path;
+  if (occ) nOcc++; else nStatic++;
+});
+document.getElementById('status').textContent = `static ${nStatic}, occluders ${nOcc}; exporting`;
+new GLTFExporter().parse(car.group, (glb) => {
+  const bytes = new Uint8Array(glb);
+  let s = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  document.getElementById('out').textContent = btoa(s);
+  document.getElementById('status').textContent = `static ${nStatic}, occluders ${nOcc}; ${bytes.length} bytes`;
+  window.__done = true;
+}, (e) => { document.getElementById('status').textContent = 'error ' + e; }, { binary: true, onlyVisible: false, includeCustomExtensions: false });
+</script>
+</body>
+</html>

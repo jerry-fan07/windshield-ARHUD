@@ -1,0 +1,101 @@
+<section>
+  <h2 id="b12"><span class="num">B12</span>Optics into the housing, first light, and the sun test</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>The virtual image (2.1) for the first time with the real mirror; proves the sun defences (2.7) before the panel sees daylight</div>
+    <div><b>Weeks</b>8–10, the week the mirror arrives</div>
+    <div><b>Closes</b>No gate; the empty-housing sun test is a hard prerequisite for B13</div>
+    <div><b>Needs</b>B9 (finished PGU), B10 (mirror, fold, filters, inspected), B11 (housing), B5 (controller and shutter)</div>
+    <div><b>Produces</b>An aligned HUD unit, a bench image at about the design distance, a logged sun test</div>
+    <div><b>People</b>Builder and a helper (mirror handling, sun test)</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> Up to now the optics have existed as a trace and a pile of parts. Here they become one instrument: the panel, fold and mirror go into the housing in the positions the trace chose, and a sheet of glass at the windshield's angle stands in for the car so the image can be seen and aligned on the bench. Before the panel is ever exposed to the sun, a thermocouple sits where the panel will be and the empty housing is pointed at the sun from the dangerous direction, so the protection is proven by measurement rather than assumed.</p>
+
+  <h3>B12.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:36%">Item</th><th>Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Neutral-cure RTV silicone</td><td>Alkoxy or oxime cure, black or translucent. Not acetoxy (vinegar-smelling) silicone: it releases acetic acid that corrodes aluminium mirror coatings.</td></tr>
+      <tr><td>1 mm shims</td><td>Three pieces of 1 mm sheet or feeler stock, to set the bond line</td></tr>
+      <tr><td>Bench "windshield"</td><td>A sheet of 4–6 mm glass, at least 400 × 300 mm, in a frame that holds it at the measured rake over the housing at the trace's glass position (two printed or plywood side frames)</td></tr>
+      <tr><td>Dummy panel target for the sun test</td><td>A 2 mm aluminium plate the size of the cell, painted matte black, with the thermocouple bead bonded at the crop's centre with thermal epoxy</td></tr>
+      <tr><td>Thermocouple and MAX31855 on the controller (B5), a second thermocouple for ambient</td><td>Type K</td></tr>
+      <tr><td>Test target for the image distance</td><td>A pole or a printed cross on a stand, placed at 7.5 m from the eye point (a corridor or the car park)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B12.2 Bond the mirror to its strongback (day 1, cures overnight)</h3>
+  <ol class="steps">
+    <li>Wear gloves. Lay the mirror face down on a clean, soft, lint-free cloth over a flat board. Never touch the coated face; never wipe it dry.</li>
+    <li>Clean the mirror's back and the strongback's three pad areas with isopropyl alcohol; let them dry.</li>
+    <li>Set the three 1 mm shims beside the pad positions. Apply a 25 mm round of RTV at each pad position on the strongback, slightly proud of 1 mm.</li>
+    <li>Lower the strongback onto the mirror's back, centred on the mirror's outline (mark the centre on the mirror's edge with tape first), until it rests on the shims. The RTV must not reach the edge of the mirror. Do not press further: a thin bond line transmits stress and can distort the figure.</li>
+    <li>Leave it untouched for 24 hours at room temperature. Then remove the shims.</li>
+  </ol>
+
+  <h3>B12.3 Install the fold and the mirror</h3>
+  <ol class="steps">
+    <li>Open the housing (lid screws out, lid off). Keep the shutter closed.</li>
+    <li><b>Find the cold mirror's coated face.</b> Touch a pen tip to the glass: on the coated face, the reflection of the tip touches the tip; on the uncoated face a gap the thickness of the glass appears. The coated face goes toward the panel and the concave mirror.</li>
+    <li>Drop the cold-mirror glass into the fold bracket, coating as above, its long edge across the car, so its plane of incidence (the vertical fore-aft plane) matches the windshield's. Fit the four clips without stressing the glass. Screw the black absorber plate to the tabs behind it.</li>
+    <li>Set the strongback with its bonded mirror on the stand's three adjusters and turn the three M4 screws in evenly until the springs are about half compressed. Fit the two edge clips under the mirror's bottom edge, clear of its face.</li>
+    <li>With the dummy target in the panel position (sun test first, B12.4), or the PGU (B12.5), check the clearances: nothing within 2 mm of the traced beam (the CAD's nearest part is {{cad_nearest}} mm from it).</li>
+  </ol>
+
+  <h3>B12.4 Sun test of the empty housing (before the panel ever sees daylight)</h3>
+  <div class="box warn">
+    <p class="h">This test focuses sunlight on purpose</p>
+    <p>Nothing flammable near the housing; no hands, cables or labels near the focus with the shutter open; a shade cloth ready to throw over the dust cover; an observer who watches the temperature and calls the stop. Stop at the panel's rated temperature or at 10 minutes, whichever comes first.</p>
+  </div>
+  <ol class="steps">
+    <li>Fit the dummy target in the panel's position (carrier and mask in place, the hot-mirror IR-cut plate on the mask as it will be). Route its thermocouple out through a grommet to the controller's MAX31855. Tape the second thermocouple in the shade inside the cabin for ambient.</li>
+    <li>Install the housing on the car's dash (B13.2 describes the mounting) with the dust cover, polariser and shutter in place.</li>
+    <li>Choose the time and heading: run <code>egod</code>'s sun-watch computation (or the trace's sun patch with any solar-position calculator) for the venue's coordinates and pick a time when the sun stands at the patch's centre elevation behind the car (about {{sun_elev}}° for a 28° windshield; the B1 trace gives the real value), then park the car facing directly away from the sun's azimuth.</li>
+    <li>Log both temperatures at 1 Hz. Open the shutter with the controller. Watch the target's temperature rise; stop at 10 minutes or at the panel's rated temperature.</li>
+    <li>Close the shutter and log the cool-down. Then turn the car slowly through the patch (or wait for the sun to move) with sun-watch running and confirm it closes the shutter when the sun enters the patch.</li>
+  </ol>
+  <table class="tight">
+    <thead><tr><th style="width:50%">Acceptance (plan, section 1)</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Target temperature stays under the cell's rating for 10 min with the shutter open at the worst sun position</td><td></td></tr>
+      <tr><td>Sun-watch closes the shutter inside the entry patch</td><td></td></tr>
+      <tr><td>Peak temperature rise and time to peak recorded</td><td></td></tr>
+    </tbody>
+  </table>
+  <p>If the target exceeds the rating, the panel must never be exposed with the shutter open in that sun position: widen the sun-watch patch, add an absorbing IR filter, or ask the mirror shop for a figure that spreads the solar spot (B1.7). Record the decision.</p>
+
+  <h3>B12.5 Install the PGU</h3>
+  <ol class="steps">
+    <li>Remove the dummy target. Lower the finished PGU (B9) into the bay: heat sink onto its four posts (self-tapping screws), fan over the floor grille blowing down, HDMI board on edge against the right wall with its socket toward the floor. Lead the HDMI cable and the LED and fan leads out through their grommets.</li>
+    <li>Fit the carrier; lay the cell in its pocket with the 60 × 30 mm crop centred over the backlight cavity (use the crop marks you made in B9). Route the thermistor lead.</li>
+    <li>Lay the retarder over the crop if B9 called for it, fast axis at the measured angle. Fit the mask; lay the hot-mirror IR-cut plate on the mask over its opening; fit the fold bracket's cheeks over the carrier and drive the shared corner screws.</li>
+  </ol>
+
+  <h3>B12.6 First light and coarse alignment on the bench</h3>
+  <ol class="steps">
+    <li>Set the bench windshield over the housing at the measured rake, at the trace's glass position relative to the housing (measure from the housing's front top edge).</li>
+    <li>Mount the camera (or your eye) at the nominal eye point relative to the glass. Connect the panel to the Jetson; <code>hudd</code> shows the alignment pattern: a border around the crop, a centre cross, and a 5 × 3 grid of crosses. Bring the backlight up to about 10% through the controller. Open the shutter.</li>
+    <li>Look for the pattern in the glass. If it is not visible, hold a white card in the beam to follow it: on the fold, on the mirror, out through the opening, on the glass. Adjust the three M4 screws through the front-wall access holes with the long ball-end key: turning the two lower screws together tilts the mirror up and down; turning one side tilts it left and right.</li>
+    <li>Centre the window in the line of sight 5° below horizontal. Check that the whole border is visible from the centre of the eye box, then from 65 mm left and right and 35 mm up and down.<span class="chk">Whole border visible across the eye box</span></li>
+    <li>Measure the image distance by parallax (Figure B12.1): put the pole at 7.5 m on the line of sight and move the camera sideways by 50–75 mm. If the centre cross stays on the pole, the image is at 7.5 m. The trace predicts the range across the window; at this stage, centre within about ±1 m is good. A gross error (an image at 2 m or at infinity) means the panel is at the wrong distance from the mirror or the mirror's figure is not what was ordered: stop and check.<span class="chk">Centre image distance recorded</span></li>
+    <li>Look for a second, faint window above the main one from the upper eye-box positions (the Cycles check found one 3.5° above the window, from light reflected off the glass back into the mirror) and for haze around the mirror; add flock paper where the haze comes from.</li>
+  </ol>
+  <figure>[[FIG g_vid]]<figcaption><b>Figure B12.1.</b> Measuring the virtual image distance by parallax. When a mark has no parallax against an object, they are at the same distance.</figcaption></figure>
+
+  <h3>B12.7 Close up and test the shutter rules</h3>
+  <ol class="steps">
+    <li>Refit the lid and the dust cover; leave the access plugs out until B13's fine alignment is done.</li>
+    <li>With the controller: command open and close; then unplug its USB lead with the shutter open and time how long it takes to close (the rule: USB silent 5 s, backlight off, shutter closed); then cut the controller's power and confirm the spring closes the shutter.<span class="chk">Shutter closes within 5 s of USB loss and immediately on power loss</span></li>
+    <li>Heat the cell's thermistor with a hair dryer (or simulate it with a resistor) past threshold 1: the backlight halves; past threshold 2: backlight off and shutter closed.<span class="chk">Thermal rules act at the set thresholds</span></li>
+  </ol>
+
+  <h3>B12.8 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Image doubled or smeared in one direction</td><td>Astigmatism: the mirror is rotated about its axis (a toroid's axes must lie across and along the car), or tilted far from the traced angle. Re-seat it.</td></tr>
+      <tr><td>Image keystoned or bowed</td><td>Expected; B13's pre-distortion removes it. Large asymmetry left to right means the mirror is twisted.</td></tr>
+      <tr><td>Window clipped at one edge</td><td>The mirror's tilt is off, or a part of the housing blocks the beam (check with the card); for the top edge from high eye positions, the fold-height decision (B11.1).</td></tr>
+      <tr><td>Image much dimmer than expected</td><td>Polarisation: the panel's light is p at the glass. Check with the reference polariser (B9.4) and the retarder's orientation.</td></tr>
+    </tbody>
+  </table>
+</section>

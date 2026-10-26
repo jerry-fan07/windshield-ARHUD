@@ -1,0 +1,98 @@
+<section>
+  <h2 id="s9"><span class="num">9</span>Phases and acceptance criteria</h2>
+  <p>Weeks count from the day the car and the demo venue are agreed. Phases overlap. The recordings in Phase 1 need a camera and a seat in any car, and the bench work in Phase 2 needs a beamsplitter and a monitor, so software progress is not held up by optics or by the car. Figure 27 shows the schedule, and each phase below gives its work, the reason for its position, and the test that closes it.</p>
+  <figure>[[FIG gantt]]<figcaption><b>Figure 27.</b> Phase schedule over weeks 0–13. Blue bars are software and in-car phases; orange bars are the optics chain, which carries the mirror's lead time. Bars show the planned windows.</figcaption></figure>
+
+  <h3>9.1 The critical path</h3>
+  <p>Two chains determine the earliest date for the demo. The first is the software chain: recordings, perception that passes its score, the bench HUD, the live drive on a monitor, and the in-car combiner. Apart from the car and the cameras it waits on no purchase. The second is the optics chain: car chosen, ray trace with that car's windshield, mirror order, mirror lead time, mirror arrival, Stage 2 build, daylight measurement. The mirror's lead time has not been quoted, so the schedule cannot yet show whether week 12 holds. The TFT backlight is a third, shorter chain that must be finished before the mirror arrives, so it runs in parallel with Stage 1.</p>
+  <div class="callout warn">
+    <p class="h">Schedule risk, and the fallbacks</p>
+    <p>If the mirror arrives late, Phase 6 moves past week 12 and so does the daylight demo. Stage 1 is the demo fallback: the Fresnel magnifier and combiner with the custom-backlit panel give an in-car demonstration at a 4 m virtual distance, at dusk or in overcast. If perception misses its Phase 1 score, the comma four in passive mode (section 5.7) is the perception fallback, at the cost of the car constraint it brings.</p>
+  </div>
+
+  <h3>9.2 Gates</h3>
+  <p>Each gate is a test whose result decides whether the next phase starts. A gate that fails sends the work back, and it is recorded, rather than being waived to keep the schedule.</p>
+  <table>
+    <thead><tr><th style="width:22%">Gate</th><th>Criterion</th><th style="width:22%">Decision it controls</th></tr></thead>
+    <tbody>
+      <tr><td>G0 · Car, venue, sign-off</td><td>Car named, with its windshield rake measured and a dash-top mounting agreed; venue booked; the installation checklist accepted by whoever signs it off</td><td>Ray trace, mirror quote, mounting design</td></tr>
+      <tr><td>G1 · Perception on recordings</td><td>On the labelled course frames: ego lane found in ≥ 95% of frames; lane lateral error ≤ 0.15 m at 10 m, ≤ 0.3 m at 20 m, ≤ 0.5 m at 30 m; ego-lane vehicles within 50 m recalled ≥ 90%; pedestrians within 30 m ≥ 85%; range within 10% of the stereo median</td><td>Whether the Jetson's own perception continues or the passive comma four replaces it</td></tr>
+      <tr><td>G2 · Bench HUD and latency</td><td>Ribbon, lines, chevron and speed block render at 60 fps from a topic log on the Stage 0 rig; the end-to-end chain measured with the photodiode and the flashing LED is ≤ 90 ms; the prediction sign is confirmed on a recording</td><td>Start of the live drive</td></tr>
+      <tr><td>G3 · Live on a monitor</td><td>On the course at up to 25 m/s, the overlay drawn onto the road camera's own image stays within 0.5° of the lane paint and the lead vehicle for 20 minutes, with prediction on; GNSS speed within 1 m/s of a phone's GNSS speed</td><td>Start of Stage 1 in the car</td></tr>
+      <tr><td>G4 · Stage 1 registration</td><td>Static error at 30 m ≤ 1.0° and the ribbon on the lane through curves at 25 m/s, at night</td><td>Whether Stage 1 is shown and whether Stage 2 is pursued</td></tr>
+      <tr><td>G5 · Picture generator</td><td>Panel luminance ≥ {{need_panel_day}} cd/m² on axis with the custom backlight, uniform to ±20% over the crop, cell under its limit after 30 minutes at full power in a 40 °C box; polarisation oriented; input lag measured</td><td>Whether the daylight demo is attempted</td></tr>
+      <tr><td>G6 · Daylight</td><td>Every row of the validation table in section 10 passes at noon</td><td>Demo format: daylight or dusk</td></tr>
+      <tr><td>G7 · Rehearsal</td><td>Script runs twice in a row without an operator touching the Jetson</td><td>The demo date</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.3 Phase by phase</h3>
+
+  <div class="phase"><div class="when">Week 0–1</div><div class="what"><h4>Phase 0 · Decide and order</h4>
+    <ul>
+      <li>Choose the car. Measure its windshield rake and thickness at the HUD patch, photograph the dash top, and confirm the mounting.</li>
+      <li>Order the items in section 8.4 that do not depend on the car. Request mirror quotes without placing the order.</li>
+      <li>Confirm with the university who approves the installation, and where the demo may be driven. Write the installation checklist (section 4.2).</li>
+      <li><strong>Done when:</strong> the car is named, the first orders are placed, the venue is agreed, and the checklist exists.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 1–4</div><div class="what"><h4>Phase 1 · Recordings and perception on the Jetson</h4>
+    <ul>
+      <li>Reflash the Jetson to JetPack 6.2. Install the ZED kit, TensorRT exports of the candidate lane network and detector, and the tracker. Measure each job's GPU time (section 5.8).</li>
+      <li>Record the course, the course at dusk and at night, and an ordinary road, from the passenger seat with the camera at the intended height. Label 300 frames.</li>
+      <li>Build <code>roadd</code>, <code>laned</code>, <code>detectd</code> and the scoring tool. Choose the lane network by score. Fit the plane; measure its stability.</li>
+      <li>Build <code>egod</code> on the bench with the GNSS board and the ZED's inertial unit, then validate on a drive against a phone's GNSS trace.</li>
+      <li><strong>Done when:</strong> gate G1 passes on the labelled frames, and the GPU time per frame is known.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 1–3</div><div class="what"><h4>Phase 2 · Bench HUD on the mini PC and the Stage 0 rig</h4>
+    <ul>
+      <li>Define the topic schemas. Write <code>hudd</code> against a synthetic topic log, then against the first recordings' logs. Put the Stage 0 rig on the desk.</li>
+      <li>Implement the drawing rules of section 7.4 and the age compensation; confirm the prediction sign on a recording.</li>
+      <li>Write the controller firmware and the dimming curve. Build the latency probe.</li>
+      <li>Run <code>hudd</code> on the Jetson full screen on the monitor; measure the chain with the photodiode and the flashing LED.</li>
+      <li><strong>Done when:</strong> gate G2 passes.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 3–5</div><div class="what"><h4>Phase 3 · Live in the car, on a monitor</h4>
+    <ul>
+      <li>Mount the road camera, the driver camera, the GNSS antenna and the Jetson. Power from the DC-DC converter. Complete the installation checklist.</li>
+      <li>Drive the course with the overlay drawn onto the road camera's own image on monitor 1 in the passenger footwell, with the audience stream to mini PC 2.</li>
+      <li>Calibrate the camera-to-car transform and the nominal eye point. Run <code>headtrackd</code> and show the eye point on the audience view.</li>
+      <li><strong>Done when:</strong> gate G3 passes.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 4–8</div><div class="what"><h4>Phase 4 · Stage 1 combiner in the car</h4>
+    <ul>
+      <li>Build the dash enclosure with the panel, the Fresnel lens and the combiner. Calibrate the eye point with the target board. Fit the pre-distortion mesh.</li>
+      <li>Drive at night and in overcast. Measure registration at 30 m with the camera on the rail, with and without the head tracker.</li>
+      <li><strong>Done when:</strong> gate G4 passes.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 4–8</div><div class="what"><h4>Phase 5 · The picture generator</h4>
+    <ul>
+      <li>Measure the stock panel: luminance, backlight luminance with the cell removed, transmittance, polarisation axis, contrast, input lag (section 6.6).</li>
+      <li>Build the backlight: LED board, cavity, diffuser, films, driver. Measure luminance on and off axis and the cell's temperature against time. Fit the retarder film if the axis needs it.</li>
+      <li>Run the thermocouple sun test on the empty housing (section 6.8) and decide on the panel-side IR-cut glass.</li>
+      <li><strong>Done when:</strong> gate G5 passes.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 6–12</div><div class="what"><h4>Phase 6 · Stage 2 relay mirror, daylight</h4>
+    <ul>
+      <li>Requires the ray trace and the mirror, both after the car is chosen (section 6.7). Build the housing with the panel, the cold-mirror fold, the concave mirror, the dust cover with the polariser, and the shutter. Re-calibrate.</li>
+      <li>Photograph the ghost at the eye point at three heights and compare with section 6.4. Decide on the wedge windshield.</li>
+      <li>Measure luminance and contrast at noon against the sky and the road. Measure the night black level. Tune the dimming curve against the ambient sensor.</li>
+      <li><strong>Done when:</strong> gate G6 passes.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 8–12</div><div class="what"><h4>Phase 7 · Hazards, signs, polish, rehearsal</h4>
+    <ul>
+      <li>Tune the hazard rules on the course with a volunteer pedestrian. Train and fit the speed-limit classifier; drop it from the block if it is not reliable.</li>
+      <li>Review clutter: remove or dim everything that is neither conformal nor safety-relevant. Build the audience view's final layout with the targets beside the numbers.</li>
+      <li>Rehearse the section 10 script three times on the demo course.</li>
+      <li><strong>Done when:</strong> gate G7 passes.</li>
+    </ul></div></div>
+
+  <h3>9.4 What the schedule does not show</h3>
+  <p>The Gantt chart shows planned windows, not measured durations. Five things are unknown and could move the dates. The custom mirror's lead time has not been quoted. The ZED 2i's and the GNSS board's delivery times are not stated. The time to complete the ray trace has not been estimated. The time to get the backlight uniform is a build-and-measure loop whose number of turns is unknown. And whether the lane network generalises to the course without fine-tuning is the Phase 1 question. Each should be given a date at Phase 0, and the schedule redrawn when they are known.</p>
+</section>

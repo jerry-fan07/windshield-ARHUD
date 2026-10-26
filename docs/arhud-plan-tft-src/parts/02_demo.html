@@ -1,0 +1,117 @@
+<section>
+  <h2 id="s3"><span class="num">3</span>What the demo shows</h2>
+  <p>Everything else in the plan is derived from this list. In a window above the hood line, registered to the real road, the driver sees six things. The window is {{fov2_w}}° × {{fov2_h}}° at a virtual distance of 7.5 m, which is the field the 60 × 30 mm crop of the panel gives through the relay mirror (section 6.2).</p>
+
+  <figure>[[FIG mockup]]<figcaption><b>Figure 2.</b> Mockup of the demo window with the registered and fixed elements labelled. Proportions follow a flat-road perspective at a 1.22 m eye height; the content is illustrative, not a measured image.</figcaption></figure>
+
+  <h3>3.1 The six items</h3>
+  <ol>
+    <li><strong>Lane ribbon.</strong> A translucent ribbon lying on the road surface between the two detected lane lines of the driver's lane, from the bottom of the window out to the last confident point, typically 40 to 60 m. It is the hero element because any error in its edges is visible against the real paint. It is tinted a steady blue; it is not a prediction of where the car will go, and the plan never calls it a path.</li>
+    <li><strong>Lane lines and road edges.</strong> Thin lines over the real paint and the kerb or verge. They are drawn only where the lane network is confident, and they fade with the confidence instead of popping on and off. The thresholds are set in section 7.4.</li>
+    <li><strong>Lead vehicle marker.</strong> A chevron under the rear of the nearest vehicle in the driver's lane, with the gap in metres and in seconds at the current speed. The bearing comes from the image and the range from stereo depth, so the chevron sits under the bumper even when the range is a few per cent off (section 5.5).</li>
+    <li><strong>Speed and the last speed limit.</strong> A small fixed block low in the window: speed from the GNSS receiver, and the value of the last speed-limit sign the detector read. It is the only non-conformal content, so it is the only element that does not move with the scene. A corner of the block carries status glyphs for sensor health.</li>
+    <li><strong>Hazard cues.</strong> Pedestrians, cyclists and signs detected by the Jetson, highlighted as outlines that follow the object through the tracker. They are informational: the HUD does nothing with them except draw them.</li>
+    <li><strong>Head tracking made visible.</strong> The passenger-side monitor shows the rendered frame, the driver camera with the eye point overlaid, and the live registration and age numbers, so the audience can watch the parallax correction work as the driver leans.</li>
+  </ol>
+
+  <h3>3.2 Where each item's data comes from</h3>
+  <table>
+    <thead><tr><th style="width:22%">Item</th><th style="width:34%">Input</th><th style="width:14%">Topic</th><th>Built by</th></tr></thead>
+    <tbody>
+      <tr><td>Lane ribbon</td><td>Left and right lane lines of the ego lane, on the ground plane</td><td><code>lanes</code></td><td><code>laned</code> and <code>roadd</code>, new</td></tr>
+      <tr><td>Lane lines, edges</td><td>Up to four lane lines with confidences; road edges where the network provides them</td><td><code>lanes</code></td><td><code>laned</code>, new</td></tr>
+      <tr><td>Lead chevron</td><td>Tracked vehicle boxes with stereo range at the base of the box</td><td><code>objects</code></td><td><code>detectd</code> and <code>roadd</code>, new</td></tr>
+      <tr><td>Speed block</td><td>GNSS speed; last speed-limit sign from the sign classifier</td><td><code>ego</code>, <code>objects</code></td><td><code>egod</code>, <code>detectd</code>, new</td></tr>
+      <tr><td>Hazard outlines</td><td>Tracked person, cyclist and sign boxes with range</td><td><code>objects</code></td><td><code>detectd</code>, new</td></tr>
+      <tr><td>Head position</td><td>OAK-D Pro, face landmarks, depth at the eyes</td><td><code>eyePose</code></td><td><code>headtrackd</code>, new</td></tr>
+    </tbody>
+  </table>
+  <p class="small">All topics are new; none of them existed in the previous plan, which read openpilot's services. Their schemas are set in Phase 1 (section 7.2).</p>
+
+  <h3>3.3 What is deliberately left out</h3>
+  <ul>
+    <li><strong>A drive path.</strong> There is no planner, so nothing is predicted about where the car will go. A ribbon that looked like a path but came from nothing would mislead.</li>
+    <li><strong>Lane-departure warnings.</strong> They are a small addition to the ribbon (its edge could glow when the car drifts), and they are left out of the demo so the HUD is not read as a driver-assistance product. They are listed as a stretch goal.</li>
+    <li><strong>Navigation arrows.</strong> They need a route, a map and map matching, which is a project of its own. Stretch goal.</li>
+    <li><strong>Full-windshield clutter.</strong> Anything not conformal or safety-relevant is removed or dimmed. The clutter mode in the demo is a deliberate contrast, shown for ten seconds.</li>
+  </ul>
+
+  <div class="callout warn">
+    <p class="h">Behaviours that must be defined before any car drive</p>
+    <p>These matter for safety and are set in Phase 2, before the first drive on a monitor. Section 7.4 gives the plan's proposed values; they are proposals until tested.</p>
+    <ul>
+      <li>What the HUD shows when a topic stops arriving: the stale-data cutoff per topic, and how the content fades rather than freezes.</li>
+      <li>The confidence at which lane lines begin and finish fading, and the minimum time a line must be seen before it is drawn.</li>
+      <li>The minimum confidence and persistence for a hazard outline, and how a hazard that leaves the view is removed.</li>
+      <li>What the speed block shows when GNSS has no fix or the car is stationary.</li>
+      <li>How the demo's clutter mode is defined: which elements appear, and at what brightness.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2 id="s4"><span class="num">4</span>System architecture</h2>
+
+  <h3>4.1 One computer</h3>
+  <p>The architecture has one computer and three kinds of input. The Jetson reads a stereo road camera, a driver camera and a GNSS receiver, and talks to a small controller board that handles the panel's backlight, an ambient-light sensor, a temperature sensor on the panel and the sun shutter. Its HDMI output drives the panel's board. Its Ethernet port streams an audience view to a mini PC with the second monitor. Nothing else is connected to anything.</p>
+  <figure>[[FIG arch]]<figcaption><b>Figure 3.</b> Single-computer architecture. Sensors feed the Jetson over USB; the Jetson feeds the panel over HDMI and the audience PC over Ethernet. The optics column lists the light path from the panel to the eye.</figcaption></figure>
+  <p>The split of the previous plan had four reasons tied to openpilot: the safety boundary, calibrated sensing, an existing transport, and a GPU with a real job. Three of them are moot without openpilot. The fourth remains: the Orin NX's GPU now carries stereo depth, a lane network, an object detector, face landmarks and the render pass, and section 5.8 budgets it.</p>
+
+  <h3>4.2 The interfaces to the car</h3>
+  <p>The safety argument has to be easy to state, so it is stated as a list of wires. The HUD's housing sits on the dash top and is held by its own base and the dust-cover frame; nothing is bonded to the glass in the base design. The road camera mounts to the windshield's inside with a removable suction or adhesive bracket near the mirror stalk. The driver camera and the GNSS antenna mount on the dash. Power comes from the car's 12 V accessory socket through a fused, ignition-sensed converter. There is no connection to the OBD port, to any CAN bus, to the body computer or to any actuator. Figure 4 says the same thing.</p>
+  <figure>[[FIG interfaces]]<figcaption><b>Figure 4.</b> The HUD's interfaces to the car. The only crossing between the two halves is the 12 V accessory supply. There is nothing to test about the car's behaviour, because the HUD cannot affect it; the acceptance item is an inspection of the installation.</figcaption></figure>
+  <p>Two consequences. First, the acceptance criterion for the boundary is an inspection with a checklist, signed before each drive: no connector reaches a vehicle bus, every mount is removable, the fuse is in place. Second, the speed shown to the driver is not the car's speedometer value. The plan says so on the audience monitor and in the script, and the speed block shows the GNSS fix state.</p>
+
+  <h3>4.3 The perception pipeline</h3>
+  <p>Figure 5 shows the data path from camera frames to pixels. Three processes consume the road camera: <code>laned</code> runs the lane network on the left image and publishes lane points in the image with confidences; <code>detectd</code> runs the object detector and a tracker and publishes boxes with stable identities; <code>roadd</code> owns the camera, computes stereo depth, fits the ground plane, and lifts both the lane points and the boxes to three dimensions in the car frame. <code>egod</code> fuses GNSS speed with the inertial unit's gyroscope and accelerometer into a 100 Hz estimate of speed, yaw rate and pitch. <code>hudd</code> reads everything, compensates for the age of each topic, projects into the driver's eye, warps for the optics, and draws at 60 Hz.</p>
+  <figure>[[FIG pipeline]]<figcaption><b>Figure 5.</b> Perception pipeline. The three road-camera processes share one capture; every topic carries the timestamp of the camera frame it came from.</figcaption></figure>
+  <p>The division is by rate and by failure. Lanes and objects run at camera rate and may drop frames under load without stopping each other. Ego-motion runs at the inertial rate and must not drop, because the age compensation depends on it. The renderer runs at the panel's rate and must not block on any input: it draws whatever is newest and fades whatever is stale.</p>
+
+  <h3>4.4 Topic timing</h3>
+  <p>Each topic has its own rate. The renderer does not need to match them. It keeps the latest message from each topic and the capture timestamp inside it, draws at 60 Hz regardless, and advances each message's content by its measured age. A lane message at 30 Hz is therefore drawn twice at the render rate, and each draw uses the ego-motion that has arrived since the frame was captured.</p>
+  <figure>[[FIG rates]]<figcaption><b>Figure 6.</b> Topic rates the renderer reads, one second of messages. Each tick is one message. The camera-rate topics may be published at 20 Hz if the GPU budget requires it (section 5.8).</figcaption></figure>
+  <p>The timestamp discipline is the whole trick. A lane message describes the road as it was when the camera's shutter closed, not when the message arrived, and the car has moved since. Every topic therefore carries the capture time of the frame it was computed from, on the Jetson's monotonic clock, and the renderer computes age from that. Because everything is on one computer, there is no clock alignment between hosts, which removes a step the previous plan needed.</p>
+
+  <h3>4.5 Latency budget</h3>
+  <p>Road-registered content is convincing only if it stays put when the car moves. The relevant delay is from the moment light leaves the road to the moment the corresponding pixel lights up on the panel: motion-to-photon latency. The literature puts the perceptual threshold for head-mounted AR near 20 ms, and university-project targets for automotive HUDs near 50 ms. The stages below are the ones the plan measures; the head tracker is shown separately because it affects parallax, not the road-frame content.</p>
+  <figure>[[FIG latency]]<figcaption><b>Figure 7.</b> Estimated age of each stage, as ranges. The total is the sum of the five timed stages; all of them are on the Jetson, so the whole chain can be measured with one photodiode and one flashing LED.</figcaption></figure>
+  <table>
+    <thead><tr><th>Stage</th><th class="num">Estimate</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Camera exposure, readout, USB transfer</td><td class="num">10–30 ms</td><td>Exposure dominates in low light. The ZED's timestamps mark the exposure midpoint.</td></tr>
+      <tr><td>Perception inference</td><td class="num">10–25 ms</td><td>Lane network and detector in parallel streams; depth on the same GPU. Section 5.8.</td></tr>
+      <tr><td>Publish and pick-up</td><td class="num">1–3 ms</td><td>Inter-process queue on one host.</td></tr>
+      <tr><td>hudd render</td><td class="num">8–16 ms</td><td>60 Hz with vsync, to avoid tearing in the mirror.</td></tr>
+      <tr><td>Panel scan-out via the HDMI board</td><td class="num">8–25 ms</td><td>Some small-panel boards buffer a whole frame. Measure before the panel is chosen as final (<span class="tag">verify</span>).</td></tr>
+      <tr><td>Head tracker</td><td class="num">30–50 ms</td><td>Affects parallax only, not the road-frame content.</td></tr>
+      <tr><td><strong>Total, five stages, uncompensated</strong></td><td class="num"><strong>{{lat_min}}–{{lat_max}} ms</strong></td><td>At 30 m/s this is {{lat_travel_min}}–{{lat_travel_max}} m of forward travel.</td></tr>
+    </tbody>
+  </table>
+  <p>The previous plan's chain was 67 to 139 ms, most of it in the 20 Hz driving model on another computer. This chain is shorter because the networks are small and nothing crosses a network, but it is an estimate until the photodiode measures it in Phase 2. Whatever the measured value, the HUD predicts forward by it.</p>
+
+  <h3>4.6 Predicting forward</h3>
+  <p>The image cannot be made faster than the pipeline, so the HUD predicts instead. Each lane point and object is in the car's frame at capture time, with x forward, y to the right and z down. The car has moved since, so before projection hudd moves each point to where it is now: back by the distance travelled, speed × age, and rotated by the yaw the car has turned through, yaw rate × age, both integrated from the <code>ego</code> topic between the capture time and now rather than taken as constants.</p>
+  <div class="formula">age = t_now − t_capture
+p_now = Rz(−∫ yawRate dt) · (p_capture − [∫ v dt, 0, 0])   integrals over the age</div>
+  <p class="small">The sign follows from the car moving forward, so points move toward the car. Confirm the sign and the rotation direction on a recording before relying on either; a wrong sign doubles the error instead of removing it.</p>
+  <p>The size of the effect is easy to misjudge, so the figure shows both cases. Take a road point 10 m ahead, an eye 1.22 m above the road, and a car at 30 m/s. In 100 ms the car moves 3 m. Without prediction, the point's angle below the horizontal changes from {{dep0}}° to {{dep1}}°, a shift of {{uncomp}}° as seen by the driver. With prediction, the remaining error comes from what the motion estimate got wrong. Given 1 m/s² of unmodelled acceleration over the same 100 ms, the error is {{resid_mm}}, which is {{resid_deg}}° at 10 m. A speed error of 1 m/s over the same age gives {{resid_speed_deg}}°. The plan's targets are 0.5° static and 0.3° under head motion (section 10).</p>
+  <figure>[[FIG prediction]]<figcaption><b>Figure 8.</b> Side view drawn to true scale. The eye moves 3 m in the time the image is delayed, so the same road point is seen at a steeper angle. The residual figures are for the stated errors in the motion estimate.</figcaption></figure>
+  <p>Prediction has limits. It corrects for the car's own motion. It does not correct for another road user's motion, for a lane line that the network re-estimates differently next frame, or for a sudden change in acceleration. The tracker in <code>detectd</code> carries a velocity per object, so moving objects are predicted too, by their own measured velocity, which is noisier than the car's. The draw region starts at the bottom edge of the virtual window, so nothing is drawn where the hood hides the road.</p>
+
+  <h3>4.7 Head tracking and parallax</h3>
+  <p>The virtual image is fixed in space, but the driver's eye moves. A graphic computed for the nominal eye position therefore lands in a different place on the road when the eye moves. The shift is called parallax. The head tracker measures where the eye is so hudd can compute the mark's position from the actual eye.</p>
+  <p>Parallax is largest for near objects. A 150 mm head shift, which is the plan's test span, moves a point 10 m away by {{par_10}}° as seen from the eye, and a point 30 m away by {{par_30}}°. The head tracker removes most of that shift when it works.</p>
+  <figure>[[FIG parallax]]<figcaption><b>Figure 9.</b> Parallax angle against object distance for a 150 mm head shift, with the plan's distances marked. The curve falls quickly with distance, so near content needs the tracker most.</figcaption></figure>
+  <table>
+    <thead><tr><th class="num">Object distance</th><th class="num">Parallax for 150 mm head shift</th><th>Where it matters in the plan</th></tr></thead>
+    <tbody>
+      <tr><td class="num">7.5 m</td><td class="num">{{par_7_5}}°</td><td>The virtual image's own distance. Its content sits on this plane.</td></tr>
+      <tr><td class="num">10 m</td><td class="num">{{par_10}}°</td><td>Nearest ribbon points and the lead chevron in traffic.</td></tr>
+      <tr><td class="num">15 m</td><td class="num">{{par_15}}°</td><td>Middle of the ribbon.</td></tr>
+      <tr><td class="num">20 m</td><td class="num">{{par_20}}°</td><td>Typical lane-line range.</td></tr>
+      <tr><td class="num">30 m</td><td class="num">{{par_30}}°</td><td>Far end of the ribbon. The plan's registration test point.</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Parallax for a point at distance <em>d</em> is atan(0.150 m ÷ <em>d</em>). See Appendix A.11.</p>
+  <p>The eye box is the region where the eye can see the whole image. The plan requires at least 120 × 60 mm without tracking and designs for 130 × 70 mm. With tracking, the box follows the eye, so the test span of ±75 mm is larger than the static box and is only met with tracking on. The tracker is part of the design, not an optional extra. With a TFT panel there is one more coupling: the backlight's emission cone sets how far off-axis the image stays bright, so the cone is designed to the eye box (section 6.6).</p>
+</section>

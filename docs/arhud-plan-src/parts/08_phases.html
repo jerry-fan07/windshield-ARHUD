@@ -1,0 +1,93 @@
+<section>
+  <h2 id="s9"><span class="num">9</span>Phases and acceptance criteria</h2>
+  <p>Weeks count from the day the car and comma four are chosen. Phases overlap. The bench work in phases 1 and 2 does not wait on any purchase except the beamsplitter, so software progress is not held up by optics. Figure 22 shows the schedule, and each phase below gives its work, the reason for its position, and the test that closes it.</p>
+  <figure>[[FIG gantt]]<figcaption><b>Figure 22.</b> Phase schedule over weeks 0–13. Blue bars are phases; the grey bar is Track B, which starts only after week 12 and is gated by the parity test. Bars show the planned windows.</figcaption></figure>
+
+  <h3>9.1 The critical path</h3>
+  <p>Two chains determine the earliest date for the demo. The first is the software chain: the bench HUD, the Jetson, the car drive and the in-car combiner. Apart from the car, the comma four and the beamsplitters, it waits on no purchase. The second is the optics chain, and it is the one revision 2 underestimated.</p>
+  <p>The optics chain runs: car chosen, windshield identified, ray trace with that windshield, mirror order, mirror lead time, mirror arrival, Stage 2 build, daylight measurement. Revision 2 placed the mirror order in week 1 and showed Phase 5 in weeks 6–12. That would require the car to be chosen and the ray trace finished in the same first week, which the plan does not show. The mirror's lead time is also not in the plan, so the schedule cannot yet show whether week 12 holds.</p>
+  <div class="callout warn">
+    <p class="h">Schedule risk, and the fallback</p>
+    <p>If the mirror arrives late, Phase 5 moves past week 12 and so does the demo. The plan already names Stage 1 as the demo fallback: the Fresnel magnifier and combiner, with the laser DLP projector used as the picture generator, give a working in-car demonstration without the custom mirror. Whether the Stage 1 image is good enough to be shown is open (section 11).</p>
+  </div>
+
+  <h3>9.2 Gates</h3>
+  <p>Each gate is a test whose result decides whether the next phase starts. A gate that fails sends the work back, and it is recorded, rather than being waived to keep the schedule.</p>
+  <table>
+    <thead><tr><th style="width:22%">Gate</th><th>Criterion</th><th style="width:22%">Decision it controls</th></tr></thead>
+    <tbody>
+      <tr><td>G0 · Car chosen</td><td>Car named from <code>docs/CARS.md</code>, with a factory HUD trim and a windshield confirmed to exist for it</td><td>Harness, windshield and mirror specification</td></tr>
+      <tr><td>G1 · Bench HUD</td><td>Path, lane lines, lead chevron and speed block render at 60 fps from replay on the Stage 0 rig</td><td>Start of Phase 2 on the Jetson</td></tr>
+      <tr><td>G2 · Latency</td><td>End-to-end age measured with the photodiode, under 60 ms on the monitor</td><td>Whether the projector's input lag is acceptable</td></tr>
+      <tr><td>G3 · Car drives</td><td>openpilot holds lane and gap on a 20-minute drive, with the Jetson showing the live path</td><td>Start of Stage 1 in the car</td></tr>
+      <tr><td>G4 · Stage 1 registration</td><td>Static error at 30 m ≤ 1.0° and path on the lane through curves at 25 m/s</td><td>Whether Stage 1 is shown and whether Stage 2 is pursued</td></tr>
+      <tr><td>G5 · Daylight</td><td>Every row of the validation table in section 10 passes at noon</td><td>Demo format: daylight or night</td></tr>
+      <tr><td>G6 · Rehearsal</td><td>Script runs twice in a row without an operator touching the Jetson</td><td>The demo date</td></tr>
+      <tr><td>G7 · Track B parity</td><td>modeld on CUDA matches the Qualcomm build within a tolerance set before the test</td><td>Whether the Jetson runs openpilot, or stays a HUD computer</td></tr>
+    </tbody>
+  </table>
+
+  <h3>9.3 Phase by phase</h3>
+
+  <div class="phase"><div class="when">Week 0–1</div><div class="what"><h4>Phase 0 · Decide and order</h4>
+    <ul>
+      <li>Choose the car from <code>docs/CARS.md</code>, preferring one with a factory HUD trim and openpilot longitudinal control.</li>
+      <li>Order the items in section 8.4 that do not depend on the car. Request mirror quotes, without placing the order.</li>
+      <li>Confirm with the university who approves the vehicle modification, and where the demo may be driven.</li>
+      <li><strong>Done when:</strong> the car is named, the windshield for it is confirmed, the first orders are placed, and the demo venue is agreed.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 1–3</div><div class="what"><h4>Phase 1 · Bench HUD on the mini PC</h4>
+    <ul>
+      <li>Build the fork on mini PC 1. Replay the demo route. Write <code>hudd</code> as a new layout that reuses <code>ModelRenderer</code> with an eye-frame transform.</li>
+      <li>Put the Stage 0 rig on the desk. Build the content from section 3, items 1 to 4.</li>
+      <li>Define the stale-data and disengagement behaviours listed in section 3.3 before the first drive. They are needed for the rig as much as for the car.</li>
+      <li><strong>Done when:</strong> the conformal path, lane lines, lead chevron and speed block render at 60 fps from replay on the beamsplitter rig, and <code>tools/clip</code> produces a regression MP4.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 2–4</div><div class="what"><h4>Phase 2 · Jetson bring-up and the bridge</h4>
+    <ul>
+      <li>Flash JetPack 6.2 and install the fork's runtime. Run <code>hudd</code> full screen at 3840 × 2400 and 60 Hz on monitor 1.</li>
+      <li>Run the bridge from the mini PC's replay to the Jetson. Align clocks with NTP between hosts. Instrument age in <code>hudd</code>.</li>
+      <li>Run <code>headtrackd</code> on the OAK-D, publishing <code>hudEyePose</code>. Show the parallax correction on the bench rig.</li>
+      <li><strong>Done when:</strong> end-to-end age from replayed <code>modelV2</code> publish to photon is measured with the photodiode and is under 60 ms on the monitor. Head motion of ±75 mm moves the overlay correctly against a bench target.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 3–6</div><div class="what"><h4>Phase 3 · The car drives</h4>
+    <ul>
+      <li>Install the comma four and harness. Run the fork's branch. Complete the calibration drives. Engage ACC and lane centering.</li>
+      <li>Add the bridge on the comma four behind a Params flag. Mount the Jetson and power supply, and make the Ethernet link live.</li>
+      <li><strong>Done when:</strong> openpilot engages and holds lane and gap on a 20-minute drive, and <code>hudd</code> on the Jetson shows the live path on monitor 1 in the passenger footwell.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 4–8</div><div class="what"><h4>Phase 4 · Stage 1 combiner in the car</h4>
+    <ul>
+      <li>Build the dash enclosure with monitor 1, the Fresnel lens and the combiner. Calibrate the eye point with the target board. Fit the pre-distortion mesh.</li>
+      <li>Drive at night and in overcast. Show the mirror view on monitor 2.</li>
+      <li><strong>Done when:</strong> static registration error at 30 m is ≤ 1.0° (the Fresnel stage allowance), and the path stays on the lane through curves at 25 m/s.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 6–12</div><div class="what"><h4>Phase 5 · Stage 2 relay mirror, daylight</h4>
+    <ul>
+      <li>Requires the ray trace and the mirror, both after the car is chosen (section 6.6). Install the windshield. Mount the projector PGU, fold mirror and concave mirror in the printed housing. Re-calibrate.</li>
+      <li>Measure the polarisation leaving the diffuser and fit the polariser sheet. Measure the monitor's polarisation axis and orient it, or add a retarder, before it is used as the night PGU (section 6.3).</li>
+      <li>Measure luminance and contrast at noon. Measure the projector's dimming floor and fit a fixed neutral-density filter if it cannot reach the daylight working point (section 6.5). Build the dimming curve against the ambient sensor.</li>
+      <li><strong>Done when:</strong> every row of the validation table in section 10 passes.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">Week 8–12</div><div class="what"><h4>Phase 6 · Jetson perception, polish, rehearsal</h4>
+    <ul>
+      <li>Run <code>perceptd</code> with a TensorRT 10 detector. Show pedestrian and sign outlines as HUD-only cues.</li>
+      <li>Review clutter: remove or dim everything that is neither conformal nor safety-relevant.</li>
+      <li>Rehearse the section 10 script three times on the demo course.</li>
+      <li><strong>Done when:</strong> the script runs twice in a row without an operator touching the Jetson.</li>
+    </ul></div></div>
+
+  <div class="phase"><div class="when">After week 12</div><div class="what"><h4>Track B · openpilot on the Jetson</h4>
+    <ul>
+      <li>CUDA tinygrad build of the model, then output parity against replay, then USB pandad and sensors. Go/no-go after the parity test, against the tolerance set in advance (section 5.3).</li>
+    </ul></div></div>
+
+  <h3>9.4 What the schedule does not show</h3>
+  <p>The Gantt chart shows planned windows, not measured durations. Four things are unknown and could move the dates. The custom mirror's lead time has not been quoted. The OAK-D and projector delivery times are not stated. The windshield's availability for the chosen car is unconfirmed. And the time to complete the ray trace has not been estimated. Each one should be given a date at Phase 0, and the schedule redrawn when they are known.</p>
+</section>

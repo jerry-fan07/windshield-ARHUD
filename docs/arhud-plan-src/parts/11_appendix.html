@@ -1,0 +1,176 @@
+<section>
+  <h2 id="appA"><span class="num">A</span>Derivations</h2>
+  <p>Each formula used in the plan, with the worked numbers. The values are the ones printed in the text and computed in the build script, so a reader can check any figure by hand.</p>
+
+  <h3>A.1 Fresnel reflectance</h3>
+  <p>For light from air (n₁ = 1) reaching glass (n₂ = 1.52) at incidence angle θᵢ, with the transmitted angle θ<sub>t</sub> from Snell's law, the reflected fractions are:</p>
+  <div class="formula">sin θ<sub>t</sub> = sin θᵢ ÷ n₂
+R<sub>s</sub> = [(cos θᵢ − n₂ cos θ<sub>t</sub>) ÷ (cos θᵢ + n₂ cos θ<sub>t</sub>)]²
+R<sub>p</sub> = [(n₂ cos θᵢ − cos θ<sub>t</sub>) ÷ (n₂ cos θᵢ + cos θ<sub>t</sub>)]²</div>
+  <p>At θᵢ = 65°: sin θ<sub>t</sub> = 0.906 ÷ 1.52 = 0.596, so θ<sub>t</sub> = 36.6°. Then R<sub>s</sub> = {{rs65}} and R<sub>p</sub> = {{rp65}}. R<sub>p</sub> is zero at the Brewster angle, arctan(1.52) = {{brewster}}°. These are per surface; a laminated windshield has two.</p>
+
+  <h3>A.2 Mirror equation, Stage 2</h3>
+  <p>For a concave mirror of focal length f, an object at distance u in front of the mirror forms an image at distance v, with 1/u + 1/v = 1/f. Magnification is M = −v/u. When the object is inside the focal length, v is negative and the image is virtual, on the object's side, and magnified.</p>
+  <div class="formula">Virtual image at 7.5 m, f = 330 mm:
+  1/u = 1/f + 1/7500 = 0.0030303 + 0.0001333  so  u = 316.1 mm
+  M = 7500 ÷ 316.1 = 23.7
+  image width  = 60 mm × 23.7 = 1.42 m  so  field 2·atan(0.711 ÷ 7.5) = 10.8°
+  image height = 30 mm × 23.7 = 0.71 m  so  field 2·atan(0.356 ÷ 7.5) = 5.4°
+
+Revision 2's u = 346 mm, f = 330 mm:
+  1/v = 1/f − 1/u = 0.0030303 − 0.0028902 = 0.0001401  so  v = +7.14 m  (real)
+  |M| = 7140 ÷ 346 = 20.6</div>
+  <p>The second case is the one revision 2 had. Its positive v means a real image, 7.1 m from the mirror, which cannot be seen as a virtual image at 7.5 m. The single-mirror model also omits the windshield, which is covered in section 6.6.</p>
+
+  <h3>A.3 Lens equation, Stage 1</h3>
+  <p>A thin converging lens of focal length f, with an object at distance u on the object side, follows the same equation. With f = 300 mm and u = 280 mm:</p>
+  <div class="formula">1/v = 1/300 − 1/280 = −0.000238  so  v = −4200 mm  (virtual, object side)
+M = 4200 ÷ 280 = 15
+image = 80 mm × 15 = 1.2 m wide, 40 mm × 15 = 0.6 m high
+field = 2·atan(0.6 ÷ 4.2) = 16.3° wide, 2·atan(0.3 ÷ 4.2) = 8.2° high
+pixels per degree: (80 mm ÷ 0.0917 mm per px) ÷ 16.3° = 872 ÷ 16.3 ≈ 54</div>
+  <p>A Fresnel lens has the same equation as the thin lens it approximates. The grooves change the aberrations, which is why the plan expects ring artefacts.</p>
+
+  <h3>A.4 Window size</h3>
+  <p>The width of a window of field θ at distance D is 2D·tan(θ/2). At 7.5 m, the 10° window is 2 × 7.5 × tan 5° = 1.31 m wide. The 4° height is 2 × 7.5 × tan 2° = 0.52 m, and the 5° height is 0.65 m. The corrected 10.8° × 5.4° window is {{img2_w}} × {{img2_h}}.</p>
+
+  <h3>A.5 Luminance from flux, and the budget chain</h3>
+  <p>For a Lambertian emitter of area A and luminance L, the total flux into the hemisphere is πLA. Inverting it, a transmissive diffuser that passes a fraction η of flux Φ has luminance <em>L</em> = Φη ÷ (πA). For Φ = 2000 lm, η = 0.5, and A = 0.060 × 0.030 = 0.0018 m²:</p>
+  <div class="formula">L = 2000 × 0.5 ÷ (π × 0.0018) = {{L_DLP}} cd/m²</div>
+  <p>Each optical element then multiplies the luminance by its reflectance or transmittance. An ideal imaging mirror changes the image size but not its luminance, so the chain is a product of fractions:</p>
+  <div class="formula">Combiner path:          L_eye = L_source × 0.30                  = {{dlp_comb}}
+Windshield path:       L_eye = L_source × 0.24                  = {{dlp_ws}}
+Windshield + 2 mirrors L_eye = L_source × 0.90 × 0.90 × 0.24     = {{dlp_ws_mirr}}
+With polariser sheet   L_eye = L_source × 0.90 × 0.90 × 0.24 × 0.42 = {{dlp_ws_mirr_pol}}</div>
+  <p>The 0.90 mirror figure and the 0.42 polariser transmission are assumptions. The polariser is needed because a rear-projection diffuser depolarises the light that passes through it (section 6.3). The windshield factor is the s-polarised R<sub>s</sub> from A.1 for one surface, rounded to 0.24. A laminated windshield reflects from both of its air-glass surfaces: the first reflects R<sub>s</sub>, and the second returns (1 − R<sub>s</sub>)² R<sub>s</sub> after two passes through the first. With the wedge overlapping the two images at the design eye point, the combined reflection is about {{rs65_two}}, so 0.24 is the conservative figure.</p>
+
+  <h3>A.6 Contrast ratio and the noon target</h3>
+  <p>The plan defines contrast as (overlay + background) ÷ background. For a background of 10,000 cd/m² and a required ratio of 1.15, the overlay must supply 0.15 × 10,000 = 1,500 cd/m² at the eye.</p>
+
+  <h3>A.7 Dimming range</h3>
+  <div class="formula">day target ÷ night ceiling      = 1,500 ÷ 50    = {{dim_day_night}}
+full output ÷ night ceiling  = {{dlp_ws}} ÷ 50  = {{dim_full_night}}
+daylight fraction, bare windshield path    = 1,500 ÷ {{dlp_ws}} = {{dlp_day_frac_raw}}
+daylight fraction, mirrors and polariser   = 1,500 ÷ {{dlp_ws_mirr_pol}} = {{dlp_day_frac}}</div>
+
+  <h3>A.8 Parallax from head shift</h3>
+  <p>A head shift of Δ moves the line of sight to a point at distance d by an angle atan(Δ ÷ d), if the image is not corrected. For Δ = 0.150 m: at 7.5 m, atan(0.02) = 1.15°; at 10 m, atan(0.015) = 0.86°; at 30 m, atan(0.005) = 0.29°.</p>
+
+  <h3>A.9 Motion compensation</h3>
+  <p>A camera at height h = 1.22 m sights a road point at horizontal distance d. The depression angle is θ = atan(h ÷ d). At 30 m/s, the car travels 3.0 m in 100 ms, so the point's distance drops from 10 m to 7.0 m:</p>
+  <div class="formula">Uncompensated: θ(10 m) = atan(1.22 ÷ 10) = {{dep0}}°
+              θ(7.0 m)  = atan(1.22 ÷ 7.0)  = {{dep1}}°
+              change = {{uncomp}}°
+
+Residual after prediction, for unmodelled acceleration a = 1 m/s² over t = 0.1 s:
+  Δx = ½ a t² = 5.0 mm
+  Δθ ≈ h ÷ (d² + h²) × Δx = 1.22 ÷ 101.5 × 0.005 = 6.0 × 10⁻⁵ rad = {{resid_deg}}°</div>
+  <p>The residual is small because prediction removes the large term, the car's own travel. What remains is what the model did not foresee.</p>
+
+  <h3>A.10 Latency sums</h3>
+  <p>The four timed stages sum to a minimum of 50 + 1 + 8 + 8 = {{lat_min}} ms and a maximum of 80 + 3 + 16 + 40 = {{lat_max}} ms. At 30 m/s these are 2.0 m and 4.2 m of travel, which the plan rounds to 2 to 4 m. The head tracker is excluded because it affects parallax, not the road-frame path.</p>
+
+  <h3>A.11 Where a road point lands on the virtual plane</h3>
+  <p>For a flat road and an eye at height h, the line of sight to a point at distance d crosses a plane at distance D at height h(1 − D ÷ d) above the road. With h = 1.22 m and D = 7.5 m: 1.22 × (1 − 7.5 ÷ 10) = 0.31 m for d = 10 m, and 1.22 × (1 − 7.5 ÷ 30) = 0.92 m for d = 30 m.</p>
+
+  <h3>A.12 Sun focus estimate</h3>
+  <p>The sun subtends 0.53° (9.25 mrad). Its focused image at the focal plane is about f × 9.25 mrad = 330 × 0.00925 = 3.1 mm across. For the ray-trace estimate, parallel on-axis rays strike a spherical mirror of radius 660 mm over a 300 × 200 mm aperture. Each reflected ray is intersected with the PGU plane 316 mm from the vertex. The radius that contains 90% of the rays is {{r90_pgu}} mm at that plane. The ideal, lossless concentration is the aperture area over the area of that spot:</p>
+  <div class="formula">C = (300 × 200 mm²) ÷ (π × r90²) ≈ {{conc_pgu}}   (r90 = {{r90_pgu}} mm, unrounded in the calculation)</div>
+  <p>The trace gives a larger spot, {{r90_focus}} mm, at the paraxial focal plane, because marginal rays focus nearer the mirror (spherical aberration). The PGU plane is therefore close to the smallest blur, which is why it is the worst location for the diffuser. The estimate ignores the windshield and the sun's disk, so it is an upper bound.</p>
+  <div class="formula">collected power = 0.300 m × 0.200 m × 1,000 W/m² × {{ws_t_sun}} = {{sun_w}}
+spot diameter ≈ 2 × r90 = {{sun_spot_mm}} mm at the PGU plane</div>
+  <p>The 1,000 W/m² is direct sunlight on a clear day, and the {{ws_t_sun}} is an assumed windshield transmission for sunlight that covers both surfaces and the interlayer. The aperture is taken as fully lit, which is the worst case; the dash lip and the housing will shade part of it at most sun positions.</p>
+
+  <h3>A.13 Acquisition totals</h3>
+  <p>The sum of the low ends of the cost ranges in section 8.2 is ${{cost_low}}, and the sum of the high ends is ${{cost_high}}. The total excludes the deferred ZED-F9P, and it includes single prices and the mirror quote as listed.</p>
+</section>
+
+<section>
+  <h2 id="appB"><span class="num">B</span>Glossary</h2>
+  <table>
+    <thead><tr><th style="width:26%">Term</th><th>Meaning in this plan</th></tr></thead>
+    <tbody>
+      <tr><td>ACC</td><td>Adaptive cruise control. Holds a set speed and a gap to the car ahead.</td></tr>
+      <tr><td>Accommodation</td><td>The eye's change of focus with distance.</td></tr>
+      <tr><td>Age (of a message)</td><td>Current time minus the message's timestamp, here <code>modelV2.timestampEof</code>.</td></tr>
+      <tr><td>Beamsplitter</td><td>Partly reflecting, partly transmitting glass. A 70/30 part transmits 70% and, in the teleprompter convention, reflects 30%.</td></tr>
+      <tr><td>Brewster angle</td><td>The incidence angle at which the p-polarised reflection of a surface is zero.</td></tr>
+      <tr><td>Bridge</td><td>The openpilot program that converts between local msgq and network ZMQ.</td></tr>
+      <tr><td>CAN bus</td><td>The car's internal network over which the control units exchange messages.</td></tr>
+      <tr><td>Combiner</td><td>A partly reflecting glass that merges the image from a display with the view through it.</td></tr>
+      <tr><td>Conformal</td><td>Graphics that must sit on the thing they describe, such as the drive path on the road.</td></tr>
+      <tr><td>Contrast ratio</td><td>In this plan, (overlay + background) ÷ background. The noon target uses 1.15.</td></tr>
+      <tr><td>Desync</td><td>Two messages describing different moments. The age compensation exists to prevent it.</td></tr>
+      <tr><td>DC-DC converter</td><td>Here, the ignition-sensed supply that powers the Jetson and lets it shut down cleanly.</td></tr>
+      <tr><td>Eye box</td><td>The region the eye can move through while still seeing the whole image.</td></tr>
+      <tr><td>Field of view</td><td>The angle the image covers as seen from the eye.</td></tr>
+      <tr><td>Fresnel equations</td><td>The formulas for reflected and transmitted fractions at a boundary between two media.</td></tr>
+      <tr><td>Fresnel lens</td><td>A thin lens whose power comes from concentric grooves. Used here as a magnifier in Stage 1.</td></tr>
+      <tr><td>GMSL</td><td>Gigabit Multimedia Serial Link, a camera interface used by automotive cameras.</td></tr>
+      <tr><td>Keystone</td><td>A trapezoidal distortion of an image from an off-axis mirror. Corrected in software by hudd.</td></tr>
+      <tr><td>Lambertian</td><td>A surface whose luminance is the same in every direction.</td></tr>
+      <tr><td>Lane centering</td><td>openpilot's steering that keeps the car within its lane.</td></tr>
+      <tr><td>Luminance (cd/m²)</td><td>Brightness of a surface as seen by the eye. Also called a nit.</td></tr>
+      <tr><td>modelV2</td><td>The driving model's output message: path, lane lines, lead predictions. Published at 20 Hz.</td></tr>
+      <tr><td>msgq</td><td>openpilot's local inter-process message queue.</td></tr>
+      <tr><td>Motion-to-photon latency</td><td>Delay from the moment the scene changes to the moment the image shows it.</td></tr>
+      <tr><td>Nominal eye point</td><td>The design eye position, from which the calibration is measured.</td></tr>
+      <tr><td>Panda</td><td>The board in the comma four that connects the computer to the car's CAN bus and enforces the safety model in firmware.</td></tr>
+      <tr><td>Parallax</td><td>The apparent shift of an object when the viewpoint moves.</td></tr>
+      <tr><td>Params</td><td>openpilot's persistent key-value store for settings and calibration.</td></tr>
+      <tr><td>PGU</td><td>Picture generation unit: the device that makes the image, here a laser DLP projector on a diffuser or a monitor.</td></tr>
+      <tr><td>Pre-distortion</td><td>A warp applied to the image so that the optics' own distortion cancels it.</td></tr>
+      <tr><td>PVB, wedge PVB</td><td>Polyvinyl butyral, the plastic interlayer in laminated glass. A wedge-shaped version removes the ghost image at the design eye point.</td></tr>
+      <tr><td>Registration</td><td>How accurately a graphic lines up with the thing it marks.</td></tr>
+      <tr><td>Relay mirror</td><td>A mirror that re-images the PGU's picture into the windshield. Stage 2.</td></tr>
+      <tr><td>s- and p-polarisation</td><td>The two perpendicular polarisations of light. The windshield reflects s much more strongly.</td></tr>
+      <tr><td>Safety model</td><td>The per-car set of limits that the panda's firmware enforces on every control frame.</td></tr>
+      <tr><td>SubMaster</td><td>A message subscriber that keeps the latest message from each service it reads.</td></tr>
+      <tr><td>Track A, Track B</td><td>Track A: the comma four drives. Track B: openpilot runs on the Jetson, a research track.</td></tr>
+      <tr><td>Virtual image</td><td>An image that the eye perceives at a distance, though no light originates there.</td></tr>
+      <tr><td>ZMQ</td><td>ZeroMQ, the network messaging library the bridge uses.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="appC"><span class="num">C</span>Repository pointers</h2>
+  <p>The files the HUD work touches. Line references were checked against the checkout on 2026-10-08 where marked; the rest are as written in revision 2.</p>
+  <table>
+    <thead><tr><th style="width:42%">File</th><th>Why, and what was checked</th></tr></thead>
+    <tbody>
+      <tr><td><code>openpilot/cereal/messaging/bridge.cc</code>, <code>bridge_zmq.cc</code>, <code>msgq_to_zmq.cc</code></td><td>Cross-host transport and port hashing. Whitelist match at <code>bridge.cc</code> line 13: <span class="tag acc">checked</span>.</td></tr>
+      <tr><td><code>openpilot/cereal/services.py</code>, <code>log.capnp</code></td><td>Service rates, all checked. Add <code>hudEyePose</code> and <code>hudDetections</code>.</td></tr>
+      <tr><td><code>openpilot/selfdrive/ui/onroad/model_renderer.py</code></td><td>Point lists, ground offset, clipping constants, <code>set_transform</code>.</td></tr>
+      <tr><td><code>openpilot/selfdrive/ui/onroad/augmented_road_view.py</code></td><td>The camera-frame matrix hudd replaces.</td></tr>
+      <tr><td><code>openpilot/selfdrive/ui/onroad/hud_renderer.py</code></td><td>Set-speed and speed fields.</td></tr>
+      <tr><td><code>openpilot/selfdrive/ui/ui_state.py</code></td><td>Subscriptions, the <code>started</code> logic and local Params.</td></tr>
+      <tr><td><code>openpilot/system/ui/lib/application.py</code></td><td>Window, FPS, vsync and scale. Add monitor selection and full screen.</td></tr>
+      <tr><td><code>openpilot/common/transformations/camera.py</code></td><td>Frame conventions and <code>DEVICE_CAMERAS</code>.</td></tr>
+      <tr><td><code>openpilot/system/manager/process_config.py</code></td><td>Add hudd, headtrackd, perceptd and hudmirror. The bridge is gated by <code>notCar</code> at line 118: <span class="tag acc">checked</span>. The Track B rows are <span class="tag acc">checked</span>: <code>timed</code> line 83 and <code>sensord</code> line 88 are disabled on PC, <code>qcomgpsd</code> line 101 and <code>ubloxd</code>/<code>pigeond</code> lines 105–106 are comma-hardware only, and <code>hardwared</code> at line 111 runs everywhere.</td></tr>
+      <tr><td><code>openpilot/selfdrive/modeld/SConscript</code>, <code>helpers.py</code></td><td>Track B only. The CUDA device branch sits at lines 27–31 of the SConscript: <span class="tag acc">checked</span> (revision 2 said 28–32).</td></tr>
+      <tr><td><code>openpilot/selfdrive/pandad/panda.cc</code></td><td>Track B only. The SPI handle is constructed at line 16: <span class="tag acc">checked</span> (revision 2 said 15).</td></tr>
+      <tr><td><code>openpilot/tools/replay</code>, <code>tools/clip</code>, <code>tools/sim</code></td><td>Bench development and regression.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="appD"><span class="num">D</span>Sources</h2>
+  <p>The sources cited in revision 2. They were not re-read for this edition, except where a claim is marked as checked in Appendix C. Prices and product claims should be checked again before ordering.</p>
+  <ul class="small">
+    <li>Seeed, reComputer J4012 JetPack flashing guides (JetPack 6.0, 6.1 and 6.2 listed; 9–19 V input; MAXN SUPER warning): wiki.seeedstudio.com/reComputer_J4012_Flash_Jetpack and wiki.seeedstudio.com/flash/jetpack_to_selected_product, read 2026-10-08.</li>
+    <li>NVIDIA, JetPack 6.2 Super Mode blog, 2025-01-16. JetPack 6.2 components CUDA 12.6 and TensorRT 10.3, via PyTorch and RidgeRun documentation.</li>
+    <li>comma.ai shop, comma four and chestnut pages, read 2026-10-08.</li>
+    <li>Arducam GMSL quick-start for Jetson (JetPack 6.2 / L4T 36.4.3), docs.arducam.com.</li>
+    <li>TI DLP application notes DLPA057, DLPA073 and DLPA117 on AR HUD virtual image distance and field of view.</li>
+    <li>Mercedes supplier portal and VW newsroom on S-Class and ID.4 AR HUDs (10 m); Huawei IAA 2021 release (7.5 m, 13° × 5°); Corning and Hyundai Mobis on Ioniq 5 (7.5 m); Panasonic CES 2022 AR HUD 2.0 with eye tracking.</li>
+    <li>Analog Devices design note on HUD daylight contrast (ratio 1.15–1.5 against up to 10,000 cd/m² ambient); Karl Guttag, CES 2018 HUD notes on source luminance.</li>
+    <li>SAE 2016-01-1402 and Eastman Saflex and Kuraray Trosifol literature on wedge PVB; AGC on p-polarised HUD glass.</li>
+    <li>NASA Ames (Foyle; Dowell) on attention capture with superimposed HUD symbology; AIST simulator study on lead-vehicle-centred cues; Frontiers 2019 AR DriveSim study.</li>
+    <li>arXiv 2607.23901 and Jerald 2010 on perceptual latency thresholds; Holloway 1997 on latency as the dominant registration error.</li>
+    <li>California Vehicle Code 26708; Texas Transportation Code 547.613; Florida Statutes 316.2952; NHTSA interpretation aiam4336.</li>
+    <li>Mini-Box DCDC-USB-200 product page; SparkFun GPS-RTK2; Waveshare OAK-D Pro listing.</li>
+  </ul>
+  <p class="small">This document supersedes the earlier plan and the TODOs in <code>.github/README.md</code>.</p>
+</section>

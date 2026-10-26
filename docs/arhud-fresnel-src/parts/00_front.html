@@ -1,0 +1,41 @@
+<section class="cover">
+  <div class="band"></div>
+  <div class="eyebrow">Windshield AR HUD · TFT LCD edition · Stage 1</div>
+  <h1 style="margin-top:14px">The Fresnel Stage</h1>
+  <div class="sub">How Stage 1's Fresnel magnifier and combiner turn an 80 × 40 mm patch of an LCD into a picture floating {{d_eye_img}} m ahead of the driver, traced through the real lens, groove by groove.</div>
+  <div class="meta">2026-10-25 · Companion to <code>docs/ARHUD-PLAN-TFT.pdf</code>, section 5 (Stage 1) · Numbers from <code>docs/arhud-fresnel-src/calc.py</code> and its ray tracer; renders from Blender Cycles</div>
+  <figure>[[FIG thr_eye]]<figcaption><b>Figure [[N thr_eye]].</b> What the eye sees: a Cycles render through a 300 mm PMMA Fresnel lens built tooth by tooth (0.5 mm pitch), with a 4 mm pupil focused at the virtual image and the lens's dispersion rendered as three colour passes. The panel shows a HUD test frame on the 80 × 40 mm crop; the combiner is left out (it is a flat mirror). Section 5 explains every artefact in it.</figcaption></figure>
+</section>
+
+<section>
+  <div class="eyebrow">At a glance</div>
+  <p class="lede" style="margin-top:8px">Stage 1 is a magnifying glass. A 300 mm plastic Fresnel lens sits {{u}} mm above the panel, just inside its {{f}} mm focal length, so the eye sees an enlarged, upright image of the panel far behind it. A tilted sheet of glass, the combiner, reflects that image toward the driver while letting the road show through.</p>
+  <div class="kpi">
+    <div><div class="v">{{d_eye_img}} m</div><div class="l">from the eye to the virtual image at the centre ({{v_m}} m from the lens)</div></div>
+    <div><div class="v">{{fov_eye_w}}° × {{fov_eye_h}}°</div><div class="l">field of view from the eye, traced (the plan's 16° × 8° is measured from the lens)</div></div>
+    <div><div class="v">{{eyebox_w}} × {{eyebox_h}} mm</div><div class="l">eye box set by the lens aperture, traced at {{eye_z}} mm (ASSUMED eye distance)</div></div>
+    <div><div class="v">{{dvdu}} mm/mm</div><div class="l">image distance change per mm of panel movement, but only {{diopt_per_mm}} D: invisible to focus</div></div>
+    <div><div class="v">{{eyeclean_90}}</div><div class="l">of the eye's sight lines at the field edge pass a facet cleanly; the rest strike draft walls</div></div>
+    <div><div class="v">{{sun_W}} W</div><div class="l">of sunlight the lens can focus onto the panel, peaking at {{sun_worst}} kW/m² {{sun_worst_ang}}° off axis</div></div>
+  </div>
+
+  <div class="find">
+    <div class="h">What this document adds to the plan</div>
+    <ol>
+      <li><b>Quote the image from the eye.</b> The image is {{d_eye_img}} m from the eye, not 4.2 m, and spans {{fov_eye_w}}° × {{fov_eye_h}}° at {{ppd_mon_eye}} px per degree on the 4K monitor ({{ppd_55_eye}} on the 5.5-inch panel). The plan's figures are measured from the lens (section 3).</li>
+      <li><b>The image is not flat.</b> It curves away from the eye: {{isurf_c}} m at the centre, {{isurf_w_t}}–{{isurf_w_s}} m at the side edges. The eye cannot tell (0.06 D), but registration should use a measured distance per point, as Stage 2 does (section 4).</li>
+      <li><b>Set the panel distance per lens, by parallax.</b> A ±2% focal-length tolerance moves the image between {{tol_v_p2}} and {{tol_v_m2}} m. Put the panel on a slide and set it against a target (section 11).</li>
+      <li><b>Grooves must face the eye.</b> Flipped, only {{fw_f_100}} of the light at r = 100 mm passes cleanly (against {{fw_c_100}}), and the field edge shows {{flip_astig_D}} D of astigmatism (section 7).</li>
+      <li><b>Per-colour pre-distortion.</b> Red and blue separate by {{lc_edge}}° at the field edge ({{lc_edge_px}} pixels on the 5.5-inch panel); the split moves with the head (section 6).</li>
+      <li><b>Stage 1 needs its own sun defence.</b> It has no cold mirror, filter or shutter. Sunlight straight down the lens puts {{sun_peak}} kW/m² on the panel, and {{sun_worst}} kW/m² at {{sun_worst_ang}}° off axis. A lid that is closed whenever the HUD is off is the minimum (section 10).</li>
+      <li><b>The path must be folded.</b> 280 mm does not fit straight on a dash top; a 45° front-surface mirror makes a box about 410 × 116 mm (section 11; a suggestion, not in the plan).</li>
+      <li><b>Crop and backlight disagree.</b> Stage 1 uses an 80 × 40 mm crop; the custom backlight is designed for 60 × 30 mm. Either light {{bl_area_ratio}}× the area or accept {{fov60_w}}° × {{fov60_h}}° in Stage 1.</li>
+    </ol>
+  </div>
+
+</section>
+
+<section style="break-before:page">
+  [[TOC]]
+  <p class="small" style="margin-top:22px">Values marked ASSUMED are not in the plan or a datasheet: the eye distance ({{eye_z}} mm along the light path), the in-car layout, the windshield and combiner transmissions, and the lens's design conjugate. The lens is the plan's Knight Optical LFQ300300: 300 × 300 mm, f = {{f}} mm, {{t}} mm thick, {{pitch}} mm groove pitch, PMMA (stock listing).</p>
+</section>

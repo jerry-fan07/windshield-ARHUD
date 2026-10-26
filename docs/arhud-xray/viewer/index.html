@@ -1,0 +1,1775 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AR HUD X-ray</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+:root {
+  /* Layout: the component tree docks on the left (a bottom sheet on phones) beside a white x-ray stage; the view bar
+     and the part card float on the stage. The stage tokens never change with the theme: the stage is white by request,
+     so anything drawn straight on it uses --stage-* colours in both themes. */
+  --stage: #ffffff;
+  --stage-ink: #4b5969;
+  --stage-line: #dce3eb;
+  --stage-strong: #111923;
+  --stage-accent: #1a5daf;
+  --stage-danger: #b42318;
+  --bg: #e8edf3;
+  --panel: #f4f6f9;
+  --raised: #ffffff;
+  --ink: #111923;
+  --muted: #5a6778;
+  --faint: #8592a3;
+  --line: #d5dce5;
+  --accent: #1a5daf;
+  --accent-ink: #ffffff;
+  --accent-soft: #e0eaf7;
+  --ghost: #619cda;
+  --solid: #111923;
+  --on-solid: #ffffff;
+  --hl: #ee8a00;
+  --tip-bg: #111923;
+  --tip-ink: #ffffff;
+  --danger: #b42318;
+  --shadow: 0 1px 2px rgb(17 25 35 / 0.08), 0 6px 22px rgb(17 25 35 / 0.12);
+  --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --r: 8px;
+  --side-w: 344px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0f15; --panel: #111820; --raised: #18212b; --ink: #e2e8ef; --muted: #98a5b5; --faint: #6c798a;
+    --line: #243040; --accent: #7cb1f0; --accent-ink: #06121f; --accent-soft: #15263a; --ghost: #6ea6e2;
+    --solid: #e2e8ef; --on-solid: #111820; --tip-bg: #e2e8ef; --tip-ink: #111923; --danger: #ff8b7e;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 26px rgb(0 0 0 / 0.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a0f15; --panel: #111820; --raised: #18212b; --ink: #e2e8ef; --muted: #98a5b5; --faint: #6c798a;
+  --line: #243040; --accent: #7cb1f0; --accent-ink: #06121f; --accent-soft: #15263a; --ghost: #6ea6e2;
+  --solid: #e2e8ef; --on-solid: #111820; --tip-bg: #e2e8ef; --tip-ink: #111923; --danger: #ff8b7e;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 26px rgb(0 0 0 / 0.35);
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 13px/1.45 var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+#app { position: fixed; inset: 0; display: flex; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); background: var(--bg); }
+
+/* ---------------------------------------------------------------- side panel */
+#side { flex: 0 0 var(--side-w); width: var(--side-w); display: flex; flex-direction: column; min-height: 0; background: var(--panel); border-right: 1px solid var(--line); z-index: 3; }
+.ph { display: flex; align-items: flex-start; gap: 12px; padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+.brand { min-width: 0; flex: 1; }
+.brand h1 { margin: 0; font-size: 19px; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance; }
+.brand h1 b { color: var(--accent); font-weight: 700; }
+.brand p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.summary { margin-top: 8px; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.summary .sw { display: inline-flex; align-items: center; gap: 5px; }
+.sw i { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+.sw .s { background: var(--solid); }
+.sw .g { border: 1.5px dashed var(--ghost); }
+#sheetToggle { display: none; flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--raised); align-items: center; justify-content: center; }
+#sheetToggle svg { width: 16px; height: 16px; transition: transform 0.2s; }
+#side.collapsed #sheetToggle svg { transform: rotate(180deg); }
+.pbody { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; }
+.blk { padding: 12px 16px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
+.lbl { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; border: 1px solid var(--line); border-radius: var(--r); background: var(--raised); }
+.seg button { border: 0; background: transparent; padding: 6px 4px; border-radius: 6px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.ctl { display: grid; grid-template-columns: 92px 1fr 34px; align-items: center; gap: 10px; }
+.ctl label, .ctl .t { color: var(--muted); font-size: 12px; }
+.ctl output { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; color: var(--ink); }
+input[type="range"] { width: 100%; accent-color: var(--accent); margin: 0; }
+.ctl.off input[type="range"], .ctl.off output { opacity: 0.4; }
+.tintrow { display: flex; align-items: center; gap: 8px; }
+input[type="color"] { width: 34px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--raised); cursor: pointer; }
+input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 4px; }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font-size: 12px; text-decoration: underline; text-underline-offset: 2px; }
+.switch { position: relative; width: 34px; height: 20px; border-radius: 10px; border: 1px solid var(--line); background: var(--raised); padding: 0; flex: none; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--faint); transition: transform 0.15s, background 0.15s; }
+.switch[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+.switch[aria-checked="true"]::after { transform: translateX(14px); background: var(--accent-ink); }
+.filter { width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: var(--r); background: var(--raised); }
+.btns { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.btn { border: 1px solid var(--line); background: var(--raised); border-radius: 6px; padding: 5px 6px; font-weight: 600; font-size: 12px; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.hint { margin: 0; color: var(--muted); font-size: 11.5px; }
+
+/* tree */
+#tree { padding: 6px 8px 12px; }
+.cat { border-bottom: 1px solid var(--line); padding: 4px 0; }
+.cat:last-child { border-bottom: 0; }
+.cat-h { display: flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 4px 0 2px; }
+.cat-n { flex: 1; min-width: 0; font-weight: 700; font-size: 12.5px; letter-spacing: 0.01em; cursor: pointer; }
+.cnt { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 11.5px; margin-right: 4px; }
+.mini { border: 1px solid var(--line); background: var(--raised); border-radius: 5px; padding: 1px 7px; font-size: 11px; font-weight: 600; color: var(--muted); }
+.mini:hover { color: var(--accent); border-color: var(--accent); }
+.cat.closed .cat-b { display: none; }
+.tw { width: 22px; height: 22px; border: 0; background: none; padding: 0; display: inline-grid; place-items: center; color: var(--faint); flex: none; border-radius: 4px; }
+.tw svg { width: 12px; height: 12px; transition: transform 0.15s; }
+.tw[aria-expanded="true"] svg { transform: rotate(90deg); }
+.tw:hover { color: var(--ink); background: var(--accent-soft); }
+.sp { width: 22px; flex: none; }
+.row { display: flex; align-items: center; gap: 6px; min-height: 30px; padding: 2px 2px 2px calc(2px + var(--d, 0) * 16px); border-radius: 6px; }
+.row:hover, .row.hov { background: var(--accent-soft); }
+.row.cur { box-shadow: inset 2px 0 0 var(--accent); background: var(--accent-soft); }
+.nm { flex: 1; min-width: 0; cursor: pointer; line-height: 1.25; padding: 4px 0; overflow-wrap: anywhere; }
+.node[data-solid="0"] > .row .nm { color: var(--muted); }
+.node > .kids { display: none; }
+.node.open > .kids { display: block; }
+.acts { display: flex; gap: 1px; flex: none; }
+.ib { width: 24px; height: 24px; border: 0; background: none; border-radius: 5px; padding: 0; display: inline-grid; place-items: center; color: var(--faint); }
+.ib svg { width: 15px; height: 15px; }
+.ib:hover { color: var(--accent); background: var(--raised); }
+.cb { -webkit-appearance: none; appearance: none; margin: 0; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 1.5px dashed var(--ghost); background: transparent; display: grid; place-content: center; cursor: pointer; }
+.cb:checked { border: 1.5px solid var(--solid); background: var(--solid); }
+.cb:checked::after { content: ""; width: 8px; height: 4px; border-left: 2px solid var(--on-solid); border-bottom: 2px solid var(--on-solid); transform: translateY(-1px) rotate(-45deg); }
+.cb:indeterminate { border: 1.5px solid var(--solid); background: transparent; }
+.cb:indeterminate::after { content: ""; width: 8px; height: 2px; background: var(--solid); border-radius: 1px; }
+.cat.empty, .node.nomatch { display: none; }
+.credit { margin-top: auto; padding: 12px 16px 16px; color: var(--faint); font-size: 11px; line-height: 1.4; border-top: 1px solid var(--line); }
+
+/* ---------------------------------------------------------------- stage */
+#stage { position: relative; flex: 1; min-width: 0; min-height: 0; background: var(--stage); overflow: hidden; }
+#stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+#views { position: absolute; top: 16px; left: 16px; right: 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; pointer-events: none; z-index: 2; }
+#views > * { pointer-events: auto; }
+.vb { border: 1px solid var(--line); background: var(--raised); color: var(--ink); border-radius: 999px; padding: 5px 12px; font-weight: 600; font-size: 12px; box-shadow: var(--shadow); white-space: nowrap; }
+.vb:hover { border-color: var(--accent); color: var(--accent); }
+.vb[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.vb.fit { margin-left: 6px; }
+.vb:disabled { opacity: 0.5; cursor: default; }
+#info { position: absolute; right: 16px; bottom: 16px; width: 360px; max-width: calc(100% - 32px); max-height: calc(100% - 88px); overflow-y: auto; background: var(--raised); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: 14px 16px 14px; z-index: 2; }
+#info .eyebrow { margin: 0; font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); padding-right: 30px; }
+#info h2 { margin: 4px 0 2px; font-size: 16px; line-height: 1.25; text-wrap: balance; padding-right: 26px; }
+#info .partof { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+#info .desc { margin: 0 0 10px; line-height: 1.5; }
+#info table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; }
+#info th { text-align: left; font-weight: 600; color: var(--muted); padding: 5px 10px 5px 0; vertical-align: top; width: 38%; border-top: 1px solid var(--line); }
+#info td { padding: 5px 0; vertical-align: top; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+#info .where { margin: 0 0 10px; font-size: 12px; }
+#info .where b { color: var(--muted); font-weight: 600; }
+#info .acts2 { display: flex; gap: 6px; flex-wrap: wrap; }
+#info .close { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border: 0; background: none; border-radius: 6px; color: var(--muted); display: grid; place-items: center; }
+#info .close:hover { background: var(--accent-soft); color: var(--ink); }
+#info .state { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); margin-left: auto; align-self: center; }
+/* on phones the part card lives at the top of the bottom sheet, so it never covers the model */
+.pbody > #info { position: relative; right: auto; bottom: auto; width: auto; max-width: none; max-height: none; overflow: visible; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; background: var(--raised); padding: 14px 16px; flex: none; }
+#tip { position: absolute; left: 0; top: 0; pointer-events: none; background: var(--stage-strong); color: var(--stage); border-radius: 6px; padding: 5px 9px; font-size: 12px; line-height: 1.3; max-width: 260px; z-index: 4; box-shadow: var(--shadow); }
+#tip small { display: block; opacity: 0.72; font-size: 11px; }
+#loader { position: absolute; inset: 0; display: grid; place-items: center; background: var(--stage); z-index: 5; padding: 16px; }
+.ld { width: min(340px, 100%); color: var(--stage-ink); text-align: center; }
+.ld h2 { margin: 0 0 4px; font-size: 15px; color: var(--stage-strong); }
+.ld p { margin: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.bar { height: 4px; border-radius: 2px; background: var(--stage-line); overflow: hidden; margin: 12px 0 8px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--stage-accent); transition: width 0.2s; }
+#loader.err .bar { display: none; }
+#loader.err h2 { color: var(--stage-danger); }
+#loader.err p { font-size: 13px; line-height: 1.5; color: var(--stage-strong); }
+#stageHint { position: absolute; left: 16px; bottom: 14px; color: var(--stage-ink); font-size: 11.5px; pointer-events: none; z-index: 1; }
+.tree-empty { margin: 0; padding: 4px 16px 16px; color: var(--muted); font-size: 12px; }
+/* no WebGL: the component list and part cards still work, the 3-D controls are switched off */
+#app.nogl #look { opacity: 0.45; }
+#app.nogl .ib[data-act="frame"] { display: none; }
+
+/* ---------------------------------------------------------------- phone: the panel becomes a bottom sheet */
+@media (max-width: 760px) {
+  #app { flex-direction: column; }
+  #stage { order: 1; }
+  #side { order: 2; flex: 0 0 auto; width: 100%; max-height: 50%; border-right: 0; border-top: 1px solid var(--line); border-radius: 14px 14px 0 0; box-shadow: 0 -6px 20px rgb(17 25 35 / 0.12); }
+  #side.collapsed .pbody { display: none; }
+  .ph { padding: 10px 16px; border-bottom: 1px solid var(--line); }
+  .brand h1 { font-size: 16px; }
+  .brand p { display: none; }
+  .summary { margin-top: 4px; }
+  #sheetToggle { display: inline-flex; }
+  #views { top: 12px; left: 0; right: 0; flex-wrap: nowrap; overflow-x: auto; padding: 0 16px 8px; scrollbar-width: none; }
+  #views::-webkit-scrollbar { display: none; }
+  .vb { box-shadow: none; }
+  #views { padding-bottom: 4px; }
+  #stageHint { display: none; }
+  .ib { width: 30px; height: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}
+</style>
+
+<div id="app">
+  <aside id="side" aria-label="Components">
+    <header class="ph">
+      <div class="brand">
+        <h1>AR HUD <b>X-ray</b></h1>
+        <p>Windshield HUD, TFT LCD edition: every component, car and bench</p>
+        <div class="summary" id="summary"><span class="sw"><i class="s"></i><span id="nSolid">0</span> solid</span><span class="sw"><i class="g"></i><span id="nGhost">0</span> <span id="ghostWord">x-ray</span></span><span id="nTotal"></span></div>
+      </div>
+      <button id="sheetToggle" type="button" aria-expanded="true" aria-controls="pbody" aria-label="Show or hide the component list"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </header>
+    <div class="pbody" id="pbody">
+      <section class="blk" id="look" aria-label="How hidden parts look">
+        <div class="lbl">Parts not selected</div>
+        <div class="seg" role="group" aria-label="Draw parts that are not selected as">
+          <button type="button" id="mode-xray" data-mode="xray" aria-pressed="true">X-ray</button>
+          <button type="button" id="mode-frost" data-mode="frost" aria-pressed="false">Frosted</button>
+          <button type="button" id="mode-hide" data-mode="hide" aria-pressed="false">Hide</button>
+        </div>
+        <div class="ctl" id="ctlStrength"><label for="strength">Ghost strength</label><input type="range" id="strength" min="0.05" max="1" step="0.01" value="0.55"><output id="strengthOut" for="strength">0.55</output></div>
+        <div class="ctl" id="ctlTint"><label for="tint">Tint</label><div class="tintrow"><input type="color" id="tint" value="#619cda"><button type="button" class="linkbtn" id="tintReset">Default</button></div><span></span></div>
+        <div class="ctl" id="ctlBlur"><span class="t" id="blurLbl">Blur ghosts</span><div class="tintrow"><button type="button" class="switch" id="blur" role="switch" aria-checked="false" aria-labelledby="blurLbl"></button><input type="range" id="blurSize" min="1" max="80" step="1" value="14" aria-label="Blur size in pixels"></div><output id="blurOut" for="blurSize">14 px</output></div>
+      </section>
+      <section class="blk" aria-label="Choose parts">
+        <input type="search" class="filter" id="filter" placeholder="Filter components" aria-label="Filter components" autocomplete="off">
+        <div class="btns">
+          <button type="button" class="btn" data-all="ALL" title="Show every component solid">All</button>
+          <button type="button" class="btn" data-all="NONE" title="Ghost every component">None</button>
+          <button type="button" class="btn" data-all="INVERT" title="Swap solid and ghosted components">Invert</button>
+          <button type="button" class="btn" data-all="RESET" title="Project parts solid, car ghosted">Reset</button>
+        </div>
+        <p class="hint">Tick a part to show it solid. Click a part in the view to isolate it; Shift-click adds or removes it.</p>
+      </section>
+      <div id="tree" role="tree" aria-label="Component tree"></div>
+      <p class="tree-empty" id="treeEmpty" hidden></p>
+      <footer class="credit">Modelled from the AR HUD simulator's components; assembled, x-ray materials and export in Blender 5.2</footer>
+    </div>
+  </aside>
+  <main id="stage" aria-label="3-D view of the AR HUD build">
+    <nav id="views" aria-label="Camera views"></nav>
+    <div id="stageHint">Drag to orbit, right-drag to pan, scroll to zoom</div>
+    <section id="info" hidden aria-live="polite"></section>
+    <div id="tip" hidden></div>
+    <div id="loader" role="status"><div class="ld"><h2 id="ldTitle">Loading the 3-D model</h2><div class="bar"><i id="ldBar"></i></div><p id="ldText">Starting</p></div></div>
+  </main>
+</div>
+
+<script>
+// If the 3-D module never starts (blocked CDN, very old browser, a script error), say so instead of spinning forever.
+(function () {
+  function stop(text) {
+    if (window.__xrStarted) return;
+    var l = document.getElementById('loader');
+    if (!l) return;
+    l.hidden = false;
+    l.className = 'err';
+    document.getElementById('ldTitle').textContent = 'The 3-D viewer could not start';
+    document.getElementById('ldText').textContent = text;
+  }
+  // a module whose imports fail to fetch fires "error" on its script element (no bubbling, so listen while capturing)
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'SCRIPT' && t.type === 'module') stop('The three.js library did not load from cdn.jsdelivr.net. Check the connection, or whether a network filter blocks that site, then reload the page.');
+  }, true);
+  window.addEventListener('error', function (e) {
+    if (e instanceof ErrorEvent && !window.__xrStarted) stop('The viewer script stopped with an error (' + e.message + '). Reload the page in a current Chrome, Edge, Safari or Firefox.');
+  });
+  setTimeout(function () {
+    stop('The three.js library did not load from cdn.jsdelivr.net, or this browser does not support JavaScript modules. Check the connection and reload the page in a current Chrome, Edge, Safari or Firefox.');
+  }, 25000);
+})();
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+window.__xrStarted = true;
+
+// ------------------------------------------------------------------------------------------------ constants
+// The ghost shading mirrors the Blender materials in arhud_xray.py ("XR ghost: x-ray" / "XR ghost: frosted"):
+// alpha = face + rim, face = FACE * s * fade, rim = RIM * s * facing^POW * (0.5 + 0.5 * fade), facing from Layer
+// Weight "Facing", fade = how far a ghost surface lies on the way from the camera to the solid parts. The x-ray values
+// follow arhud_xray.py (FACE 0.38, tint 0.12/0.33/0.70) rather than the first spec (0.17, 0.16/0.38/0.72).
+const GH = {
+  xray: { face: 0.38, rim: 1.1, pow: 1.6, blend: 0.45 },
+  frost: { face: 0.30, rim: 0.9, pow: 2.0, blend: 0.3 },
+  fadeFrom: [0.55, 0.9], fadeTo: [0.1, 1.0],
+};
+// Glass and film (build_scene.dress_materials): teal base (0.50, 0.80, 0.75) with a Layer Weight alpha,
+// alpha = a0 + (0.6 - a0) * facing^1.5, blend 0.4. glTF cannot carry a node-driven alpha (it arrives as opacity 1) and
+// a0 (0.12-0.3 per material) is lost with it, so the viewer rebuilds the alpha with one middle a0.
+const GLASS = { r: 0.5, g: 0.8, b: 0.75, a0: 0.28, rim: 0.6, pow: 1.5, blend: 0.4 };
+const DEFAULT_TINT = new THREE.Color(0.12, 0.33, 0.70);            // linear, the Blender panel's default ghost tint
+const DEFAULT_TINT_HEX = '#' + DEFAULT_TINT.getHexString();       // sRGB hex for the colour picker
+const HL = new THREE.Color('#ee8a00');                             // hover highlight
+const PRESET_ASPECT = 1920 / 1200;                                 // the Blender cameras' render aspect
+const ORTHO_DIST = 30;                                             // a long lens at this distance stands in for an ortho preset
+const PIXEL_BUDGET = 2.6e6;                                        // device pixels per pass
+const CDN_DRACO = 'https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/libs/draco/gltf/';
+// layers: 1 opaque solid parts, 2 ghosts, 5/7 depth stand-ins of the solid parts (opaque/glass), 6 solid glass,
+// 3/8 hover highlight on a solid/ghosted part, 4 floor
+const L_LIGHT = 0, L_SOLID = 1, L_GHOST = 2, L_HL = 3, L_FLOOR = 4, L_DEPTH = 5, L_GLASS = 6, L_GLASSD = 7, L_HLG = 8;
+// Frame directions, as render.py's gallery: a preset whose view direction suits the part, or a direction (glTF axes)
+const GALLERY_VIEW = { hud: 'hud', sensor: 'overview', compute: 'footwell', controller: 'hud', power: 'footwell',
+  network: 'footwell', cables: 'footwell', optics: 'side', bench: 'bench', vehicle: 'overview' };
+const ITEM_VIEW = { zed2i: 'overview', oakdPro: 'hud', gnssAntenna: 'hud', miniPC: 'footwell', fuseTap: 'footwell',
+  pdCharger: 'footwell', ledDriver: 'hud', windshield: 'overview', eyeBox: 'hud', housing: 'overview',
+  concaveMirror: 'side', coldMirror: [-0.55, 0.78, -0.30], hudUnit: 'hud', monitor: [0.9, -0.3, -0.3] };
+const ITEM_MARGIN = { cables_usb: 1.15, cables_power: 1.15, cables_hdmi: 1.15, cables_eth: 1.15, cables_serial: 1.15, cables_rf: 1.15 };
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const clamp = THREE.MathUtils.clamp;
+
+const $ = (s) => document.querySelector(s);
+const stageEl = $('#stage');
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('arhud-xray:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('arhud-xray:' + k, JSON.stringify(v)); } catch (e) { /* storage off */ } },
+};
+
+// ------------------------------------------------------------------------------------------------ loader UI
+function progress(title, text, frac) {
+  if (title) $('#ldTitle').textContent = title;
+  if (text != null) $('#ldText').textContent = text;
+  if (frac != null) $('#ldBar').style.width = Math.round(clamp(frac, 0, 1) * 100) + '%';
+}
+function fail(title, text) {
+  const l = $('#loader');
+  l.hidden = false;
+  l.className = 'err';
+  progress(title, text);
+  console.error('[arhud-xray]', title, text);
+}
+const mb = (b) => (b / 1048576).toFixed(1);
+
+// ------------------------------------------------------------------------------------------------ state
+const S = {
+  solid: new Set(), mode: 'xray', strength: 0.55, tint: DEFAULT_TINT_HEX, blur: false, blurSize: 14,
+  info: null, filter: '', open: new Set(store.get('open', ['hudUnit'])), closedCats: new Set(store.get('closedCats', [])),
+  view: 'overview', hover: null,
+};
+let D = null, CAMS = [];
+const byId = new Map(), kids = new Map(), catName = new Map(), descCache = new Map();
+function children(id) { return kids.get(id) || []; }
+function descendants(id) {
+  if (descCache.has(id)) return descCache.get(id);
+  const out = [];
+  for (const c of children(id)) out.push(c, ...descendants(c));
+  descCache.set(id, out);
+  return out;
+}
+const isLeaf = (id) => children(id).length === 0;
+
+function fixParents() {            // a parent row is solid when all its children are (arhud_xray._fix_parents)
+  const solidOf = (id) => {
+    const k = children(id);
+    if (!k.length) return S.solid.has(id);
+    let all = true;
+    for (const c of k) if (!solidOf(c)) all = false;
+    if (all) S.solid.add(id); else S.solid.delete(id);
+    return all;
+  };
+  for (const it of D.items) if (!it.parent) solidOf(it.id);
+}
+function setSolid(ids, value, others) {
+  const want = new Set();
+  for (const i of ids) { want.add(i); for (const d of descendants(i)) want.add(d); }
+  for (const it of D.items) {
+    if (want.has(it.id)) { if (value) S.solid.add(it.id); else S.solid.delete(it.id); }
+    else if (others !== undefined) { if (others) S.solid.add(it.id); else S.solid.delete(it.id); }
+  }
+  fixParents();
+  apply();
+}
+const isolate = (ids) => setSolid(ids, true, false);
+function resetDefaults() {
+  S.solid.clear();
+  for (const it of D.items) if (it.default !== false) S.solid.add(it.id);
+  fixParents();
+  apply();
+}
+function setAll(action, cat) {
+  if (action === 'RESET') return resetDefaults();
+  if (cat) return setSolid(D.items.filter((i) => i.cat === cat).map((i) => i.id), action === 'ALL');
+  if (action === 'INVERT') return isolate(D.items.filter((i) => isLeaf(i.id) && !S.solid.has(i.id)).map((i) => i.id));
+  setSolid([], true, action === 'ALL');
+}
+
+// ------------------------------------------------------------------------------------------------ 3-D objects (no WebGL needed yet)
+let GL = false, renderer = null, controls = null;
+let rtSolid, rtGlass, rtGhost, rtGhostB, rtA, rtB, rtC;
+let dirty = true, tween = null;
+const redraw = () => { dirty = true; };
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(41, 1, 0.01, 200);
+camera.layers.enableAll();
+const sun = new THREE.DirectionalLight(0xffffff, 1.5);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.02;
+sun.shadow.radius = 4;
+const hemi = new THREE.HemisphereLight(0xffffff, 0xdfe6ee, 0.35);
+for (const l of [sun, hemi]) l.layers.enableAll();
+scene.add(sun, sun.target, hemi);
+
+// ------------------------------------------------------------------------------------------------ materials
+const srgbGLSL = `
+vec3 xrToSRGB(vec3 c) {
+  c = clamp(c, 0.0, 1.0);
+  return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
+}`;
+// Ghost passes. Blender draws the ghosts Blended with "Transparency Overlap" off, so a pixel mostly shows the nearest
+// ghost surface rather than every layer behind it. Here the ghosts render into their own float target: pass 0 adds
+// every layer at a light weight uK (as minus log transmittance in B; lighting sums in R, G for the frosted look);
+// pass 1, after a ghost depth prepass, lifts the nearest surface that is not faded out to full weight (A). The
+// composite turns the summed log transmittance into one alpha and mixes the tint over the sharp solid render.
+const ghostMat = new THREE.ShaderMaterial({
+  name: 'XR ghost',
+  uniforms: {
+    uS: { value: 0.55 }, uMode: { value: 0 }, uPass: { value: 0 }, uK: { value: 0.12 },
+    uFocus: { value: new THREE.Vector3() }, uFocusR: { value: 1000 },
+    uLight: { value: new THREE.Vector3(0.45, 0.8, 0.4).normalize() },
+    uSide: { value: 0 }, tGlassZ: { value: null }, uRes: { value: new THREE.Vector2(1, 1) },
+  },
+  vertexShader: `
+    varying vec3 vW; varying vec3 vN;
+    void main() {
+      vec4 w = modelMatrix * vec4(position, 1.0);
+      vW = w.xyz;
+      vN = normalize(mat3(modelMatrix) * normal);
+      gl_Position = projectionMatrix * viewMatrix * w;
+    }`,
+  fragmentShader: `
+    uniform float uS; uniform float uMode; uniform float uPass; uniform float uK; uniform vec3 uFocus; uniform float uFocusR; uniform vec3 uLight;
+    uniform float uSide; uniform sampler2D tGlassZ; uniform vec2 uRes;
+    varying vec3 vW; varying vec3 vN;
+    float facingOf(float nv, float blend) {          // Blender Layer Weight > Facing
+      float e = blend < 0.5 ? 2.0 * blend : 0.5 / (1.0 - blend);
+      return 1.0 - pow(nv, e);
+    }
+    void main() {
+      vec3 V = normalize(cameraPosition - vW);
+      vec3 N = normalize(vN);
+      if (dot(N, V) < 0.0) N = -N;
+      float nv = clamp(dot(N, V), 0.0, 1.0);
+      float viewDist = length(cameraPosition - vW);
+      float near = max(distance(cameraPosition, uFocus) - uFocusR, 0.01);
+      float fade = mix(${GH.fadeTo[0].toFixed(3)}, ${GH.fadeTo[1].toFixed(3)},
+                       clamp((viewDist / near - ${GH.fadeFrom[0].toFixed(3)}) / ${(GH.fadeFrom[1] - GH.fadeFrom[0]).toFixed(3)}, 0.0, 1.0));
+      float a, l = 1.0;
+      if (uMode < 0.5) {
+        float f = facingOf(nv, ${GH.xray.blend.toFixed(3)});
+        a = ${GH.xray.face.toFixed(3)} * uS * fade + ${GH.xray.rim.toFixed(3)} * uS * pow(f, ${GH.xray.pow.toFixed(3)}) * (0.5 + 0.5 * fade);
+      } else {
+        float f = facingOf(nv, ${GH.frost.blend.toFixed(3)});
+        a = ${GH.frost.face.toFixed(3)} * uS * fade + ${GH.frost.rim.toFixed(3)} * uS * pow(f, ${GH.frost.pow.toFixed(3)}) * (0.5 + 0.5 * fade);
+        l = 0.5 + 0.6 * max(dot(N, uLight), 0.0) + 0.12 * N.y;      // a soft key light: the frosted shell is lit, as in Blender
+      }
+      a = clamp(a, 0.0, 0.98);
+      // with solid glass in view the ghosts render twice: those in front of the nearest glass, then those behind it
+      if (uSide > 0.5 && (gl_FragCoord.z > texture2D(tGlassZ, gl_FragCoord.xy / uRes).r) != (uSide > 1.5)) discard;
+      if (uPass < 0.5) {            // every layer, weighted by uK: -log transmittance in B
+        gl_FragColor = vec4(l * a, a, -log(1.0 - uK * a), 0.0);
+      } else {                      // nearest surface that is not faded out: lift it from uK to full weight
+        if (fade < 0.5) discard;    // surfaces faded near the camera never hide what lies behind them
+        gl_FragColor = vec4(0.0, 0.0, 0.0, log(1.0 - uK * a) - log(1.0 - a));
+      }
+    }`,
+  transparent: true, depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+  blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor,
+  blendEquationAlpha: THREE.AddEquation, blendSrcAlpha: THREE.OneFactor, blendDstAlpha: THREE.OneFactor,
+});
+// hover highlight of a solid part: drawn with the solid parts, so other solids still hide it
+const hlMat = new THREE.MeshBasicMaterial({
+  color: HL, transparent: true, opacity: 0.32, depthWrite: false, depthFunc: THREE.LessEqualDepth,
+  polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2, toneMapped: false, side: THREE.DoubleSide,
+});
+// hover highlight of a ghosted part: an orange x-ray of its nearest surface, drawn last, straight onto the canvas
+const hlGhostMat = new THREE.ShaderMaterial({
+  uniforms: { uCol: { value: new THREE.Vector3(0.933, 0.541, 0.0) } },        // #ee8a00 (sRGB: the canvas pass)
+  vertexShader: `
+    varying vec3 vW; varying vec3 vN;
+    void main() {
+      vW = (modelMatrix * vec4(position, 1.0)).xyz;
+      vN = normalize(mat3(modelMatrix) * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }`,
+  fragmentShader: `
+    uniform vec3 uCol; varying vec3 vW; varying vec3 vN;
+    void main() {
+      float nv = abs(dot(normalize(vN), normalize(cameraPosition - vW)));
+      float f = 1.0 - pow(clamp(nv, 0.0, 1.0), 0.9);
+      gl_FragColor = vec4(uCol, clamp(0.13 + 0.62 * pow(f, 1.6), 0.0, 0.8));
+    }`,
+  transparent: true, depthWrite: false, depthFunc: THREE.LessEqualDepth, side: THREE.DoubleSide, toneMapped: false,
+  polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4,
+});
+const depthOnly = new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide });   // some solid parts are drawn double-sided
+
+// Glass alpha (see GLASS), added to the glTF materials of real glass and film
+const GLASS_GLSL = `{
+  float xrNV = clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0);
+  float xrF = 1.0 - pow(xrNV, ${(GLASS.blend < 0.5 ? 2 * GLASS.blend : 0.5 / (1 - GLASS.blend)).toFixed(3)});
+  diffuseColor.a = clamp(${GLASS.a0.toFixed(3)} + ${(GLASS.rim - GLASS.a0).toFixed(3)} * pow(xrF, ${GLASS.pow.toFixed(3)}), 0.0, 1.0);
+}
+#include <opaque_fragment>`;
+const glassTeal = new THREE.Color(GLASS.r, GLASS.g, GLASS.b);
+// Sort one material: is it glass (drawn in the glass pass, over the ghosts behind it, casting no shadow)?
+function prepMaterial(mat) {
+  if (mat.userData.xrPrep) return mat.userData.xrGlass;
+  mat.userData.xrPrep = true;
+  if (mat.transmission > 0) { mat.userData.glass = true; mat.transmission = 0; mat.needsUpdate = true; }   // translucent instead: no transmission pass
+  const c = mat.color;
+  const teal = mat.isMeshStandardMaterial && mat.transparent && mat.opacity > 0.99 && !mat.map && !mat.alphaMap && !!c
+    && Math.abs(c.r - GLASS.r) < 0.02 && Math.abs(c.g - GLASS.g) < 0.02 && Math.abs(c.b - GLASS.b) < 0.02;
+  const glass = !!mat.transparent && (teal || !!mat.userData.glass || mat.opacity < 0.7);
+  mat.userData.xrGlass = glass;
+  if (teal) {
+    mat.onBeforeCompile = (sh) => { sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', GLASS_GLSL); };
+    mat.customProgramCacheKey = () => 'xr-glass';
+    mat.envMapIntensity = 1.4;              // a reflection cue, as the studio gives the glass in Blender
+    if (mat.emissive) mat.emissive.setRGB(0.16, 0.27, 0.26);   // Blender's bright studio lifts the teal to a pale cyan
+    mat.needsUpdate = true;
+  } else if (glass && c && !mat.map && c.r + c.g + c.b < 0.3) {
+    // near-black tinted glass (older exports) reads as a grey slab on white: lighten it toward the glass teal
+    c.lerp(glassTeal, 0.75);
+    mat.opacity = Math.max(mat.opacity, 0.25);
+    mat.needsUpdate = true;
+  }
+  if (glass) mat.depthWrite = false;
+  return glass;
+}
+
+// ------------------------------------------------------------------------------------------------ pipeline materials
+// Opaque solids render to rtSolid. Solid glass renders to rtGlass (premultiplied, over the opaque parts' depth), and
+// its own depth is kept. Ghosts render to rtGhost, depth-tested against the opaque solids; when solid glass is in view
+// they split by the glass depth into rtGhost (in front of the glass) and rtGhostB (behind it). With blur on, a
+// separable gaussian blurs the ghost layers at half resolution (ghosts only, the solids stay sharp). The composite
+// stacks back to front: white, solids, ghosts behind the glass, glass, ghosts in front of it.
+const fsCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const fsVert = `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
+const blurMat = new THREE.ShaderMaterial({
+  uniforms: { tSrc: { value: null }, uDir: { value: new THREE.Vector2() }, uSigma: { value: 3 } },
+  vertexShader: fsVert,
+  fragmentShader: `
+    uniform sampler2D tSrc; uniform vec2 uDir; uniform float uSigma; varying vec2 vUv;
+    void main() {
+      float R = ceil(3.0 * uSigma);
+      float stp = max(1.0, R / 32.0);
+      float s2 = uSigma * uSigma;
+      vec4 acc = vec4(0.0); float wsum = 0.0;
+      for (int i = -32; i <= 32; i++) {
+        float x = float(i) * stp;
+        if (abs(x) > R) continue;
+        float w = exp(-0.5 * x * x / s2);
+        acc += texture2D(tSrc, vUv + uDir * x) * w;
+        wsum += w;
+      }
+      gl_FragColor = acc / wsum;
+    }`,
+  depthTest: false, depthWrite: false, toneMapped: false, blending: THREE.NoBlending,
+});
+const blackTex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
+blackTex.needsUpdate = true;
+// Composite, in linear light like Blender's blended materials: tone-map the solid render (its background stays pure
+// white), mix the ghost tint over it with the ghost layer's alpha, lay the glass over or under the ghosts by depth.
+const compMat = new THREE.ShaderMaterial({
+  uniforms: {
+    tSolid: { value: null }, tGhost: { value: blackTex }, tSharp: { value: blackTex }, uGlass: { value: 0 },
+    tGlass: { value: blackTex }, tGhostB: { value: blackTex }, tSharpB: { value: blackTex },
+    uTint: { value: DEFAULT_TINT.clone() }, uMode: { value: 0 },
+  },
+  vertexShader: fsVert,
+  fragmentShader: `
+    uniform sampler2D tSolid; uniform sampler2D tGhost; uniform sampler2D tSharp; uniform sampler2D tGlass;
+    uniform sampler2D tGhostB; uniform sampler2D tSharpB; uniform float uGlass; uniform vec3 uTint; uniform float uMode;
+    varying vec2 vUv;
+    ${srgbGLSL}
+    vec3 neutralTM(vec3 color) {                    // Khronos PBR Neutral, as THREE.NeutralToneMapping
+      const float start = 0.76; const float desat = 0.15;
+      float x = min(color.r, min(color.g, color.b));
+      float offset = x < 0.08 ? x - 6.25 * x * x : 0.04;
+      color -= offset;
+      float peak = max(color.r, max(color.g, color.b));
+      if (peak < start) return color;
+      float d = 1.0 - start;
+      float newPeak = 1.0 - d * d / (peak + d - start);
+      color *= newPeak / peak;
+      float g = 1.0 - 1.0 / (desat * (peak - newPeak) + 1.0);
+      return mix(color, vec3(newPeak), g);
+    }
+    vec4 ghostLayer(vec4 g) {                       // rgb: ghost colour, a: its alpha
+      float a = clamp(1.0 - exp(-max(g.b + g.a, 0.0)), 0.0, 1.0);
+      return vec4(uMode < 0.5 ? uTint : (0.45 + 0.4 * uTint) * (g.r / max(g.g, 1e-4)), a);
+    }
+    void main() {
+      vec4 s = texture2D(tSolid, vUv);
+      vec3 c = mix(vec3(1.0), neutralTM(max(s.rgb, 0.0)), clamp(s.a, 0.0, 1.0));
+      // blur mask, as the Blender compositor's xr_solid AOV: where a solid part is drawn, use the unblurred ghosts
+      float sharp = step(0.5, s.a);
+      if (uGlass > 0.5) {                             // ghosts behind the solid glass, then the glass
+        vec4 gb = ghostLayer(mix(texture2D(tGhostB, vUv), texture2D(tSharpB, vUv), sharp));
+        c = mix(c, gb.rgb, gb.a);
+        vec4 q = texture2D(tGlass, vUv);              // premultiplied, linear
+        float qa = clamp(q.a, 0.0, 1.0);
+        c = c * (1.0 - qa) + (qa > 1e-4 ? neutralTM(max(q.rgb / qa, 0.0)) * qa : vec3(0.0));
+      }
+      vec4 g = ghostLayer(mix(texture2D(tGhost, vUv), texture2D(tSharp, vUv), sharp));
+      gl_FragColor = vec4(xrToSRGB(mix(c, g.rgb, g.a)), 1.0);
+    }`,
+  depthTest: false, depthWrite: false, toneMapped: false, blending: THREE.NoBlending,
+});
+const fsQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), blurMat);
+fsQuad.frustumCulled = false;
+const fsScene = new THREE.Scene();
+fsScene.add(fsQuad);
+
+// ------------------------------------------------------------------------------------------------ model
+const merged = [];                 // one mesh per (item, material): the solid look
+const proxies = [];                // one mesh per item and kind (opaque / glass), materials ignored: ghosts, depth, picking
+const byItem = new Map();          // iid -> that item's own proxies
+const itemBox = new Map();         // iid -> world box of the item's own meshes
+const hlGroup = new THREE.Group();
+scene.add(hlGroup);
+let floor = null, sceneBox = new THREE.Box3(), anyGhost = false, anyGlass = false, anyHlGhost = false;
+
+function boxOf(ids) {
+  const b = new THREE.Box3();
+  for (const id of ids) {
+    for (const x of [id, ...descendants(id)]) if (itemBox.has(x)) b.union(itemBox.get(x));
+  }
+  return b.isEmpty() ? null : b;
+}
+function proxiesOf(id, withKids = true) {
+  const out = [];
+  for (const x of withKids ? [id, ...descendants(id)] : [id]) for (const m of byItem.get(x) || []) out.push(m);
+  return out;
+}
+
+let loadStage = 'data';
+async function loadData() {
+  progress('Loading the 3-D model', 'Fetching the component list', 0.02);
+  const [items, cams] = await Promise.all([
+    fetch('items.json').then((r) => { if (!r.ok) throw new Error('items.json: HTTP ' + r.status); return r.json(); }),
+    fetch('cameras.json').then((r) => (r.ok ? r.json() : [])).catch(() => []),     // presets are optional
+  ]);
+  D = items;
+  for (const [cid, name] of D.categories) catName.set(cid, name);
+  for (const it of D.items) {
+    byId.set(it.id, it);
+    if (it.parent) { if (!kids.has(it.parent)) kids.set(it.parent, []); kids.get(it.parent).push(it.id); }
+  }
+  CAMS = Array.isArray(cams) ? cams : [];
+  buildViews();
+  buildTree();
+  resetDefaults();                 // the tree shows the default selection while the model loads
+}
+
+// The model: arhud.glb.gz (plain GLB, gzipped) when the browser can unpack gzip; otherwise arhud.glb (Draco), fetched
+// once, with a Draco decoder that fails (a sandbox may refuse WebAssembly or the CDN) swapped for the next one and the
+// same bytes parsed again: local wasm, CDN wasm, local JS, CDN JS.
+async function fetchModel(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(url + ': HTTP ' + r.status);
+  const total = Number(r.headers.get('content-length')) || 0;
+  const show = (got) => {
+    const known = total > 0 && got <= total * 1.02;
+    progress(null, known ? `${mb(got)} of ${mb(total)} MB` : `${mb(got)} MB`, 0.05 + 0.75 * (known ? got / total : 1 - Math.exp(-got / 4.5e6)));
+  };
+  if (!r.body || !r.body.getReader) { const b = await r.arrayBuffer(); show(b.byteLength); return b; }
+  const reader = r.body.getReader();
+  const chunks = [];
+  let got = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value); got += value.length; show(got);
+  }
+  const out = new Uint8Array(got);
+  let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.length; }
+  return out.buffer;
+}
+async function startDraco(path, type) {
+  const d = new DRACOLoader();
+  d.setDecoderPath(path);
+  d.setDecoderConfig({ type });
+  try {
+    if (typeof d._initDecoder === 'function') await d._initDecoder(); else d.preload();
+  } catch (e) { d.dispose(); throw e; }
+  return d;
+}
+const parseGLB = (bytes, draco) => new Promise((resolve, reject) => {
+  const loader = new GLTFLoader();
+  if (draco) loader.setDRACOLoader(draco);
+  loader.parse(bytes.slice(0), './', resolve, reject);
+});
+async function gunzip(buf) {
+  const u = new Uint8Array(buf, 0, Math.min(4, buf.byteLength));
+  if (u[0] === 0x67 && u[1] === 0x6c && u[2] === 0x54 && u[3] === 0x46) return buf;   // "glTF": the server already unpacked it
+  if (u[0] !== 0x1f || u[1] !== 0x8b) throw new Error('the model file is not gzip data');
+  return new Response(new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}
+function fromBase64(buf) {           // base64 text -> bytes, without building a 4 MB intermediate array of strings
+  const t = new TextDecoder().decode(buf).replace(/[^A-Za-z0-9+/]/g, '');
+  const L = new Uint8Array(128);
+  'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split('').forEach((c, i) => { L[c.charCodeAt(0)] = i; });
+  const n = Math.floor(t.length * 3 / 4);
+  const out = new Uint8Array(n);
+  let o = 0;
+  const full = t.length - (t.length % 4);
+  for (let i = 0; i < full; i += 4) {
+    const v = (L[t.charCodeAt(i)] << 18) | (L[t.charCodeAt(i + 1)] << 12) | (L[t.charCodeAt(i + 2)] << 6) | L[t.charCodeAt(i + 3)];
+    out[o++] = v >> 16; out[o++] = (v >> 8) & 255; out[o++] = v & 255;
+  }
+  const rest = t.length % 4;
+  if (rest > 1) {
+    const v = (L[t.charCodeAt(full)] << 18) | (L[t.charCodeAt(full + 1)] << 12) | (rest > 2 ? L[t.charCodeAt(full + 2)] << 6 : 0);
+    out[o++] = v >> 16;
+    if (rest > 2) out[o++] = (v >> 8) & 255;
+  }
+  return out.buffer.slice(0, o);
+}
+async function loadModel() {
+  loadStage = 'model';
+  progress('Loading the 3-D model', 'Starting the download', 0.05);
+  // First choice: the plain GLB, gzipped, unpacked by the browser itself (no decoder worker, no WebAssembly). The
+  // published artifact carries it as base64 text (the host serves .txt, not .gz or .glb); a local copy also has the
+  // raw .gz. #draco=js / #draco=wasm skip both to test the Draco path.
+  if (typeof DecompressionStream === 'function' && !/(^|[#&])draco=/.test(location.hash)) {
+    for (const [url, decode] of [['arhud.glb.gz.b64.txt', fromBase64], ['arhud.glb.gz', (b) => b]]) {
+      try {
+        const raw = await fetchModel(url);
+        loadStage = 'decode';
+        progress('Unpacking the model', 'Decompressing', 0.84);
+        return await parseGLB(await gunzip(decode(raw)), null);
+      } catch (e) {
+        console.warn('[arhud-xray]', url, 'did not load:', e && e.message);
+        loadStage = 'model';
+      }
+    }
+  }
+  const bytes = await fetchModel('arhud.glb');
+  let wasm = !/(^|[#&])draco=js(&|$)/.test(location.hash);             // #draco=js tests the JS decoder
+  try { new WebAssembly.Module(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])); } catch (e) { wasm = false; }
+  const tries = [];
+  for (const type of wasm ? ['wasm', 'js'] : ['js']) for (const path of ['./draco/', CDN_DRACO]) tries.push({ type, path });
+  let last = null;
+  for (const t of tries) {
+    loadStage = 'decoder';
+    progress('Decoding the meshes', 'Starting the mesh decoder', 0.82);
+    let draco;
+    try { draco = await startDraco(t.path, t.type); }
+    catch (e) { last = e; console.warn('[arhud-xray] Draco decoder', t.type, t.path, 'did not start:', e && e.message); continue; }
+    loadStage = 'decode';
+    progress(null, 'Unpacking the compressed meshes', 0.85);
+    try {
+      const gltf = await parseGLB(bytes, draco);
+      draco.dispose();
+      return gltf;
+    } catch (e) {
+      draco.dispose();
+      last = e;
+      console.warn('[arhud-xray] decoding with', t.type, t.path, 'failed:', e && e.message);
+    }
+  }
+  throw last || new Error('no mesh decoder could start');
+}
+
+function mergeModel(root) {
+  root.updateMatrixWorld(true);
+  const groups = new Map();
+  let parts = 0, skipped = 0;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    let p = o, iid = null;
+    while (p) { if (p.userData && p.userData.xr_item) { iid = p.userData.xr_item; break; } p = p.parent; }
+    if (!iid || !byId.has(iid)) { skipped++; return; }
+    const mat = o.material;
+    const g = o.geometry.clone();
+    g.applyMatrix4(o.matrixWorld);
+    if (o.matrixWorld.determinant() < 0 && g.index) {
+      const ix = g.index.array;
+      for (let i = 0; i < ix.length; i += 3) { const t = ix[i + 1]; ix[i + 1] = ix[i + 2]; ix[i + 2] = t; }
+    }
+    for (const k of Object.keys(g.attributes)) if (k !== 'position' && k !== 'normal' && k !== 'uv') g.deleteAttribute(k);
+    g.morphAttributes = {};
+    if (!g.attributes.normal) g.computeVertexNormals();
+    if (!g.attributes.uv) g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 2), 2));
+    if (!g.index) { const n = g.attributes.position.count; const a = new Uint32Array(n); for (let i = 0; i < n; i++) a[i] = i; g.setIndex(new THREE.BufferAttribute(a, 1)); }
+    const key = iid + '|' + mat.uuid;
+    if (!groups.has(key)) groups.set(key, { iid, mat, geoms: [] });
+    groups.get(key).geoms.push(g);
+    parts++;
+  });
+  const mergeAll = (geoms) => {
+    let list;
+    try { list = [geoms.length === 1 ? geoms[0] : mergeGeometries(geoms, false)]; } catch (e) { list = null; }
+    return list && list[0] ? list : geoms;
+  };
+  const proxyGeoms = new Map();    // iid -> { opaque: [], glass: [] }, position + normal only
+  for (const { iid, mat, geoms } of groups.values()) {
+    const glass = prepMaterial(mat);
+    const list = mergeAll(geoms);
+    for (const g of list) {
+      g.computeBoundingBox(); g.computeBoundingSphere();
+      const m = new THREE.Mesh(g, mat);
+      m.matrixAutoUpdate = false;
+      m.userData = { iid, glass };
+      m.castShadow = !glass;                    // glass throws no slab-shaped shadow
+      m.receiveShadow = false;
+      m.layers.set(glass ? L_GLASS : L_SOLID);
+      m.visible = false;
+      scene.add(m);
+      merged.push(m);
+      const pg = new THREE.BufferGeometry();
+      pg.setAttribute('position', g.attributes.position);
+      pg.setAttribute('normal', g.attributes.normal);
+      pg.setIndex(g.index);
+      if (!proxyGeoms.has(iid)) proxyGeoms.set(iid, { opaque: [], glass: [] });
+      proxyGeoms.get(iid)[glass ? 'glass' : 'opaque'].push(pg);
+    }
+    if (list !== geoms) for (const g of geoms) g.dispose();
+  }
+  for (const [iid, k] of proxyGeoms) {
+    for (const kind of ['opaque', 'glass']) {
+      if (!k[kind].length) continue;
+      for (const g of mergeAll(k[kind])) {
+        g.computeBoundingBox(); g.computeBoundingSphere();
+        const p = new THREE.Mesh(g, ghostMat);
+        p.matrixAutoUpdate = false;
+        p.userData = { iid, glass: kind === 'glass', state: null, pick: null };
+        p.visible = false;
+        scene.add(p);
+        proxies.push(p);
+        if (!byItem.has(iid)) byItem.set(iid, []);
+        byItem.get(iid).push(p);
+        if (!itemBox.has(iid)) itemBox.set(iid, new THREE.Box3());
+        itemBox.get(iid).union(g.boundingBox);
+        sceneBox.union(g.boundingBox);
+      }
+    }
+  }
+  root.traverse((o) => { if (o.isMesh) o.geometry.dispose(); });
+  buildPick();
+  // floor, sun and shadow frustum fitted to the whole build
+  const size = sceneBox.getSize(new THREE.Vector3()), c = sceneBox.getCenter(new THREE.Vector3());
+  floor = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.ShadowMaterial({ opacity: 0.13, color: 0x1b2a3c }));
+  floor.rotation.x = -Math.PI / 2;
+  floor.scale.set(size.x * 3 + 10, size.z * 3 + 10, 1);
+  floor.position.set(c.x, sceneBox.min.y - 0.002, c.z);
+  floor.receiveShadow = true;
+  floor.layers.set(L_FLOOR);
+  scene.add(floor);
+  const ext = Math.max(size.x, size.z) * 0.62 + 0.5;
+  sun.position.set(c.x + 2.5, sceneBox.max.y + 9, c.z + 4);
+  sun.target.position.copy(c);
+  const sc = sun.shadow.camera;
+  sc.left = -ext; sc.right = ext; sc.top = ext; sc.bottom = -ext; sc.near = 0.5; sc.far = 40;
+  sc.updateProjectionMatrix();
+  console.log(`[arhud-xray] ${parts} parts merged into ${merged.length} solid meshes and ${proxies.length} ghost meshes (${skipped} without an item)`);
+}
+
+// ------------------------------------------------------------------------------------------------ picking (GPU, 1 px)
+const pickScene = new THREE.Scene();
+const pickRT = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, depthBuffer: true });
+const pickCam = new THREE.PerspectiveCamera();
+const pickBuf = new Uint8Array(4);
+const pickIds = [];
+function buildPick() {
+  const mats = new Map();
+  for (const m of proxies) {
+    const iid = m.userData.iid;
+    if (!mats.has(iid)) {
+      pickIds.push(iid);
+      const n = pickIds.length;
+      mats.set(iid, new THREE.ShaderMaterial({
+        uniforms: { uId: { value: new THREE.Vector3((n & 255) / 255, ((n >> 8) & 255) / 255, 0) } },
+        vertexShader: `void main() { gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+        fragmentShader: `uniform vec3 uId; void main() { gl_FragColor = vec4(uId, 1.0); }`,
+        side: THREE.DoubleSide, toneMapped: false,
+      }));
+    }
+    const p = new THREE.Mesh(m.geometry, mats.get(iid));
+    p.matrixAutoUpdate = false;
+    m.userData.pick = p;
+    pickScene.add(p);
+  }
+}
+function pickAt(x, y) {               // x, y in CSS px inside the stage; solid parts win over ghosts in front of them
+  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  if (!GL || x < 0 || y < 0 || x >= w || y >= h) return null;
+  pickCam.copy(camera);
+  pickCam.layers.set(0);
+  const v = camera.view;
+  if (v && v.enabled) pickCam.setViewOffset(v.fullWidth, v.fullHeight, v.offsetX + Math.floor(x), v.offsetY + Math.floor(y), 1, 1);
+  else pickCam.setViewOffset(w, h, Math.floor(x), Math.floor(y), 1, 1);
+  const keepShadow = renderer.shadowMap.needsUpdate;
+  renderer.shadowMap.needsUpdate = false;
+  const cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
+  renderer.setClearColor(0x000000, 0);
+  renderer.setRenderTarget(pickRT);
+  let hit = null;
+  // opaque solid parts first, then solid glass, then ghosts
+  const passOf = (m) => m.userData.state === 'hide' ? -1 : m.userData.state !== 'solid' ? 2 : m.userData.glass ? 1 : 0;
+  for (const pass of [0, 1, 2]) {
+    for (const m of proxies) m.userData.pick.visible = passOf(m) === pass;
+    renderer.clear(true, true, true);
+    renderer.render(pickScene, pickCam);
+    renderer.readRenderTargetPixels(pickRT, 0, 0, 1, 1, pickBuf);
+    const n = pickBuf[0] + pickBuf[1] * 256;
+    if (n > 0 && n <= pickIds.length) { hit = pickIds[n - 1]; break; }
+  }
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(cc, ca);
+  renderer.shadowMap.needsUpdate = keepShadow;
+  return hit;
+}
+
+// ------------------------------------------------------------------------------------------------ applying state
+function apply() {
+  if (GL && proxies.length) apply3D();
+  updateTree();
+  updateInfo();
+}
+function apply3D() {
+  const mode = S.mode;
+  const focus = new THREE.Box3();
+  anyGlass = false;
+  for (const m of merged) {                      // the real materials show only while their item is solid
+    const on = S.solid.has(m.userData.iid);
+    m.visible = on;
+    if (on && m.userData.glass) anyGlass = true;
+  }
+  anyGhost = false;
+  for (const p of proxies) {
+    const solid = S.solid.has(p.userData.iid);
+    p.userData.state = solid ? 'solid' : mode;
+    if (solid) {
+      focus.union(p.geometry.boundingBox);
+      p.visible = true;
+      p.layers.set(p.userData.glass ? L_GLASSD : L_DEPTH);
+    } else {
+      p.visible = mode !== 'hide';
+      p.layers.set(L_GHOST);
+      if (p.visible) anyGhost = true;
+    }
+  }
+  const u = ghostMat.uniforms;
+  u.uMode.value = compMat.uniforms.uMode.value = mode === 'frost' ? 1 : 0;
+  if (focus.isEmpty()) { u.uFocusR.value = 1000; }
+  else { focus.getCenter(u.uFocus.value); u.uFocusR.value = Math.max(0.03, focus.getSize(new THREE.Vector3()).length() / 2); }
+  renderer.shadowMap.needsUpdate = true;
+  refreshHighlight();
+  redraw();
+}
+function setMode(mode) {
+  S.mode = mode;
+  for (const b of document.querySelectorAll('.seg button')) b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+  $('#ctlStrength').classList.toggle('off', mode === 'hide');
+  $('#ghostWord').textContent = mode === 'hide' ? 'hidden' : mode === 'frost' ? 'frosted' : 'x-ray';
+  if (D) apply();
+}
+function setStrength(v) {
+  if (!Number.isFinite(v)) return;
+  S.strength = clamp(v, 0.05, 1);
+  ghostMat.uniforms.uS.value = S.strength;
+  $('#strength').value = S.strength; $('#strengthOut').textContent = S.strength.toFixed(2);
+  redraw();
+}
+function setTint(hex) {
+  if (!/^#[0-9a-f]{6}$/i.test(hex)) return;
+  S.tint = hex.toLowerCase();
+  compMat.uniforms.uTint.value.setStyle(S.tint);   // sRGB in, linear uniform
+  $('#tint').value = S.tint;
+  redraw();
+}
+function setBlur(on, size) {
+  S.blur = !!on;
+  if (size != null && Number.isFinite(size)) S.blurSize = clamp(Math.round(size), 1, 80);
+  $('#blur').setAttribute('aria-checked', String(S.blur));
+  $('#blurSize').value = S.blurSize; $('#blurOut').textContent = S.blurSize + ' px';
+  $('#ctlBlur').classList.toggle('off', !S.blur);
+  redraw();
+}
+
+// ------------------------------------------------------------------------------------------------ hover highlight
+let hlKey = '';
+function setHover(id) {
+  if (S.hover === id) return;
+  S.hover = id;
+  for (const r of document.querySelectorAll('.row.hov')) r.classList.remove('hov');
+  if (id) { const r = document.querySelector(`.node[data-id="${id}"] > .row`); if (r) r.classList.add('hov'); }
+  refreshHighlight();
+}
+function refreshHighlight() {
+  if (!GL) return;
+  const id = S.hover;
+  const ps = id ? proxiesOf(id) : [];
+  const key = id ? id + '|' + ps.map((p) => p.userData.state === 'solid' ? 1 : 0).join('') : '';
+  if (key !== hlKey) {
+    hlKey = key;
+    hlGroup.clear();
+    anyHlGhost = false;
+    for (const p of ps) {
+      const solid = p.userData.state === 'solid';
+      const h = new THREE.Mesh(p.geometry, solid ? hlMat : hlGhostMat);
+      h.matrixAutoUpdate = false;
+      h.layers.set(solid ? L_HL : L_HLG);
+      if (!solid) anyHlGhost = true;
+      hlGroup.add(h);
+    }
+  }
+  redraw();
+}
+
+// ------------------------------------------------------------------------------------------------ cameras
+// The floating part card covers the right of the stage on desktop. The camera's optical centre moves left by half the
+// card's footprint (a view offset), so presets, Frame and orbiting all centre on the part of the stage left free.
+let shiftCur = 0, shiftGoal = 0;
+const v3 = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+function cardOnStage() { const c = $('#info'); return !c.hidden && c.parentElement === stageEl; }
+function cardShift() { return cardOnStage() ? ($('#info').offsetWidth + 32) / 2 : 0; }
+function freeAspect(shift = cardShift()) {
+  const w = Math.max(1, stageEl.clientWidth), h = Math.max(1, stageEl.clientHeight);
+  return Math.max(0.3, (w - 2 * shift) / h);
+}
+const stageAspect = () => Math.max(0.3, Math.max(1, stageEl.clientWidth) / Math.max(1, stageEl.clientHeight));
+function presetVfov(c) {
+  // an orthographic preset becomes a long lens: orthoScale is its width at the preset aspect
+  return c.ortho ? THREE.MathUtils.radToDeg(2 * Math.atan((c.orthoScale || 6) / PRESET_ASPECT / 2 / ORTHO_DIST)) : c.vfov;
+}
+function presetFov(c, aspect) {        // keep the preset's width on a narrower view, up to a 75 degree lens
+  const v = presetVfov(c);
+  if (aspect >= PRESET_ASPECT) return v;
+  const h = 2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(v) / 2) * PRESET_ASPECT);
+  return Math.max(v, Math.min(75, THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(h / 2) / aspect))));
+}
+function setProjection() {
+  const w = Math.max(1, stageEl.clientWidth), h = Math.max(1, stageEl.clientHeight);
+  const d = 0;                         // the card never shifts the projection; camera moves fit around it instead
+  if (S.view && CAMS.length && !tween) { const c = CAMS.find((x) => x.key === S.view); if (c) camera.fov = presetFov(c, stageAspect()); }
+  if (d > 0) { camera.aspect = (w + 2 * d) / h; camera.setViewOffset(w + 2 * d, h, 2 * d, 0, w, h); }
+  else { camera.aspect = w / h; camera.clearViewOffset(); }
+  camera.updateProjectionMatrix();
+}
+function updateShift() { shiftGoal = shiftCur = 0; }   // opening or closing the card leaves the view alone
+// World offset that puts a target at distance dist in the middle of the stage area the part card leaves free.
+function cardOffset(dist, right) {
+  const s = cardShift();
+  if (!s) return new THREE.Vector3();
+  const w = Math.max(1, stageEl.clientWidth), h = Math.max(1, stageEl.clientHeight);
+  const TX = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * (w / h);
+  return right.clone().multiplyScalar(dist * (s / (w / 2)) * TX);
+}
+function updateNear() {               // keep depth precision at every zoom: near plane follows the orbit distance
+  const n = clamp(camera.position.distanceTo(controls.target) * 0.004, 0.004, 0.4);
+  if (Math.abs(n - camera.near) > camera.near * 0.15) { camera.near = n; camera.updateProjectionMatrix(); }
+}
+function flyTo(pos, target, fov, instant) {
+  const to = { p: pos.clone(), t: target.clone(), f: fov };
+  if (instant || reduceMotion) {
+    tween = null;
+    camera.position.copy(to.p); controls.target.copy(to.t); camera.fov = to.f; camera.updateProjectionMatrix();
+    controls.update(); redraw();
+    return;
+  }
+  const from = { p: camera.position.clone(), t: controls.target.clone(), f: camera.fov };
+  const s0 = new THREE.Spherical().setFromVector3(from.p.clone().sub(from.t));
+  const s1 = new THREE.Spherical().setFromVector3(to.p.clone().sub(to.t));
+  let dth = s1.theta - s0.theta;
+  if (dth > Math.PI) dth -= 2 * Math.PI; if (dth < -Math.PI) dth += 2 * Math.PI;
+  tween = { from, to, s0, s1, dth, t0: performance.now(), dur: 850 };
+}
+function stepTween(now) {
+  if (!tween) return;
+  const k = Math.min(1, (now - tween.t0) / tween.dur);
+  const e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+  const { from, to, s0, s1, dth } = tween;
+  const t = from.t.clone().lerp(to.t, e);
+  const r = Math.exp(THREE.MathUtils.lerp(Math.log(Math.max(1e-4, s0.radius)), Math.log(Math.max(1e-4, s1.radius)), e));
+  const sp = new THREE.Spherical(r, THREE.MathUtils.lerp(s0.phi, s1.phi, e), s0.theta + dth * e);
+  camera.position.setFromSpherical(sp).add(t);
+  controls.target.copy(t);
+  camera.fov = THREE.MathUtils.lerp(from.f, to.f, e);
+  camera.updateProjectionMatrix();
+  if (k >= 1) { camera.position.copy(to.p); controls.target.copy(to.t); tween = null; }
+  redraw();
+}
+function goView(key, instant) {
+  if (!GL) return;
+  const c = CAMS.find((x) => x.key === key);
+  if (!c) return;
+  const tgt = v3(c.target);
+  let pos = v3(c.position);
+  if (c.ortho) pos = tgt.clone().addScaledVector(pos.clone().sub(tgt).normalize(), ORTHO_DIST);
+  if (Math.abs(pos.x - tgt.x) < 1e-3 && Math.abs(pos.z - tgt.z) < 1e-3) pos.z += 0.002;   // straight down: give the orbit a heading
+  const a = stageAspect(), fov = presetFov(c, a);
+  // past the lens cap a narrow stage would crop the preset's sides: back off along the view until its width fits
+  const wantH = Math.tan(THREE.MathUtils.degToRad(presetVfov(c)) / 2) * PRESET_ASPECT;
+  const haveH = Math.tan(THREE.MathUtils.degToRad(fov) / 2) * a;
+  if (haveH < wantH) pos = tgt.clone().add(pos.clone().sub(tgt).multiplyScalar(wantH / haveH));
+  const fwd = tgt.clone().sub(pos).normalize();
+  const right = new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0, 1, 0));
+  const off = right.lengthSq() > 1e-6 ? cardOffset(pos.distanceTo(tgt), right.normalize()) : new THREE.Vector3();
+  flyTo(pos.add(off), tgt.clone().add(off), fov, instant);
+  setActiveView(key);
+}
+function setActiveView(key) {
+  S.view = key;
+  for (const b of document.querySelectorAll('#views .vb[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === key));
+}
+// Fit a set of boxes into the free part of the stage (arhud_xray.frame_camera, ported). Keeps the current view
+// direction unless one is given.
+function frameBoxes(boxes, instant, margin = 1.18, dir = null) {
+  if (!GL || !boxes.length) return false;
+  let fwd, right, up;
+  if (dir) {
+    fwd = dir.clone().normalize();
+    const wu = Math.abs(fwd.y) > 0.98 ? new THREE.Vector3(0, 0, -1) : new THREE.Vector3(0, 1, 0);
+    right = new THREE.Vector3().crossVectors(fwd, wu).normalize();
+    up = new THREE.Vector3().crossVectors(right, fwd).normalize();
+  } else {
+    const q = camera.quaternion;
+    fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(q); right = new THREE.Vector3(1, 0, 0).applyQuaternion(q); up = new THREE.Vector3(0, 1, 0).applyQuaternion(q);
+  }
+  const fov = camera.fov < 20 || camera.fov > 70 ? 41.11 : camera.fov;      // not the long lens of an ortho preset
+  const ty = Math.tan(THREE.MathUtils.degToRad(fov) / 2), tx = ty * freeAspect();
+  const corners = [];
+  const all = new THREE.Box3();
+  for (const b of boxes) {
+    all.union(b);
+    for (let i = 0; i < 8; i++) corners.push(new THREE.Vector3(i & 1 ? b.max.x : b.min.x, i & 2 ? b.max.y : b.min.y, i & 4 ? b.max.z : b.min.z));
+  }
+  let c = all.getCenter(new THREE.Vector3());
+  let dist = Math.max(all.getSize(new THREE.Vector3()).length(), 0.1);
+  const d = new THREE.Vector3();
+  for (let it = 0; it < 8; it++) {
+    const p = c.clone().addScaledVector(fwd, -dist);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const k of corners) {
+      d.subVectors(k, p);
+      const z = Math.max(1e-4, d.dot(fwd));
+      const x = d.dot(right) / z, y = d.dot(up) / z;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+    }
+    const need = Math.max((x1 - x0) / (2 * tx), (y1 - y0) / (2 * ty));
+    c = c.addScaledVector(right, (x1 + x0) / 2 * dist).addScaledVector(up, (y1 + y0) / 2 * dist);
+    dist = Math.max(0.06, dist * need * margin);
+  }
+  const off = cardOffset(dist, right);
+  flyTo(c.clone().addScaledVector(fwd, -dist).add(off), c.clone().add(off), fov, instant);
+  setActiveView(null);
+  return true;
+}
+function viewDirFor(id) {            // render.py's gallery direction for this part
+  const it = byId.get(id);
+  const v = ITEM_VIEW[id] ?? GALLERY_VIEW[it && it.cat] ?? 'overview';
+  if (Array.isArray(v)) return v3(v);
+  const c = CAMS.find((x) => x.key === v);
+  return c ? v3(c.target).sub(v3(c.position)) : null;
+}
+function frameItem(id, instant) {
+  frameBoxes(proxiesOf(id).map((m) => m.geometry.boundingBox), instant, ITEM_MARGIN[id] || 1.3, viewDirFor(id));
+}
+function frameSolid(instant) {
+  return frameBoxes(proxies.filter((m) => m.userData.state === 'solid').map((m) => m.geometry.boundingBox), instant, 1.12);
+}
+
+// ------------------------------------------------------------------------------------------------ render
+function resize() {
+  const w = Math.max(1, stageEl.clientWidth), h = Math.max(1, stageEl.clientHeight);
+  renderer.setPixelRatio(Math.max(1, Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(PIXEL_BUDGET / (w * h)))));
+  renderer.setSize(w, h, false);
+  placeInfo();
+  shiftGoal = shiftCur = 0;
+  setProjection();
+  const pr = renderer.getPixelRatio();
+  const W = Math.max(1, Math.round(w * pr)), H = Math.max(1, Math.round(h * pr));
+  for (const rt of [rtSolid, rtGlass, rtGhost, rtGhostB]) rt.setSize(W, H);
+  rtA.setSize(Math.max(1, Math.round(W / 2)), Math.max(1, Math.round(H / 2)));
+  rtB.setSize(rtA.width, rtA.height);
+  rtC.setSize(rtA.width, rtA.height);
+  layoutOverlays();
+  redraw();
+}
+
+const mask = (...ls) => ls.reduce((a, l) => a | (1 << l), 0);
+function depthPass(...layers) {
+  scene.overrideMaterial = depthOnly;
+  camera.layers.mask = mask(...layers);
+  renderer.render(scene, camera);
+  scene.overrideMaterial = null;
+}
+function ghostPasses(target, side) {
+  renderer.setRenderTarget(target);
+  renderer.setClearColor(0x000000, 0);
+  renderer.clear(true, true, true);
+  depthPass(L_DEPTH);
+  const gu = ghostMat.uniforms;
+  gu.uSide.value = side;
+  camera.layers.mask = mask(L_GHOST);
+  gu.uPass.value = 0;
+  renderer.render(scene, camera);              // every layer, light weight
+  gu.uPass.value = 1;
+  ghostMat.colorWrite = false; ghostMat.depthWrite = true;
+  renderer.render(scene, camera);              // ghost depth prepass
+  ghostMat.colorWrite = true; ghostMat.depthWrite = false;
+  renderer.render(scene, camera);              // nearest ghost surface at full weight
+  gu.uPass.value = 0;
+}
+function blurInto(from, to, sigma) {
+  fsQuad.material = blurMat;
+  blurMat.uniforms.uSigma.value = sigma;
+  blurMat.uniforms.tSrc.value = from.texture;
+  blurMat.uniforms.uDir.value.set(1 / rtA.width, 0);
+  renderer.setRenderTarget(rtA); renderer.render(fsScene, fsCam);
+  blurMat.uniforms.tSrc.value = rtA.texture;
+  blurMat.uniforms.uDir.value.set(0, 1 / to.height);
+  renderer.setRenderTarget(to); renderer.render(fsScene, fsCam);
+  return to;
+}
+function renderFrame() {
+  updateNear();
+  const ghosts = S.mode !== 'hide' && anyGhost;
+  renderer.autoClear = false;
+  // 1. opaque solid parts, the floor shadow and a solid part's hover highlight: sharp, linear, multisampled
+  renderer.setRenderTarget(rtSolid);
+  renderer.setClearColor(0xffffff, 0);
+  renderer.clear(true, true, true);
+  camera.layers.mask = mask(L_LIGHT, L_SOLID, L_FLOOR, L_HL);
+  renderer.render(scene, camera);
+  // 2. solid glass and film over the opaque parts' depth, then the glass depth itself (for ordering against ghosts)
+  if (anyGlass) {
+    renderer.setRenderTarget(rtGlass);
+    renderer.setClearColor(0x000000, 0);
+    renderer.clear(true, true, true);
+    depthPass(L_DEPTH);
+    camera.layers.mask = mask(L_LIGHT, L_GLASS);
+    renderer.render(scene, camera);
+    depthPass(L_GLASSD);
+  }
+  let src = null, srcB = null;
+  if (ghosts) {
+    // 3. ghosts into their own target, depth-tested against the opaque solids; split by the glass depth when solid
+    //    glass is in view (in front of it into rtGhost, behind it into rtGhostB)
+    const gu = ghostMat.uniforms;
+    gu.tGlassZ.value = anyGlass ? rtGlass.depthTexture : blackTex;
+    gu.uRes.value.set(rtGhost.width, rtGhost.height);
+    ghostPasses(rtGhost, anyGlass ? 1 : 0);
+    if (anyGlass) ghostPasses(rtGhostB, 2);
+    gu.uSide.value = 0;
+    src = rtGhost; srcB = anyGlass ? rtGhostB : null;
+    // 4. blur: separable gaussian at half resolution, ghosts only
+    if (S.blur) {
+      const sigma = Math.max(0.5, S.blurSize * renderer.getPixelRatio() / 2 / 2.5);
+      src = blurInto(rtGhost, rtB, sigma);
+      if (srcB) srcB = blurInto(rtGhostB, rtC, sigma);
+    }
+  }
+  // 5. composite onto the canvas
+  renderer.setRenderTarget(null);
+  renderer.setClearColor(0xffffff, 1);
+  fsQuad.material = compMat;
+  const cu = compMat.uniforms;
+  cu.tSolid.value = rtSolid.texture;
+  cu.tGhost.value = src ? src.texture : blackTex;
+  cu.tSharp.value = src ? rtGhost.texture : blackTex;
+  cu.uGlass.value = anyGlass ? 1 : 0;
+  cu.tGlass.value = anyGlass ? rtGlass.texture : blackTex;
+  cu.tGhostB.value = srcB ? srcB.texture : blackTex;
+  cu.tSharpB.value = srcB ? rtGhostB.texture : blackTex;
+  renderer.render(fsScene, fsCam);
+  // 6. hover highlight on a ghosted or hidden part: its nearest surface, drawn last so the tint cannot muddy it
+  if (anyHlGhost) {
+    renderer.clearDepth();
+    depthPass(L_HLG);
+    camera.layers.mask = mask(L_HLG);
+    renderer.render(scene, camera);
+  }
+  renderer.autoClear = true;
+}
+let lastT = 0, lastPick = 0;
+function loop(now) {
+  requestAnimationFrame(loop);
+  const dt = lastT ? Math.min(100, now - lastT) : 16;
+  lastT = now;
+  if (shiftCur !== shiftGoal) {         // slide the optical centre as the part card opens or closes
+    shiftCur += (shiftGoal - shiftCur) * Math.min(1, dt / 90);
+    if (Math.abs(shiftGoal - shiftCur) < 0.5) shiftCur = shiftGoal;
+    setProjection();
+    redraw();
+  }
+  stepTween(now);
+  controls.update();
+  if (pendingHover && now - lastPick > 50) { lastPick = now; doHover(); }
+  if (!dirty || !proxies.length) return;
+  dirty = false;
+  renderFrame();
+}
+
+// ------------------------------------------------------------------------------------------------ pointer
+const tip = $('#tip');
+let pendingHover = null, down = null;
+function hideTip() { tip.hidden = true; }
+function stageRect(el) {            // an element's box in stage coordinates
+  const s = stageEl.getBoundingClientRect(), r = el.getBoundingClientRect();
+  return { l: r.left - s.left, t: r.top - s.top, r: r.right - s.left, b: r.bottom - s.top };
+}
+function doHover() {
+  const { x, y } = pendingHover;
+  pendingHover = null;
+  if (tween) return;
+  const id = pickAt(x, y);
+  setHover(id);
+  renderer.domElement.style.cursor = id ? 'pointer' : '';
+  if (!id) { hideTip(); return; }
+  const it = byId.get(id);
+  const st = S.solid.has(id) ? 'Solid' : S.mode === 'frost' ? 'Frosted' : 'X-ray ghost';
+  tip.innerHTML = '';
+  tip.append(it.name);
+  const sm = document.createElement('small');
+  sm.textContent = `${st}. Click to isolate, Shift-click to ${S.solid.has(id) ? 'remove' : 'add'}`;
+  tip.append(sm);
+  tip.hidden = false;
+  const w = stageEl.clientWidth, h = stageEl.clientHeight;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let tx = x + 14, ty = y + 18;
+  if (tx + tw > w - 8) tx = x - tw - 14;
+  if (ty + th > h - 8) ty = y - th - 10;
+  // keep clear of the part card (and the view buttons): flip left of the cursor, else above the card
+  const hits = (r) => tx < r.r + 6 && tx + tw > r.l - 6 && ty < r.b + 6 && ty + th > r.t - 6;
+  if (cardOnStage()) {
+    const r = stageRect($('#info'));
+    if (hits(r)) { tx = x - tw - 14; if (hits(r)) { tx = x + 14 + tw > r.l ? Math.min(x - tw / 2, r.l - tw - 8) : x + 14; ty = Math.min(ty, r.t - th - 8); } }
+  }
+  tx = clamp(tx, 8, Math.max(8, w - tw - 8)); ty = clamp(ty, 8, Math.max(8, h - th - 8));
+  tip.style.transform = `translate(${Math.round(tx)}px, ${Math.round(ty)}px)`;
+}
+
+// ------------------------------------------------------------------------------------------------ UI: views
+const ICON = {
+  chev: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  solo: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="8" cy="8" r="2.3" fill="currentColor"/></svg>',
+  frame: '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5.6V2h3.6M10.4 2H14v3.6M14 10.4V14h-3.6M5.6 14H2v-3.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  info: '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 7.2v4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="8" cy="4.9" r="1" fill="currentColor"/></svg>',
+  close: '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+};
+function buildViews() {
+  const nav = $('#views');
+  nav.innerHTML = '';
+  for (const c of CAMS) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'vb'; b.dataset.view = c.key; b.id = 'view-' + c.key;
+    b.textContent = c.label; b.setAttribute('aria-pressed', 'false');
+    b.addEventListener('click', () => goView(c.key));
+    nav.append(b);
+  }
+  const f = document.createElement('button');
+  f.type = 'button'; f.className = 'vb fit'; f.id = 'fitSolid'; f.textContent = 'Frame solid parts';
+  f.title = 'Fit the camera to the parts shown solid';
+  f.addEventListener('click', () => frameSolid(false));
+  nav.append(f);
+}
+
+// ------------------------------------------------------------------------------------------------ UI: tree
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function iconBtn(act, id, label, svg) {
+  const b = el('button', 'ib'); b.type = 'button'; b.dataset.act = act; b.dataset.id = id; b.title = label; b.setAttribute('aria-label', label); b.innerHTML = svg; return b;
+}
+function nodeFor(id, depth) {
+  const it = byId.get(id);
+  const node = el('div', 'node'); node.dataset.id = id; node.setAttribute('role', 'treeitem');
+  const row = el('div', 'row'); row.style.setProperty('--d', depth);
+  const k = children(id);
+  if (k.length) {
+    const tw = el('button', 'tw'); tw.type = 'button'; tw.dataset.act = 'toggle'; tw.dataset.id = id;
+    tw.setAttribute('aria-label', 'Show the parts of ' + it.name); tw.innerHTML = ICON.chev; row.append(tw);
+    if (S.open.has(id)) node.classList.add('open');
+    tw.setAttribute('aria-expanded', String(S.open.has(id)));
+    node.setAttribute('aria-expanded', String(S.open.has(id)));
+  } else row.append(el('span', 'sp'));
+  const cb = el('input', 'cb'); cb.type = 'checkbox'; cb.id = 'cb-' + id; cb.dataset.id = id;
+  const nm = el('span', 'nm', it.name); nm.dataset.act = 'info'; nm.dataset.id = id; nm.title = 'About ' + it.name;
+  cb.setAttribute('aria-label', 'Show ' + it.name + ' solid');
+  const acts = el('span', 'acts');
+  acts.append(iconBtn('solo', id, 'Show only ' + it.name, ICON.solo), iconBtn('frame', id, 'Frame ' + it.name, ICON.frame), iconBtn('info', id, 'About ' + it.name, ICON.info));
+  row.append(cb, nm, acts);
+  node.append(row);
+  if (k.length) {
+    const kd = el('div', 'kids'); kd.setAttribute('role', 'group');
+    for (const c of k) kd.append(nodeFor(c, depth + 1));
+    node.append(kd);
+  }
+  return node;
+}
+function buildTree() {
+  const tree = $('#tree');
+  tree.innerHTML = '';
+  for (const [cid, name] of D.categories) {
+    const sec = el('section', 'cat'); sec.dataset.cat = cid;
+    if (S.closedCats.has(cid)) sec.classList.add('closed');
+    const h = el('div', 'cat-h');
+    const tw = el('button', 'tw'); tw.type = 'button'; tw.dataset.act = 'cat'; tw.dataset.cat = cid; tw.innerHTML = ICON.chev;
+    tw.setAttribute('aria-expanded', String(!S.closedCats.has(cid))); tw.setAttribute('aria-label', 'Show or fold ' + name);
+    const n = el('span', 'cat-n', name); n.dataset.act = 'cat'; n.dataset.cat = cid;
+    const cnt = el('span', 'cnt'); cnt.dataset.cnt = cid;
+    const all = el('button', 'mini', 'Solid'); all.type = 'button'; all.dataset.act = 'cat-all'; all.dataset.cat = cid; all.title = 'Show the whole group solid';
+    const none = el('button', 'mini', 'Ghost'); none.type = 'button'; none.dataset.act = 'cat-none'; none.dataset.cat = cid; none.title = 'Ghost the whole group';
+    h.append(tw, n, cnt, all, none);
+    const body = el('div', 'cat-b'); body.setAttribute('role', 'group');
+    for (const it of D.items) if (it.cat === cid && !it.parent) body.append(nodeFor(it.id, 0));
+    sec.append(h, body);
+    tree.append(sec);
+  }
+  const leaves = D.items.filter((i) => isLeaf(i.id)).length;
+  $('#nTotal').textContent = `of ${leaves} parts`;
+}
+function updateTree() {
+  let nSolid = 0, nGhost = 0;
+  for (const it of D.items) {
+    const node = document.querySelector(`.node[data-id="${it.id}"]`);
+    if (!node) continue;
+    const cb = node.querySelector(':scope > .row > .cb');
+    const solid = S.solid.has(it.id);
+    let mixed = false;
+    if (!isLeaf(it.id) && !solid) mixed = descendants(it.id).some((d) => S.solid.has(d));
+    cb.checked = solid; cb.indeterminate = mixed;
+    node.dataset.solid = solid || mixed ? '1' : '0';
+    if (isLeaf(it.id)) { if (solid) nSolid++; else nGhost++; }
+  }
+  for (const [cid] of D.categories) {
+    const lv = D.items.filter((i) => i.cat === cid && isLeaf(i.id));
+    const c = document.querySelector(`[data-cnt="${cid}"]`);
+    if (c) c.textContent = `${lv.filter((i) => S.solid.has(i.id)).length}/${lv.length}`;
+  }
+  $('#nSolid').textContent = nSolid; $('#nGhost').textContent = nGhost;
+  const fit = $('#fitSolid'); if (fit) fit.disabled = nSolid === 0 || !GL;
+}
+function setOpen(id, open) {
+  const node = document.querySelector(`.node[data-id="${id}"]`);
+  if (!node) return;
+  if (open) S.open.add(id); else S.open.delete(id);
+  node.classList.toggle('open', open);
+  node.setAttribute('aria-expanded', String(open));
+  const tw = node.querySelector(':scope > .row > .tw'); if (tw) tw.setAttribute('aria-expanded', String(open));
+  store.set('open', [...S.open]);
+}
+function setCatOpen(cid, open) {
+  if (open) S.closedCats.delete(cid); else S.closedCats.add(cid);
+  const sec = document.querySelector(`.cat[data-cat="${cid}"]`);
+  sec.classList.toggle('closed', !open);
+  sec.querySelector('.cat-h .tw').setAttribute('aria-expanded', String(open));
+  store.set('closedCats', [...S.closedCats]);
+}
+function revealRow(id) {
+  const it = byId.get(id);
+  if (!it) return;
+  setCatOpen(it.cat, true);
+  let p = it.parent;
+  while (p) { setOpen(p, true); p = byId.get(p).parent; }
+  const row = document.querySelector(`.node[data-id="${id}"] > .row`);
+  if (row && !cardDocked() && !$('#side').classList.contains('collapsed')) row.scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+}
+// Filter: a category name shows its whole group; an item shows when its name, a descendant's or an ancestor's matches.
+function applyFilter() {
+  const f = S.filter.trim().toLowerCase();
+  const nameHit = (id) => byId.get(id).name.toLowerCase().includes(f);
+  const ancestorHit = (id) => { let p = byId.get(id).parent; while (p) { if (nameHit(p)) return true; p = byId.get(p).parent; } return false; };
+  let shown = 0;
+  for (const [cid, cname] of D.categories) {
+    const sec = document.querySelector(`.cat[data-cat="${cid}"]`);
+    const catHit = !!f && (cname.toLowerCase().includes(f) || cid.toLowerCase().includes(f));   // "vehicle" finds "Car (context)"
+    let any = false;
+    for (const node of sec.querySelectorAll('.node')) {
+      const id = node.dataset.id;
+      const ok = !f || catHit || nameHit(id) || descendants(id).some(nameHit) || ancestorHit(id);
+      node.classList.toggle('nomatch', !ok);
+      if (!isLeaf(id)) node.classList.toggle('open', f && ok ? true : S.open.has(id));
+      if (ok) any = true;
+    }
+    sec.classList.toggle('empty', !!f && !any);
+    if (f && any) sec.classList.remove('closed'); else if (!f) sec.classList.toggle('closed', S.closedCats.has(cid));
+    if (!f || any) shown++;
+  }
+  const empty = $('#treeEmpty');
+  empty.hidden = !f || shown > 0;
+  empty.textContent = `No components match "${S.filter.trim()}".`;
+}
+$('#tree').addEventListener('change', (e) => {
+  const cb = e.target.closest('.cb');
+  if (!cb) return;
+  setSolid([cb.dataset.id], cb.checked);
+});
+$('#tree').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-act]');
+  if (!t) return;
+  const id = t.dataset.id, cid = t.dataset.cat;
+  switch (t.dataset.act) {
+    case 'toggle': setOpen(id, !S.open.has(id)); break;
+    case 'cat': setCatOpen(cid, S.closedCats.has(cid)); break;
+    case 'cat-all': setAll('ALL', cid); break;
+    case 'cat-none': setAll('NONE', cid); break;
+    case 'solo': isolate([id]); showInfo(id); break;
+    case 'frame': showInfo(id); frameItem(id); break;     // card first, so the frame fits the stage it leaves free
+    case 'info': showInfo(id); break;
+  }
+});
+$('#tree').addEventListener('mouseover', (e) => {
+  const node = e.target.closest('.node');
+  if (node) setHover(node.dataset.id);
+});
+$('#tree').addEventListener('mouseleave', () => setHover(null));
+
+// ------------------------------------------------------------------------------------------------ UI: info card
+const side = $('#side');
+const phoneMQ = matchMedia('(max-width: 760px)');
+// the card floats over the stage on wide screens; on phones, narrow stages and without WebGL it docks atop the panel
+function cardDocked() { return phoneMQ.matches || !GL || stageEl.clientWidth < 1000; }
+function placeInfo() {
+  const card = $('#info');
+  if (cardDocked()) { if (card.parentElement !== $('#pbody')) $('#pbody').prepend(card); }
+  else if (card.parentElement !== stageEl) stageEl.insertBefore(card, $('#tip'));
+}
+function showInfo(id) {
+  S.info = id;
+  updateInfo();
+  if (id && cardDocked()) { if (phoneMQ.matches) setSheet(false); $('#pbody').scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' }); }
+  for (const r of document.querySelectorAll('.row.cur')) r.classList.remove('cur');
+  if (id) { const r = document.querySelector(`.node[data-id="${id}"] > .row`); if (r) r.classList.add('cur'); }
+}
+function updateInfo() {
+  const box = $('#info');
+  const it = S.info && byId.get(S.info);
+  if (!it) { box.hidden = true; box.innerHTML = ''; updateShift(); layoutOverlays(); return; }
+  box.innerHTML = '';
+  const close = el('button', 'close'); close.type = 'button'; close.innerHTML = ICON.close; close.setAttribute('aria-label', 'Close the part card');
+  close.addEventListener('click', () => showInfo(null));
+  box.append(close, el('p', 'eyebrow', catName.get(it.cat) || ''), el('h2', null, it.name));
+  const parent = it.parent && byId.get(it.parent);
+  const group = catName.get(it.cat) || '';
+  box.append(el('p', 'partof', parent ? 'Part of ' + parent.name : group && group !== it.name ? 'Part of ' + group : 'Top-level assembly of the build'));
+  if (it.desc) box.append(el('p', 'desc', it.desc));
+  if (it.facts && it.facts.length) {
+    const t = el('table'); const tb = el('tbody');
+    for (const [k, v] of it.facts) { const tr = el('tr'); tr.append(el('th', null, k), el('td', null, v)); tb.append(tr); }
+    t.append(tb); box.append(t);
+  }
+  if (it.where) { const w = el('p', 'where'); w.append(el('b', null, 'Mounted: '), it.where); box.append(w); }
+  const acts = el('div', 'acts2');
+  const solo = el('button', 'btn', 'Show only this'); solo.type = 'button'; solo.addEventListener('click', () => isolate([it.id]));
+  acts.append(solo);
+  if (GL) { const fr = el('button', 'btn', 'Frame'); fr.type = 'button'; fr.addEventListener('click', () => frameItem(it.id)); acts.append(fr); }
+  const solid = S.solid.has(it.id);
+  const tg = el('button', 'btn', solid ? 'Ghost it' : 'Add to solid'); tg.type = 'button'; tg.addEventListener('click', () => setSolid([it.id], !S.solid.has(it.id)));
+  const st = el('span', 'state'); const sw = el('i'); sw.style.cssText = solid ? 'width:10px;height:10px;border-radius:3px;background:var(--solid)' : 'width:10px;height:10px;border-radius:3px;border:1.5px dashed var(--ghost)';
+  st.append(sw, solid ? 'Solid' : S.mode === 'hide' ? 'Hidden' : S.mode === 'frost' ? 'Frosted' : 'X-ray');
+  acts.append(tg, st);
+  box.append(acts);
+  box.hidden = false;
+  updateShift();
+  layoutOverlays();
+}
+// the stage hint sits bottom-left; it gives way to the card and disappears when there is no room for it
+function layoutOverlays() {
+  const hint = $('#stageHint');
+  const room = stageEl.clientWidth - 32 - (cardOnStage() ? $('#info').offsetWidth + 24 : 0);
+  hint.hidden = !GL || room < 240;
+  hint.style.maxWidth = Math.max(0, room) + 'px';
+}
+
+// ------------------------------------------------------------------------------------------------ UI: controls
+for (const b of document.querySelectorAll('.seg button')) b.addEventListener('click', () => setMode(b.dataset.mode));
+$('#strength').addEventListener('input', (e) => setStrength(parseFloat(e.target.value)));
+$('#tint').addEventListener('input', (e) => setTint(e.target.value));
+$('#tintReset').addEventListener('click', () => setTint(DEFAULT_TINT_HEX));
+$('#blur').addEventListener('click', () => setBlur(!S.blur));
+$('#blurSize').addEventListener('input', (e) => { setBlur(true, parseFloat(e.target.value)); });
+$('#filter').addEventListener('input', (e) => { S.filter = e.target.value; applyFilter(); });
+for (const b of document.querySelectorAll('[data-all]')) b.addEventListener('click', () => setAll(b.dataset.all));
+phoneMQ.addEventListener('change', () => { placeInfo(); updateShift(); layoutOverlays(); });
+placeInfo();
+function setSheet(collapsed) {
+  side.classList.toggle('collapsed', collapsed);
+  $('#sheetToggle').setAttribute('aria-expanded', String(!collapsed));
+  store.set('sheetCollapsed', collapsed);
+}
+$('#sheetToggle').addEventListener('click', () => setSheet(!side.classList.contains('collapsed')));
+setSheet(!!store.get('sheetCollapsed', false));
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !$('#info').hidden) showInfo(null);
+});
+
+// ------------------------------------------------------------------------------------------------ hash flags
+// #show=jetson,zed2i&mode=xray|frost|hide&blur=1&blursize=20&view=footwell&info=jetson&strength=0.7&tint=4477aa
+// &frame=solid|<id>&hover=<id>&filter=text&sheet=0|1&theme=light|dark&k=<ghost layer weight, 0.12>&draco=js, or one
+// bare token: a view key or an item id (the only form a published artifact link passes through). Values that do not
+// parse are ignored; a malformed escape never stops the page.
+function readHash() {
+  const raw = (location.hash || '').replace(/^#/, '');
+  if (!raw) return null;
+  if (!raw.includes('=')) {
+    let tok = raw;
+    try { tok = decodeURIComponent(raw); } catch (e) { /* keep the raw text */ }
+    tok = tok.trim();
+    if (CAMS.some((c) => c.key === tok)) return new URLSearchParams([['view', tok]]);
+    if (byId.has(tok)) return new URLSearchParams([['show', tok], ['info', tok], ['frame', tok]]);
+    return null;
+  }
+  return new URLSearchParams(raw);          // never throws, even on a stray %
+}
+function applyHash() {
+  const p = readHash();
+  if (!p) return false;
+  const g = (k) => { const v = p.get(k); return v == null ? null : v.trim(); };
+  const num = (k) => { const v = g(k); if (!v) return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
+  const ids = (k) => (g(k) || '').split(',').map((s) => s.trim()).filter((i) => byId.has(i));
+  const theme = g('theme');
+  if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+  const k = num('k');
+  if (k != null) { ghostMat.uniforms.uK.value = clamp(k, 0.01, 0.95); redraw(); }
+  const st = num('strength');
+  if (st != null) setStrength(st);
+  const tint = g('tint');
+  if (tint && /^#?[0-9a-f]{6}$/i.test(tint)) setTint('#' + tint.replace('#', ''));
+  const b = g('blur'), bs = num('blursize');
+  if (b != null || bs != null) setBlur(b != null ? !['0', 'false', 'off', 'no'].includes(b.toLowerCase()) : S.blur, bs);
+  const mode = { xray: 'xray', frost: 'frost', frosted: 'frost', fade: 'frost', hide: 'hide' }[(g('mode') || '').toLowerCase()];
+  if (mode) setMode(mode);
+  const show = ids('show');
+  if (show.length) isolate(show);
+  const add = ids('add');
+  if (add.length) setSolid(add, true);
+  if (g('sheet') === '0' || g('sheet') === '1') setSheet(g('sheet') === '0');
+  if (g('filter')) { S.filter = g('filter'); $('#filter').value = S.filter; applyFilter(); }
+  const info = g('info');
+  if (info && byId.has(info)) { showInfo(info); revealRow(info); }
+  else if (show.length) { showInfo(show[0]); revealRow(show[0]); }
+  if (g('view')) goView(g('view'), true);
+  const fr = g('frame');
+  if (fr) { if (fr === 'solid' || fr === '1') frameSolid(true); else if (byId.has(fr)) frameItem(fr, true); }
+  const hv = g('hover');
+  if (hv && byId.has(hv)) setHover(hv);
+  return true;
+}
+
+// ------------------------------------------------------------------------------------------------ WebGL
+function init3D() {
+  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setClearColor(0xffffff, 1);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.NeutralToneMapping;
+  renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.autoUpdate = false;
+  GL = true;
+  stageEl.prepend(renderer.domElement);
+  const cv = renderer.domElement;
+  cv.setAttribute('tabindex', '0');
+  cv.setAttribute('aria-label', '3-D view. Drag to orbit, scroll to zoom.');
+  cv.addEventListener('webglcontextlost', (e) => { e.preventDefault(); fail('The 3-D view stopped', 'The graphics driver reset the WebGL context. Reload the page to start the view again.'); });
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.85;
+  pmrem.dispose();
+
+  controls = new OrbitControls(camera, cv);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.09;
+  controls.screenSpacePanning = true;
+  controls.zoomToCursor = true;
+  controls.minDistance = 0.05;
+  controls.maxDistance = 60;
+  let userMove = false;
+  controls.addEventListener('change', () => { if (userMove && !tween) setActiveView(null); redraw(); });
+  controls.addEventListener('start', () => { userMove = true; tween = null; hideTip(); });
+  controls.addEventListener('end', () => { userMove = false; });
+
+  const floatRT = renderer.extensions.has('EXT_color_buffer_float') || renderer.extensions.has('EXT_color_buffer_half_float');
+  const rtOpts = { type: floatRT ? THREE.HalfFloatType : THREE.UnsignedByteType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false };
+  rtSolid = new THREE.WebGLRenderTarget(4, 4, { ...rtOpts, depthBuffer: true, samples: 4 });
+  // (no MSAA: three.js invalidates a multisampled target's colour after every render call, and this one takes three)
+  rtGlass = new THREE.WebGLRenderTarget(4, 4, { ...rtOpts, depthBuffer: true, depthTexture: new THREE.DepthTexture(4, 4) });
+  rtGhost = new THREE.WebGLRenderTarget(4, 4, { ...rtOpts, depthBuffer: true });
+  rtGhostB = new THREE.WebGLRenderTarget(4, 4, { ...rtOpts, depthBuffer: true });
+  rtA = new THREE.WebGLRenderTarget(2, 2, rtOpts);
+  rtB = new THREE.WebGLRenderTarget(2, 2, rtOpts);
+  rtC = new THREE.WebGLRenderTarget(2, 2, rtOpts);
+
+  cv.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse' || e.buttons) { if (e.buttons) hideTip(); return; }
+    const r = stageEl.getBoundingClientRect();
+    pendingHover = { x: e.clientX - r.left, y: e.clientY - r.top };
+  });
+  cv.addEventListener('pointerleave', () => { pendingHover = null; hideTip(); setHover(null); });
+  cv.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now(), b: e.button }; });
+  cv.addEventListener('pointerup', (e) => {
+    if (!down || e.button !== 0 || down.b !== 0) { down = null; return; }
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
+    const dt = performance.now() - down.t;
+    down = null;
+    if (moved > 5 || dt > 700 || !proxies.length) return;
+    const r = stageEl.getBoundingClientRect();
+    const id = pickAt(e.clientX - r.left, e.clientY - r.top);
+    if (!id) return;                                   // empty space: nothing happens
+    if (e.shiftKey || e.metaKey || e.ctrlKey) setSolid([id], !S.solid.has(id));
+    else isolate([id]);
+    showInfo(id);
+    revealRow(id);
+  });
+  new ResizeObserver(resize).observe(stageEl);
+}
+
+// ------------------------------------------------------------------------------------------------ start
+const ready = () => setTimeout(() => { document.documentElement.dataset.ready = '1'; console.log('[arhud-xray] ready'); }, 400);
+(async () => {
+  try { init3D(); }
+  catch (e) { GL = false; renderer = null; console.error('[arhud-xray] WebGL could not start:', e); }
+  placeInfo();
+  try {
+    await loadData();
+  } catch (e) {
+    fail('The component list could not be loaded', `${String(e && e.message || e).replace(/\.$/, '')}. items.json and cameras.json must sit next to this page; reload to try again.`);
+    return;
+  }
+  if (!GL) {
+    // the list, the checkboxes and the part cards still work; the 3-D controls are switched off
+    $('#app').classList.add('nogl');
+    $('#look').inert = true;
+    for (const b of document.querySelectorAll('#views button')) b.disabled = true;
+    fail('WebGL is not available', 'This browser could not start WebGL 2, so the 3-D view cannot run. The component list and the part cards still work. To see the model, turn on hardware acceleration in the browser settings, or open the page in a current Chrome, Edge, Safari or Firefox.');
+    try { applyHash(); } catch (e) { console.error('[arhud-xray] ignoring the link settings:', e); }
+    ready();
+    return;
+  }
+  let gltf;
+  try {
+    gltf = await loadModel();
+    progress('Assembling the parts', 'Merging parts by component and material', 0.92);
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+    mergeModel(gltf.scene);
+  } catch (e) {
+    const msg = String(e && e.message || e).replace(/\.$/, '');
+    if (loadStage === 'model') fail('The 3-D model could not be loaded', `${msg}. The model file (arhud.glb.gz.b64.txt, or arhud.glb) must sit next to this page; check the connection and reload.`);
+    else if (loadStage === 'decoder') fail('The mesh decoder could not be loaded', `${msg}. The Draco decoder files (the draco folder next to this page, or cdn.jsdelivr.net) are missing or blocked, so the compressed model cannot be unpacked; reload to try again.`);
+    else fail('The 3-D model could not be decoded', `${msg}. The file arhud.glb may be damaged, or the browser ran out of memory; reload to try again.`);
+    return;
+  }
+  resize();
+  setMode(S.mode);
+  setStrength(S.strength);
+  setTint(S.tint);
+  setBlur(S.blur, S.blurSize);
+  resetDefaults();
+  goView('overview', true);
+  $('#loader').hidden = true;
+  let hashed = false;
+  try { hashed = applyHash(); } catch (e) { console.error('[arhud-xray] ignoring the link settings:', e); }
+  if (!hashed && stageEl.clientWidth >= 1300) { showInfo('hudUnit'); goView('overview', true); }   // a sample card where it has room; the view fits beside it
+  addEventListener('hashchange', () => { try { applyHash(); } catch (e) { console.error('[arhud-xray] ignoring the link settings:', e); } });
+  requestAnimationFrame(loop);
+  ready();
+  window.__xr = { S, merged, proxies, setSolid, isolate, setMode, setBlur, goView, frameSolid, frameItem, pickAt, renderer, renderFrame, camera, controls };
+})();
+</script>

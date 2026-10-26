@@ -1,0 +1,46 @@
+<section>
+  <h2 id="b14"><span class="num">B14</span>Hazards, polish and rehearsal (gate G7)</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Turns a working instrument into a demonstration that runs without its builder at the keyboard</div>
+    <div><b>Weeks</b>8–12</div>
+    <div><b>Closes</b>Gate G7: the script runs twice in a row without an operator touching the Jetson</div>
+    <div><b>Needs</b>B13 (or B8 for a Stage 1 demo); the venue, a lead car, a volunteer pedestrian</div>
+    <div><b>Produces</b>Tuned hazard rules, the final audience layout, a rehearsed script, the demo-day checklist</div>
+    <div><b>People</b>Driver, safety driver, presenter, a volunteer pedestrian, a lead-car driver</div>
+  </div>
+
+  <h3>B14.1 Tune the hazard rules on the course</h3>
+  <ol class="steps">
+    <li>With the volunteer walking slowly along the roadside at 20–30 m and the car at walking pace, then 10 m/s, record how often the pedestrian outline appears late, flickers, or persists after the person is gone. Adjust the three-detection rule and the 400 ms hold until the outline appears within about half a second and never flickers. The volunteer never steps into the car's path; a cone line marks the boundary.</li>
+    <li>Repeat with a cyclist if the venue allows, and with parked cars that must not be outlined as hazards.</li>
+    <li>Run the lead car ahead at 10–25 m/s with gentle braking. Watch the chevron and the gap number from the eye point; the chevron must stay under the car's rear and the gap must count down smoothly.</li>
+    <li>Train and test the speed-limit classifier on the course's signs (if they exist). If it misreads even once in ten passes, remove it from the speed block for the demo.</li>
+  </ol>
+
+  <h3>B14.2 Remove clutter</h3>
+  <p>Drive the course with the presenter and one person who has never seen the HUD in the passenger seat watching the audience view. Remove or dim anything that is neither conformal nor safety-relevant. Keep the clutter mode as a ten-second contrast on a key press only.</p>
+
+  <h3>B14.3 The audience view</h3>
+  <p>Finalise the layout on monitor 2: the rendered HUD frame, the driver camera with the tracked eye point, and the live numbers beside their targets: registration residual (target 0.5°), data age (target under the 90 ms budget), contrast at noon (target 1.15), latency, GNSS fix, sun-watch state, cell temperature. A number outside its target shows its target next to it, not a colour alone.</p>
+
+  <h3>B14.4 Rehearse</h3>
+  <ol class="steps">
+    <li>Write the script: start-up, the straight, the curve, the lead car, the pedestrian, a night or dusk segment if shown, the clutter contrast, shut-down. Each step has the presenter's words and what the audience view shows.</li>
+    <li>Make start-up automatic: the supervisor starts on boot; the HUD comes up with the shutter closed, opens it once the controller reports healthy and sun-watch is clear; no command line on the day.</li>
+    <li>Rehearse the script three times on the demo course. Log every intervention.</li>
+  </ol>
+
+  <h3>B14.5 Demo-day checklist</h3>
+  <ul class="cl">
+    <li>Installation checklist (Appendix F) signed for today.</li>
+    <li>Calibration file dated after the last camera or housing move; a 30 m board check from the eye point this morning.</li>
+    <li>Weather and sun: sun-watch patch times for the venue checked; the planned headings avoid the patch.</li>
+    <li>Nobody in the car wears polarised sunglasses.</li>
+    <li>Safety driver briefed; lead-car driver and volunteer briefed; cones out.</li>
+    <li>Laptop charged with SSH access; spare fuse; spare HDMI cable; the Pico firmware (UF2 file) on the laptop.</li>
+    <li>Fallback ready: Stage 1 rig in the boot for a night or overcast demo.</li>
+  </ul>
+
+  <h3>B14.6 Gate G7</h3>
+  <p>The script runs twice in a row without anyone touching the Jetson. Record the date; it sets the demo date.</p>
+</section>

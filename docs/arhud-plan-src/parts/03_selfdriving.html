@@ -1,0 +1,38 @@
+<section>
+  <h2 id="s5"><span class="num">5</span>Self-driving integration</h2>
+
+  <h3>5.1 Why openpilot</h3>
+  <p>openpilot is chosen over other open driving stacks for three reasons. It is the only one with a maintained list of supported cars. It enforces a hardware safety model in panda firmware. And its message bus can be tapped by a second machine without changing the driving code. Alternatives such as Autoware or a research stack would need a drive-by-wire interface built from scratch, and they would carry none of the safety model. The HUD depends on the bus, so the choice of stack determines how much of the HUD can be built on existing code.</p>
+
+  <h3>5.2 Track A, the critical path: the comma four drives</h3>
+  <p>Track A puts a comma four and a car harness in a supported car and runs the fork's branch on it, so the HUD and the driving computer share one source tree. The driver engages openpilot normally. The HUD mirrors the engagement state. Nothing about openpilot's driving behaviour is modified for the HUD; the HUD only adds a subscriber.</p>
+  <p>The changes on the comma four are small and are listed below. Each one is a place the plan is most likely to need an adjustment once the hardware is in hand.</p>
+  <table>
+    <thead><tr><th style="width:26%">Item</th><th>Change</th><th style="width:22%">Status</th></tr></thead>
+    <tbody>
+      <tr><td><code>bridge</code>, on the comma four</td><td>Started onroad. Today <code>process_config.py</code> starts it only for <code>notCar</code> builds, so a Params flag is added that enables it in a car.</td><td>To build</td></tr>
+      <tr><td>USB-C Ethernet adapter</td><td>Links the comma four to the Jetson's RJ45 port with a short Cat6 run. The comma four's USB 3.1 port powers the adapter.</td><td><span class="tag">verify</span> host mode and USB Ethernet driver</td></tr>
+      <tr><td>Driving code and panda</td><td>Unchanged.</td><td>By design</td></tr>
+      <tr><td>Fallback link</td><td>The comma four's Wi-Fi hotspot to the Jetson, accepting the jitter noted in the latency budget.</td><td>Only if the adapter fails</td></tr>
+    </tbody>
+  </table>
+  <p>Hardware note: the comma 3X is no longer sold. The comma four is $999, or $699 with trade-in, and the harness is $99 (comma shop, read 2026-10-08). The Phase 0 order is the comma four and the harness, and the car is chosen before either is ordered.</p>
+
+  <h3>5.3 Track B, research: openpilot on the Jetson</h3>
+  <p>Track B is kept alive for a practical reason. JetPack 6.2 (CUDA 12.6, TensorRT 10.3) removes the TensorRT 8.5 parser failure found on 2026-10-07, when the driving model could not be parsed on the Jetson's JetPack 5.1.3 install. Track B is worth doing only if it lets the Jetson run the whole driving stack, not just the HUD. The blockers below were each verified in this checkout.</p>
+  <table>
+    <thead><tr><th style="width:21%">Blocker</th><th style="width:31%">Where</th><th>What it would take</th></tr></thead>
+    <tbody>
+      <tr><td>No CUDA model build</td><td><code>openpilot/selfdrive/modeld/SConscript</code> lines 27–31; <code>helpers.py</code>, <code>load_oob</code></td><td>Add a <code>DEV=CUDA</code> (or <code>NV</code>) branch and a device case. tinygrad lists both devices, but openpilot never uses them. Correctness on sm_87 is <span class="tag">unverified</span>.</td></tr>
+      <tr><td>pandad is SPI-only</td><td><code>openpilot/selfdrive/pandad/panda.cc</code> line 16</td><td>A <code>PandaUsbHandle</code> path in C++ for an external red panda, or a Python pandad. Not trivial.</td></tr>
+      <tr><td>No IMU or GPS on PC</td><td><code>process_config.py</code>: <code>sensord</code> line 88, <code>qcomgpsd</code> line 101, <code>ubloxd</code> and <code>pigeond</code> lines 105–106 (<code>timed</code> at line 83 is also PC-disabled)</td><td>A Jetson hardware class, plus sensord for an external IMU and ubloxd for a ZED-F9P. <code>hardwared</code> already runs on PC; it is the sensor processes that are missing.</td></tr>
+      <tr><td>Camera mismatch</td><td><code>webcam/camera.py</code> at 1280 × 720; <code>camera.py</code> <code>("pc","unknown")</code></td><td>A GMSL AR0234 kit, the only JetPack 6.2-tested one found, with its own <code>CameraConfig</code> and warp file size.</td></tr>
+    </tbody>
+  </table>
+  <p>The first blocker is the one that decides Track B. Without a CUDA build of the model, nothing else matters, because the driving model is the part that must run for openpilot to drive. The plan's first milestone is therefore narrow: <code>modeld</code> running on CUDA against a replayed route, with outputs matching the Qualcomm build.</p>
+  <div class="callout warn">
+    <p class="h">Open before Track B starts</p>
+    <p>The plan does not define "matching". Before the parity test begins, set a numeric tolerance for the model's outputs (path points, lane-line probabilities and lead distances) and the replay route it is measured on. Without a tolerance, the go/no-go decision has no criterion and can be argued either way.</p>
+  </div>
+  <p>Go/no-go happens after Track A is driving. Track B does not block the HUD: if it fails, the Jetson remains a HUD computer, and the design does not change. That is the reason Track B sits after week 12 on the schedule (section 9).</p>
+</section>

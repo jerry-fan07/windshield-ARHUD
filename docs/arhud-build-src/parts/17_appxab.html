@@ -1,0 +1,87 @@
+<div class="part" data-toc="Appendices">
+  <div class="pn">Appendices</div>
+  <div class="pt">Reference</div>
+  <div class="pd">Wiring, pin maps, file formats, message fields, test sheets, the installation checklist, the formulas behind the numbers, a glossary, and where every number comes from.</div>
+</div>
+
+<section>
+  <h2 id="aa"><span class="num">A</span>Wiring and connector schedule</h2>
+  <p>Every cable in the installation. Label both ends of each cable with its ID before installing it.</p>
+  <table class="tight">
+    <thead><tr><th style="width:6%">ID</th><th style="width:17%">From</th><th style="width:19%">To</th><th style="width:22%">Cable</th><th style="width:10%">Fuse</th><th>Route and notes</th></tr></thead>
+    <tbody>
+      <tr><td colspan="6"><b>Power</b></td></tr>
+      <tr><td>P1</td><td>Always-live 12 V socket</td><td>DC-DC VIN (J-input pin VIN)</td><td>1.5 mm² red/black twin, plug at one end, Mini-Fit Jr at the other</td><td>10 A blade, ≤ 150 mm from the plug</td><td>Under the console trim edge to the footwell plate</td></tr>
+      <tr><td>P2</td><td>Switched 12 V socket</td><td>DC-DC IGN</td><td>0.5 mm²</td><td>1 A blade</td><td>With P1</td></tr>
+      <tr><td>P3</td><td>DC-DC output (16 V)</td><td>Jetson DC jack</td><td>1.0 mm² twin, 5.5 × 2.5 mm plug, centre positive</td><td>converter's own</td><td>On the plate; check polarity before first connection</td></tr>
+      <tr><td>P4</td><td>DC-DC output (16 V)</td><td>LED drivers A and B, +Vin and GND</td><td>0.5 mm² twin</td><td>2 A inline at the converter</td><td>Footwell to dash beside the housing, under the dash's lower edge</td></tr>
+      <tr><td>P5</td><td>DC-DC output (16 V)</td><td>5 V, 5 A buck input</td><td>0.5 mm² twin</td><td>3 A inline</td><td>On the plate</td></tr>
+      <tr><td>P6</td><td>5 V buck</td><td>Panel board power (USB-C or micro-USB, by revision)</td><td>USB cable rated 3 A</td><td>—</td><td>Into the housing through the HDMI grommet</td></tr>
+      <tr><td>P7</td><td>5 V buck</td><td>Controller 5 V terminal; fan</td><td>0.5 mm² twin</td><td>—</td><td>To the dash</td></tr>
+      <tr><td>P8</td><td>5 V buck</td><td>OAK-D Y-adapter power leg</td><td>USB cable rated 3 A</td><td>—</td><td>Along the column's underside</td></tr>
+      <tr><td>P9</td><td>LED driver A (+Vout, −Vout)</td><td>LED string A</td><td>0.5 mm² twin, JST-VH</td><td>—</td><td>Through the LED grommet; never plug or unplug live</td></tr>
+      <tr><td>P10</td><td>LED driver B (+Vout, −Vout)</td><td>LED string B</td><td>0.5 mm² twin, JST-VH</td><td>—</td><td>As P9</td></tr>
+      <tr><td>P11</td><td>Second socket (feed 2)</td><td>USB-C PD charger</td><td>The charger's own plug</td><td>10 A blade if the plug has none</td><td>To the passenger headrest</td></tr>
+      <tr><td colspan="6"><b>Control</b></td></tr>
+      <tr><td>C1</td><td>DC-DC J8</td><td>J401 button header pins 1 (PWR BTN) and 2 (GND)</td><td>2-core 0.25 mm², 2-pin header connector</td><td>—</td><td>On the plate</td></tr>
+      <tr><td>C2</td><td>Controller level and enable A, B</td><td>LED drivers pins 2 and 3</td><td>Shielded 4-core plus ground</td><td>—</td><td>Short, beside the housing</td></tr>
+      <tr><td>C3</td><td>Controller servo header</td><td>SG90 under the lid</td><td>The servo's lead, extended with 3-core</td><td>—</td><td>Down the left wall's channel</td></tr>
+      <tr><td>C4</td><td>Controller NTC connector</td><td>NTC on the cell</td><td>Shielded twin</td><td>—</td><td>Through the LED grommet</td></tr>
+      <tr><td>C5</td><td>Controller I²C connector</td><td>TSL2591 in the lid pod</td><td>Shielded 4-core</td><td>—</td><td>Down the left wall's channel</td></tr>
+      <tr><td>C6</td><td>MAX31855 socket</td><td>Type-K bead (tests only)</td><td>Type-K extension</td><td>—</td><td>Temporary</td></tr>
+      <tr><td colspan="6"><b>Data</b></td></tr>
+      <tr><td>D1</td><td>ZED 2i</td><td>Jetson USB 3</td><td>Stereolabs USB-C cable with screw locks, 1.5 or 3 m (not included with the camera)</td><td>—</td><td>Windshield top edge, headliner edge, beside (never over) the A-pillar airbag trim</td></tr>
+      <tr><td>D2</td><td>OAK-D Pro</td><td>Jetson USB 3 (Y-adapter data leg)</td><td>USB-C</td><td>—</td><td>Column underside</td></tr>
+      <tr><td>D3</td><td>ZED-F9R</td><td>Jetson USB</td><td>USB-C</td><td>—</td><td>On the plate</td></tr>
+      <tr><td>D4</td><td>GNSS antenna</td><td>ZED-F9R antenna connector (SMA on GPS-22660)</td><td>The antenna's 5 m lead</td><td>—</td><td>With D1</td></tr>
+      <tr><td>D5</td><td>Controller (Pico)</td><td>Jetson USB</td><td>Micro-USB</td><td>—</td><td>Dash to footwell</td></tr>
+      <tr><td>D6</td><td>Jetson HDMI</td><td>Panel board HDMI</td><td>High-speed HDMI, 2 m</td><td>—</td><td>Through the HDMI grommet</td></tr>
+      <tr><td>D7</td><td>Jetson Ethernet</td><td>Switch port 1</td><td>Cat 6</td><td>—</td><td>On the plate</td></tr>
+      <tr><td>D8</td><td>Switch port 2</td><td>Mini PC 2</td><td>Cat 6, 3 m</td><td>—</td><td>Under the passenger seat's edge to the headrest</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="ab"><span class="num">B</span>Controller pin map, protocol and firmware notes</h2>
+  <h4>Pin map (Raspberry Pi Pico)</h4>
+  <table class="tight">
+    <thead><tr><th style="width:12%">Pin</th><th style="width:12%">GPIO</th><th style="width:22%">Function</th><th>Connection</th></tr></thead>
+    <tbody>
+      <tr><td>6</td><td>GP4</td><td>I²C0 SDA</td><td>TSL2591 SDA (address 0x29)</td></tr>
+      <tr><td>7</td><td>GP5</td><td>I²C0 SCL</td><td>TSL2591 SCL</td></tr>
+      <tr><td>16</td><td>GP12</td><td>PWM 25 kHz</td><td>Level B: RC filter, op-amp B, driver B pin 2</td></tr>
+      <tr><td>17</td><td>GP13</td><td>Output</td><td>Enable B: NPN B base (high = LEDs enabled)</td></tr>
+      <tr><td>19</td><td>GP14</td><td>PWM 25 kHz</td><td>Level A: RC filter, op-amp A, driver A pin 2</td></tr>
+      <tr><td>20</td><td>GP15</td><td>Output</td><td>Enable A: NPN A base</td></tr>
+      <tr><td>21</td><td>GP16</td><td>SPI0 RX</td><td>MAX31855 DO</td></tr>
+      <tr><td>22</td><td>GP17</td><td>SPI0 CSn</td><td>MAX31855 CS</td></tr>
+      <tr><td>24</td><td>GP18</td><td>SPI0 SCK</td><td>MAX31855 CLK (up to 5 MHz)</td></tr>
+      <tr><td>29</td><td>GP22</td><td>PWM 50 Hz</td><td>Servo signal (about 1–2 ms pulses; end-points measured)</td></tr>
+      <tr><td>31</td><td>GP26</td><td>ADC0</td><td>NTC divider midpoint</td></tr>
+      <tr><td>33</td><td>AGND</td><td>Analogue ground</td><td>NTC low side, filter capacitor</td></tr>
+      <tr><td>35</td><td>ADC_VREF</td><td>ADC reference (3.3 V, filtered)</td><td>NTC divider top (10 kΩ 0.1%)</td></tr>
+      <tr><td>36</td><td>3V3</td><td>3.3 V out (keep under 300 mA)</td><td>TSL2591, MAX31855</td></tr>
+      <tr><td>39</td><td>VSYS</td><td>Power in (1.8–5.5 V)</td><td>5 V buck through the Schottky diode</td></tr>
+      <tr><td>3, 38</td><td>GND</td><td>Ground</td><td>Common ground</td></tr>
+    </tbody>
+  </table>
+  <h4>Serial protocol (USB CDC, 115200, one ASCII line per message)</h4>
+  <table class="tight">
+    <thead><tr><th style="width:26%">Message</th><th style="width:14%">Direction</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>HB</code></td><td>Jetson to Pico</td><td>Heartbeat, 5 Hz. Five seconds without one: LEDs off, shutter closed.</td></tr>
+      <tr><td><code>LV a b</code></td><td>Jetson to Pico</td><td>Requested levels of strings A and B, 0.000–1.000 (0 also disables the string)</td></tr>
+      <tr><td><code>SH open</code> / <code>SH close</code></td><td>Jetson to Pico</td><td>Shutter request</td></tr>
+      <tr><td><code>SUN 1</code> / <code>SUN 0</code></td><td>Jetson to Pico</td><td>Sun-watch inside the patch: forces off and closed while 1</td></tr>
+      <tr><td><code>TH t1 t2</code></td><td>Jetson to Pico</td><td>Derate and cut-off temperatures at the NTC, °C (stored in flash)</td></tr>
+      <tr><td><code>RST</code></td><td>Jetson to Pico</td><td>Clears a latched over-temperature once the NTC is below t1 − 5 °C</td></tr>
+      <tr><td><code>ST t=… lux=… ntc=… tc=… a=… b=… en=.. sh=… fl=…</code></td><td>Pico to Jetson</td><td>Status at 10 Hz: time, ambient lux, NTC °C, thermocouple °C, applied levels, enables, shutter state, flags (USB_SILENT, DERATE, OVER_TEMP, SUN, TC_FAULT)</td></tr>
+    </tbody>
+  </table>
+  <h4>Conversions</h4>
+  <div class="formula">NTC: R = 10 kΩ × n / (4095 − n) for ADC count n (the NTC is the lower leg);  1/T = 1/298.15 + ln(R / 10 kΩ) / B,  T in kelvin, B ≈ 3950 (calibrate, B5.6)
+Driver level (inverted analogue input, 0.13 V full, about 4.2 V off):  V = 4.2 − 4.07 × level;  PWM duty = V / (3.3 × 1.33)
+MAX31855 frame (32 bits): D31–D18 thermocouple temperature, 0.25 °C per bit, signed; D16 fault; D15–D4 cold junction, 0.0625 °C per bit; D2, D1, D0: short to VCC, short to GND, open
+Servo: 20 ms period; pulse width between the measured closed and open end-points (about 1.0 and 2.0 ms)</div>
+</section>

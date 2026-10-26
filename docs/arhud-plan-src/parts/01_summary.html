@@ -1,0 +1,103 @@
+<section>
+  <h2 id="s1"><span class="num">1</span>Recommendation in brief</h2>
+
+  <p><strong>Split the system into two computers.</strong> A comma four runs openpilot and drives the car. The Jetson Orin NX runs only the HUD. It subscribes to openpilot's outputs over a wired link, tracks the driver's head, re-projects the model's path, lane lines and lead vehicle into the driver's eye, and draws them on a picture generation unit (PGU). A mirror relays that picture into the windshield.</p>
+  <p>The HUD never sits in the control path. The only device that can put bytes on the car's CAN bus is the panda inside the comma four, and its firmware limits torque and acceleration on every frame whatever the Jetson does. Power-cycling the Jetson mid-drive must leave openpilot unaffected; that is one of the acceptance tests in section 10.</p>
+
+  <div class="kpi">
+    <div><div class="v">1,500</div><div class="l">cd/m² noon target at the eye, for a contrast ratio of 1.15 against 10,000 cd/m² sky</div></div>
+    <div><div class="v">{{fov2_w}}° × {{fov2_h}}°</div><div class="l">demo window for the corrected relay design, with the virtual image at 7.5 m</div></div>
+    <div><div class="v">{{lat_min}}–{{lat_max}} ms</div><div class="l">uncompensated latency across the four timed stages, before the HUD predicts forward</div></div>
+  </div>
+
+  <h3>Why not run openpilot on the Jetson?</h3>
+  <p>Four things in this checkout make that a multi-month port with no HUD benefit:</p>
+  <ol>
+    <li>The driving model is compiled only for Qualcomm, Metal or CPU. There is no CUDA path.</li>
+    <li>The C++ panda daemon speaks SPI only, so an external USB panda does not work without new code.</li>
+    <li>The PC build has no IMU or GPS processes.</li>
+    <li>No purchasable GMSL camera matches comma's image sensors with a JetPack 6 driver.</li>
+  </ol>
+  <p>The comma four removes all four problems for $999 (the plan's price, read 2026-10-08). The Jetson's GPU is better spent on the HUD's own perception and rendering. Running openpilot on the Jetson stays in the plan as a research track, Track B, with its blockers listed in section 5 rather than as the critical path.</p>
+
+  <h3>Optics are the hard part</h3>
+  <p>A flat display reflected in a windshield forms its image about a metre away, so road-registered graphics cannot be drawn on it without the driver refocusing. Production AR head-up displays place the virtual image 7.5 to 10 m out with a concave mirror. Daylight readability needs roughly 1,500 cd/m² reaching the eye.</p>
+  <p>A 1,200-nit monitor delivers about {{yod_pct}} of that target after the windshield, so monitors are used for the bench rig and night driving. A 2,000-lumen laser DLP projector, shining onto a small diffuser, delivers about {{dlp_headroom}} times the daylight target through the windshield path, about {{dlp_headroom_mirr}} times with two relay mirrors at an assumed 90% reflectance each, and about {{dlp_headroom_pol}} times once the polariser sheet that the diffuser makes necessary is included. It is the daylight picture generator in the final stage. Section 6 gives the full budget.</p>
+
+  <div class="callout warn">
+    <p class="h">Three decisions needed before ordering</p>
+    <p>Which car: it must be on openpilot's supported list, and it should have an OEM head-up display trim so a wedge-PVB windshield exists for it. The car also fixes the windshield's curvature, which the relay mirror's design depends on, so the mirror cannot be specified until the car is chosen. Where the demo will be driven: a closed course or private lot. Who signs off the vehicle modification at the university.</p>
+    <p>Everything else in this plan can start on the bench today.</p>
+  </div>
+
+  <h3>How the plan is organised</h3>
+  <table>
+    <thead><tr><th style="width:24%">Chapter</th><th>What you learn from it</th></tr></thead>
+    <tbody>
+      <tr><td>2 Background</td><td>What a head-up display is, what a virtual image is, what registration means, and the openpilot pieces the HUD reads.</td></tr>
+      <tr><td>3 Demo</td><td>The six things the driver sees, why each is there, and what is still undecided.</td></tr>
+      <tr><td>4 Architecture</td><td>The two computers, the safety boundary, the message transport, latency, prediction, and head tracking.</td></tr>
+      <tr><td>5 Self-driving</td><td>Track A (the critical path) and Track B (openpilot on the Jetson) with their go/no-go gates.</td></tr>
+      <tr><td>6 Optics</td><td>The constraints, the reflection physics, the luminance budget, three build stages, the sun hazard and calibration.</td></tr>
+      <tr><td>7 Software</td><td>The new processes, the projection chain, age compensation and bring-up.</td></tr>
+      <tr><td>8 Hardware</td><td>What is owned, what to buy and why, wiring and power, and the order of purchases.</td></tr>
+      <tr><td>9 Phases</td><td>The twelve-week critical path, phase by phase, with acceptance criteria.</td></tr>
+      <tr><td>10 Validation</td><td>Measurable targets, how each one is measured, and the five-minute demo script.</td></tr>
+      <tr><td>11 Risks</td><td>Risks with mitigations, the legal position to confirm, and open questions.</td></tr>
+      <tr><td>A–D</td><td>Derivations of every number, a glossary, repository pointers and sources.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="s2"><span class="num">2</span>Background for readers new to the project</h2>
+  <p>This chapter explains the four ideas the rest of the plan relies on: what a head-up display does, where its image appears and why that matters, what registration means, and what openpilot exposes to other programs. A reader who already knows these can skip to chapter 3.</p>
+
+  <h3>2.1 What a head-up display does</h3>
+  <p>A head-up display (HUD) puts information in the driver's line of sight so the driver does not have to look down at a dashboard. There are two design questions. First, where the image appears to be, meaning its focus distance. Second, how large it is, meaning its field of view, the angle it covers as seen from the eye.</p>
+  <p>An augmented-reality HUD goes further: it places each graphic where the thing it describes is. A path drawn on the road, or a box drawn around a pedestrian, only works if the overlay stays on the object as the car moves and the driver's head moves. The technical word for that is <em>registration</em>, covered in section 2.3.</p>
+
+  <h3>2.2 Where the image appears</h3>
+  <p>Light from a display reaches the eye as a bundle of rays. If the rays diverge as if they came from a point 7.5 m away, the eye perceives the image at 7.5 m. Such an image is called a <em>virtual image</em>: no light actually originates there, but the eye cannot tell. A virtual image is the mechanism that lets a HUD draw content at road distance.</p>
+  <p>The eye focuses on whatever it is looking at, a process called accommodation. A screen 0.6 m away forces the eye to refocus when the driver looks up at the road, which can take a fraction of a second and causes eye strain. A virtual image at 7.5 m is in the range where road objects sit, so the eye can keep one focus across the road and the graphics.</p>
+  <figure>[[FIG concept]]<figcaption><b>Figure 1.</b> Schematic of a virtual image plane between the eye and the road. To draw a mark on the road point, the HUD places it where the line from the eye to the point crosses the plane. Positions are not to scale; heights in the captions are true-geometry values.</figcaption></figure>
+  <p>The plan's convention is that a road point at distance <em>d</em> is drawn where the line of sight crosses a plane at distance <em>D</em>. On a flat road with the eye at height <em>h</em> = 1.22 m, the crossing is at height <em>h</em>(1 − <em>D</em>/<em>d</em>) above the road. With <em>D</em> = 7.5 m, a point 10 m away is drawn 0.31 m above the road on the plane, and a point 30 m away is drawn 0.92 m above it. Far points therefore sit higher on the plane, and their marks shift less when the head moves.</p>
+
+  <h3>2.3 Registration and conformal graphics</h3>
+  <p>Registration error is the angle between where a graphic is drawn and where the thing it marks actually is, measured from the eye. A one-degree error at 30 m is about half a metre on the road. The plan calls graphics that must register <em>conformal</em>, and graphics that stay fixed <em>non-conformal</em>. Each element in the demo is one or the other.</p>
+  <table>
+    <thead><tr><th style="width:24%">Element</th><th style="width:30%">Where it appears</th><th>Must it register?</th></tr></thead>
+    <tbody>
+      <tr><td>Drive path</td><td>On the road surface, along the lane</td><td>Yes. Its error is visible against the lane paint.</td></tr>
+      <tr><td>Lane lines and road edges</td><td>Over the real paint</td><td>Yes. Drawn only where the model is confident.</td></tr>
+      <tr><td>Lead vehicle chevron</td><td>Under the lead car's rear bumper</td><td>Yes. Its gap is read by the driver as the car ahead's position.</td></tr>
+      <tr><td>Hazard outlines</td><td>Around a detected pedestrian, sign or cyclist</td><td>Yes. HUD-only; never feeds control.</td></tr>
+      <tr><td>Speed, set speed, engagement</td><td>Small fixed block low in the window</td><td>No. This is the only non-conformal content.</td></tr>
+      <tr><td>Driver-monitoring warnings</td><td>Not in the AR window</td><td>No. They stay on the comma four's own screen.</td></tr>
+    </tbody>
+  </table>
+  <p>Registration is the reason the rest of the plan is so detailed. A path that is 1° off at 30 m looks wrong to a driver who is watching the lane paint, even though the same error would be invisible on a dashboard gauge.</p>
+
+  <h3>2.4 openpilot in brief</h3>
+  <p>openpilot is an open-source driver-assistance system for cars on its supported list. It provides adaptive cruise control (ACC), which holds a set speed and a gap to the car ahead, and lane centering, which steers within the lane. The comma four is the comma device that runs it; the plan uses it unmodified for driving.</p>
+  <p>openpilot is a set of separate programs that talk through a message bus. Cameras feed a driving model, the model's output feeds a planner, the planner feeds a controller, and the controller's commands go through an interface to the car. Each program publishes typed messages on named services, and any program that subscribes receives the latest message. The HUD uses the same mechanism: it is one more subscriber, and it never publishes a control message.</p>
+  <p>The services the HUD reads, with their rates from <code>cereal/services.py</code> and a plain-language summary of each field group, are below. The full field definitions are in <code>cereal/log.capnp</code>.</p>
+  <table>
+    <thead><tr><th style="width:23%">Service</th><th class="num" style="width:12%">Rate</th><th>What it carries</th></tr></thead>
+    <tbody>
+      <tr><td><code>modelV2</code></td><td class="num">20 Hz</td><td>The driving model's output: predicted path, lane lines and road edges, lead predictions. Timestamped at the camera frame (<code>timestampEof</code>).</td></tr>
+      <tr><td><code>radarState</code></td><td class="num">20 Hz</td><td>Lead vehicles from radar, where the car provides radar.</td></tr>
+      <tr><td><code>longitudinalPlan</code></td><td class="num">20 Hz</td><td>Planned speed and acceleration from the longitudinal planner.</td></tr>
+      <tr><td><code>carState</code></td><td class="num">100 Hz</td><td>Vehicle state from the car bus: speed, yaw rate, steering and related signals.</td></tr>
+      <tr><td><code>controlsState</code></td><td class="num">100 Hz</td><td>State of the lateral and longitudinal controllers.</td></tr>
+      <tr><td><code>selfdriveState</code></td><td class="num">100 Hz</td><td>Whether openpilot is engaged and in which mode. Drives the path's colour.</td></tr>
+      <tr><td><code>extrinsicsCalibration</code></td><td class="num">4 Hz</td><td>The camera's calibrated position in the car frame.</td></tr>
+      <tr><td><code>pandaStates</code></td><td class="num">10 Hz</td><td>State of the panda and the car interface.</td></tr>
+      <tr><td><code>deviceState</code></td><td class="num">2 Hz</td><td>Device health and temperature.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.5 The safety model and supported cars</h3>
+  <p>The panda is a small board between the computer and the car's CAN bus, the wiring over which the car's electronic control units talk. The panda's firmware checks each message the computer asks to send against a safety model written for that car. A command outside the model's limits is blocked before it reaches the bus. This is why the plan treats the panda as the safety boundary: it is the last check, in hardware, that does not depend on the software that asks for control.</p>
+  <p>A <em>supported car</em> is one for which openpilot has a tested interface and safety model. The plan selects the car in Phase 0 from the repository's car list in <code>docs/CARS.md</code>, preferring a car with a factory HUD trim and openpilot longitudinal control.</p>
+</section>

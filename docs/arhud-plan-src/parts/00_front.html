@@ -1,0 +1,61 @@
+<section class="cover">
+  <div class="band"></div>
+  <div class="eyebrow">windshield-ARHUD · project plan</div>
+  <h1 style="margin-top:12px">Windshield AR HUD</h1>
+  <p class="sub">A road-registered augmented-reality head-up display built on openpilot, with openpilot providing adaptive cruise and lane centering in the same car.</p>
+  <p class="sub" style="font-size:11pt">This revision assumes the budget is not the constraint: every purchase carries a one-line justification, and the design aims at the best demo the physics allows.</p>
+  <p class="meta">Revision 2 · PDF edition · written 2026-10-08, revised 2026-10-09.<br>
+  Research sections were drafted by Claude Sonnet 5.5 agents and reviewed, corrected and assembled by Claude Fable 5.1. This PDF edition expands the plan, adds explanatory figures and corrects several numbers (see the next page); it was prepared by Claude Haiku 5.5.<br>
+  Facts that could not be verified today are marked <span class="tag">unverified</span>. Anything learned about the Jetson is from 2026-10-07; the board was unreachable when the research was written.</p>
+  <figure>[[FIG cover]]<figcaption>Illustrative driver's-eye view of the HUD window: drive path, lane lines, lead chevron, speed block and a hazard outline. Not a measured image.</figcaption></figure>
+</section>
+
+<section>
+  <h2 id="about"><span class="num"></span>About this edition</h2>
+  <p>This is the same plan as revision 2, rewritten as a document to read on paper or on screen. Every section now explains the mechanism behind a decision before it gives the number. Where a mechanism was previously stated only as a result, it is now derived in Appendix A, so a reader can check the arithmetic.</p>
+  <p>Figures are schematics unless their caption says otherwise. Those that plot numbers are computed from the same values as the text, so a changed input changes both. Heights and distances in the schematics are labelled as true or not to scale.</p>
+
+  <div class="callout fix">
+    <p class="h">Changes from revision 2</p>
+    <p>Checking the plan's arithmetic against its own assumptions turned up the following. The text, figures and appendices in this edition use the corrected values. Anyone who worked from revision 2 should read these first.</p>
+    <ol>
+      <li><strong>Relay mirror geometry.</strong> Revision 2 put the PGU at 346 mm from a mirror with f ≈ 330 mm. Since 346 mm is outside the focal length, that single-mirror equation gives a real image at {{plan_v}}, not a virtual image. A virtual image at 7.5 m needs the PGU inside the focal length, at {{u2}}. That gives magnification {{m2}} and a {{fov2_w}}° × {{fov2_h}}° field. The windshield is still not in this model, so the mirror is not ready to order (see Stage 2 in the optics chapter).</li>
+      <li><strong>Dimming range.</strong> Revision 2 called the night requirement a "300:1 dimming range". From the 1,500 cd/m² noon target down to the 50 cd/m² night ceiling the ratio is {{dim_day_night}}. If the projector runs at its full output, {{dlp_ws}} cd/m² at the eye, the range down to 50 cd/m² is {{dim_full_night}}.</li>
+      <li><strong>Luminance table.</strong> The "after 70/30 combiner" and "after windshield" columns are two different light paths, not a cascade. The windshield column was computed from the source value times 24%. This edition labels the paths separately and adds a row with an assumed 90% reflectance for each of the two relay mirrors.</li>
+      <li><strong>Demo window shape.</strong> Section 2 of revision 2 gave the window as 10° × 4°, but the PGU is 2:1 (60 × 30 mm), and the optics section sized the image for 10° × 5°. A 10° × 4° window needs a 2.5:1 active region, which means cropping the PGU. This edition states the window as 10.8° × 5.4° (matching the corrected mirror) with 10° × 5° as the alternative.</li>
+      <li><strong>Prediction claim.</strong> Revision 2 said the residual error at 100 ms is "a fraction of a degree". Both halves are now shown: without prediction the 3 m of travel at 30 m/s moves a road point 10 m ahead by {{uncomp}}°; with prediction the residual is {{resid_deg}}° for 1 m/s² of unmodelled acceleration.</li>
+      <li><strong>Parallax table.</strong> A 7.5 m row was added, since that is where the virtual image sits: {{par_7_5}}° for a 150 mm head shift.</li>
+      <li><strong>Citations.</strong> The SPI handle in <code>panda.cc</code> is at line 16 (revision 2 said 15). The modeld device branch in <code>SConscript</code> is at lines 27–31 (revision 2 said 28–32).</li>
+    </ol>
+    <p>The latency total is the rounded form of the stage ranges, which sum to {{lat_min}}–{{lat_max}} ms; the plan's "70–140 ms" is kept where it is quoted as the plan's figure.</p>
+  </div>
+
+  <div class="callout fix">
+    <p class="h">Revised 2026-10-09</p>
+    <p>A second check of the PDF edition against the physics and the source tree. The repository line references all held; the changes are in the optics and the hardware notes.</p>
+    <ol>
+      <li><strong>Polarisation in the luminance budget.</strong> The rear-projection diffuser depolarises the projector's light, so the polariser sheet in the parts list is needed and passes about {{pol_t}} of it. With that loss the daylight headroom through the windshield falls from {{dlp_headroom_mirr}}× to {{dlp_headroom_pol}}× (section 6.5, Appendix A.5). The LCD monitor is already polarised, so its mounting orientation decides whether the windshield reflects {{rs65}} or {{rp65}} of its light (section 6.3).</li>
+      <li><strong>Polarised sunglasses.</strong> An s-polarised image is largely blocked by polarised sunglasses. Added as a risk with the demo-day mitigation (section 11.1).</li>
+      <li><strong>Sun focus in watts.</strong> The concentration ratio is now accompanied by the collected power, about {{sun_w}} into a spot a few millimetres across (section 6.7, Appendix A.12).</li>
+      <li><strong>Dimming floor.</strong> The daylight working point is about {{dlp_day_frac}} of full projector output on the realistic path. Whether the projector can dim that far is unverified, so a fixed neutral-density filter is now named as the fallback (section 6.5).</li>
+      <li><strong>Two-surface reflection.</strong> The 24% windshield factor is for one surface; with the wedge overlapping both images it is about {{rs65_two}}, so the budget is conservative (Appendix A.5).</li>
+      <li><strong>Head tracker wording.</strong> MediaPipe Face Landmarker runs on the Jetson, not on the OAK-D Pro; running a converted model on the camera's own processor is an option to verify (sections 7.1, 8.2).</li>
+      <li><strong>Citations.</strong> The <code>process_config.py</code> lines for Track B were checked: line 83 is time synchronisation, not thermal management, and <code>hardwared</code> does run on PC. The blocker is now stated as IMU and GPS only (section 5.3, Appendix C).</li>
+    </ol>
+  </div>
+
+  <h3>How to read the tags and units</h3>
+  <table>
+    <thead><tr><th style="width:26%">Marker</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">unverified</span></td><td>A fact, price or product claim that could not be checked when the plan was written. Do not rely on it without checking.</td></tr>
+      <tr><td><span class="tag">verify</span></td><td>A condition that depends on hardware or software behaviour not yet tested on this device, such as whether a USB port runs in host mode.</td></tr>
+      <tr><td><span class="tag">confirm locally</span></td><td>A legal point that depends on the jurisdiction. The plan gives the current position, not legal advice.</td></tr>
+      <tr><td><span class="tag fix">fix</span></td><td>A value or claim corrected in this edition. Each one is listed above.</td></tr>
+      <tr><td><span class="tag fix">added</span></td><td>A risk or open question added in this edition, found while checking the plan. Revision 2 does not contain it.</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:10px">Units: luminance in cd/m² (candela per square metre, also called a nit); angles in degrees unless stated as mrad; distances in metres or millimetres as written; frequencies in Hz; latency in milliseconds. Monetary values are US dollars as listed in the plan.</p>
+
+  [[TOC]]
+</section>

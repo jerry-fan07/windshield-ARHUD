@@ -1,0 +1,148 @@
+<div class="part" data-toc="Part III · The build, stage by stage">
+  <div class="pn">Part III</div>
+  <div class="pt">The build, stage by stage</div>
+  <div class="pd">Fourteen build stages, each with what it solves, what it needs, a numbered procedure with checks, and the test that closes it. Software stages B2 to B7 and the hardware stages B5, B9 to B11 overlap in time; the order of chapters is the order in which each stage starts.</div>
+  <div class="pl">B1 Car, measurements, ray trace, orders · B2 Jetson · B3 Sensors and recordings · B4 Perception · B5 Controller and LED driver · B6 Stage 0 rig, renderer, latency · B7 Car installation · B8 Stage 1 combiner · B9 Picture generator · B10 Mirror, fold, filters · B11 Housing · B12 Optics and first light · B13 Stage 2 calibration and proof · B14 Rehearsal</div>
+</div>
+
+<section>
+  <h2 id="b1"><span class="num">B1</span>Choose and measure the car, run the ray trace, order</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Fixes the geometry every optical part depends on (2.1, 2.7, 2.9)</div>
+    <div><b>Weeks</b>0–1; the trace may take longer</div>
+    <div><b>Closes</b>Gate G0: car named, orders placed, venue agreed, checklist exists</div>
+    <div><b>Needs</b>Access to the candidate car; the project repository; the tool venvs</div>
+    <div><b>Produces</b>A measurement record, ray-trace outputs, the mirror request for quote, the first purchase orders</div>
+    <div><b>People</b>Builder, the car's owner, the regular driver, whoever signs off installation</div>
+  </div>
+  <p><b>Why this comes first.</b> The windshield is an optical element of the HUD: its angle sets where the mirror must sit and where the sun can enter, its curvature changes the image distance and shape, and its thickness sets the ghost. The mirror's shape therefore cannot be specified until the car is chosen and measured, and the mirror has the longest lead time in the project. Every week spent here before ordering the mirror is a week on the critical path, so do the measurements in one session and run the trace immediately.</p>
+
+  <h3>B1.1 Materials and tools</h3>
+  <table class="tight">
+    <thead><tr><th style="width:36%">Item</th><th>Use</th></tr></thead>
+    <tbody>
+      <tr><td>Digital angle gauge, 0.1°</td><td>Rake, floor level</td></tr>
+      <tr><td>300 mm ground straightedge, feeler gauges 0.05–1 mm</td><td>Windshield curvature by sagitta</td></tr>
+      <tr><td>Laser pointer (class 2), white card, 150 mm rule</td><td>Laminate thickness by the double-spot method; finding the HUD patch</td></tr>
+      <tr><td>Tripod with a ball head; a small bubble level</td><td>Holding the laser at the eye point</td></tr>
+      <tr><td>Contour gauge, tape measure, plumb bob, painter's tape, marker</td><td>Dash profile, eye point, datum marks</td></tr>
+      <tr><td>Laser rangefinder</td><td>Eye-to-glass distance; car dimensions</td></tr>
+      <tr><td>Camera</td><td>Photographs of the dash, glass labels, sensor positions</td></tr>
+      <tr><td>Optional: a handheld 3-D scanner or a phone LiDAR / photogrammetry app</td><td>A scan of the dash and the inner glass for the CAD (<code>docs/arhud-blender/import_scan.py</code> cleans and fits it)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B1.2 Choose the car</h3>
+  <p>Use this table to compare candidates. The HUD can be built for any car that passes every row; the numbers in this guide assume the plan's 28° rake, 750 mm eye-to-glass distance and a left-hand-drive car.</p>
+  <table>
+    <thead><tr><th style="width:32%">Criterion</th><th>Requirement and reason</th></tr></thead>
+    <tbody>
+      <tr><td>Windshield rake</td><td>25–35° above horizontal. Flatter glass moves the mirror forward and lowers the sun-entry elevation (45° at 25°); more upright glass raises it (65° at 35°) and shortens the path.</td></tr>
+      <tr><td>Glass at the HUD patch and the camera</td><td>Clear: no dark frit band, no shade band, no heated wire grid, no rain-sensor housing at the patch about 750 mm ahead of the eye on a 5° downward line. A factory-HUD (wedge) windshield is acceptable and reduces the ghost; the trace must then use its wedge angle.</td></tr>
+      <tr><td>Dash top in front of the driver</td><td>A region about 460 mm fore-aft and 370 mm wide under the glass, which the housing can sit on through four levelling feet, with at least 8 mm between the housing's front top edge and the glass. The housing stands about 300 mm tall from the dash at the rear.</td></tr>
+      <tr><td>Instrument cluster hood</td><td>Its top must be below the housing's rear step: the CAD steps up at the rear to ride 5 mm over the simulator's hood. Measure the real hood and expect to regenerate the CAD.</td></tr>
+      <tr><td>Defroster vents and dash sensors</td><td>Note their positions. The housing must not cover the sun-load or light sensor the car uses for automatic headlamps and climate, and must leave enough defroster outlet open to clear the glass in front of the driver; if it cannot, the car fails this row.</td></tr>
+      <tr><td>Rear-view mirror stalk</td><td>Reachable for a clamp at the top of the glass on the centreline, roughly 450 mm from the driver's eye, with room for a camera 175 mm wide.</td></tr>
+      <tr><td>Accessory sockets</td><td>At least one switched 12 V socket with a known fuse rating (often 15 or 20 A); two sockets make the power budget comfortable (B7.4).</td></tr>
+      <tr><td>Steering-column shroud</td><td>A flat spot for the driver camera with a clear view of the driver's face through the wheel.</td></tr>
+      <tr><td>Permission</td><td>The owner agrees in writing to a non-permanent installation: nothing drilled, bonded or wired into the car beyond the accessory socket.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B1.3 Fix the driver's eye point</h3>
+  <ol class="steps">
+    <li>Park the car on level ground. Put the angle gauge on the floor beside the car (or on the door sill) and record the reading as the <i>ground reference</i>; every later angle is measured relative to it.</li>
+    <li>Seat the person who will drive the demos in their normal driving position: seat, backrest, head restraint and steering wheel as they will be on the day. Record all four settings (seat-track notch, backrest angle, wheel reach and height) in the log; the calibration is only valid for them.</li>
+    <li>Have the driver look straight ahead at a distant point. Hang the plumb bob from a point midway between their eyes (a second person holds it at the bridge of the nose, about 10 mm in front) and mark where it touches the floor mat with tape. That is the eye point's plan position.</li>
+    <li>Measure the height of the eye midpoint above the ground with the tape (or the rangefinder from the floor plus the floor's height). The plan assumes 1.22 m. Record it.</li>
+    <li>Measure the eye point's position relative to three fixed datums that do not move with the seat: the centre of the steering-wheel hub, the base of the mirror stalk, and the driver's B-pillar seat-belt anchor. These let you find the eye point again without the driver.</li>
+    <li>Ask the driver to sway left, right, up and down as they would in normal driving; note the range. The design eye box is 130 mm wide and 70 mm tall around the nominal point.</li>
+  </ol>
+
+  <h3>B1.4 Find and measure the HUD patch on the windshield</h3>
+  <figure>[[FIG g_glassmeasure]]<figcaption><b>Figure B1.1.</b> The three windshield measurements. All are made on the inner surface at the HUD patch.</figcaption></figure>
+  <ol class="steps">
+    <li><b>Find the patch.</b> Put the laser pointer on the tripod head at the nominal eye point, aimed straight ahead (parallel to the car's centreline) and 5° below horizontal, set with the angle gauge against the ground reference. Where the spot meets the glass is the centre of the HUD patch. Mark it on the outside of the glass with a small piece of painter's tape (never write on the inner surface). Measure the distance from the eye point to the spot along the beam with the rangefinder or tape; the plan assumes 750 mm.</li>
+    <li><b>Rake.</b> Hold the angle gauge flat on the inner glass at the patch, its long edge in the car's vertical centre plane through the patch (pointing up the glass). Read the angle; subtract the ground reference. Repeat three times, lifting and re-seating the gauge each time, and average. Repeat 100 mm left and right of the patch to see how fast the rake changes.<span class="chk">Rake recorded at three points; spread under 0.5°</span></li>
+    <li><b>Laminate thickness.</b> Look for the glass label in a lower corner (maker, model number, DOT code); a maker's catalogue may list the thickness. Then measure it: in a darkened car, shine the laser at the patch from a known angle θ<sub>i</sub> (measure with the angle gauge, 50–70° from the glass normal) and hold the white card where the reflection lands, about 300 mm away. You will see two spots, one from each outer surface (a faint third from the interlayer may appear). Measure their separation d perpendicular to the beam. The thickness is t = d / (2 tan θ<sub>t</sub> cos θ<sub>i</sub>), with θ<sub>t</sub> from Snell's law, sin θ<sub>t</sub> = sin θ<sub>i</sub> / 1.52. At θ<sub>i</sub> = 65° and the assumed 4.96 mm, d = 3.1 mm. Average three angles.<span class="chk">Thickness recorded, with the label's part number</span></li>
+    <li><b>Curvature.</b> Lay the straightedge on the inner glass across the patch, horizontal (across the car). The glass curves away from it toward the middle or the ends. Slide feeler gauges under the straightedge at its centre to find the gap s (the sagitta) while both ends touch. The radius is R = L² / (8 s): with L = 300 mm, a 4 m radius gives s = 2.8 mm and an 8 m radius 1.4 mm. Repeat with the straightedge running up the glass along the rake. These are R<sub>h</sub> (lateral) and R<sub>v</sub> (vertical). Repeat both 100 mm above and below the patch.<span class="chk">R<sub>h</sub> and R<sub>v</sub> recorded at three heights</span></li>
+    <li><b>Cowl and roof.</b> Measure the height of the windshield's bottom edge (the cowl) and top edge above the ground, and their fore-aft distance from the eye point. The simulator uses a cowl at 0.80 m and the roof edge at 1.385 m.</li>
+  </ol>
+  <div class="box">
+    <p class="h">Why the curvature matters so much</p>
+    <p>The Cycles cross-check traced the plan's toroid mirror against a windshield curved with 4 m lateral and 8 m vertical radii: the virtual image turned into a real image about 12 m ahead and the window grew to about 10° × 7.5°. A freeform mirror refitted for that glass recovered a flat image at 7.4 to 7.6 m. A real windshield is curved; a mirror designed for flat glass will not work in it. The two radii you measure here are inputs to the mirror's design, not details.</p>
+  </div>
+
+  <h3>B1.5 Map the dash</h3>
+  <ol class="steps">
+    <li>Mark the housing's footprint with painter's tape: centred on the driver's centreline (the simulator puts the car's centreline 370 mm to the driver's right), its front edge where a vertical from the HUD patch's lower region meets the dash, about 460 mm long and 370 mm wide.</li>
+    <li>Take contour-gauge profiles of the dash top along three fore-aft lines inside the footprint (left edge, centre, right edge), and one lateral profile at the front and one at the rear. Trace each onto paper with the datum marked, or photograph it on a grid.</li>
+    <li>Measure the instrument cluster hood: its top height, its front edge's position, and its width, relative to the eye point.</li>
+    <li>Measure the vertical gap from the dash to the glass at the front of the footprint and at 100 mm intervals backward. The CAD keeps the housing 8 mm under the glass.</li>
+    <li>Photograph the dash from above and from the driver's seat with a rule in view; photograph the defroster vents, sensors and sockets.</li>
+    <li>Optional: scan the dash, cluster hood and the inner glass. <code>import_scan.py</code> (in <code>docs/arhud-blender</code>) joins, cleans and fits a scan to the simulator's frame from paired landmark points; it reached about 1.4 mm on the simulated test scan.</li>
+  </ol>
+
+  <h3>B1.6 Run the ray trace</h3>
+  <p>The trace takes the measurements and returns the mirror's shape, the positions of the panel, fold and mirror, the image distance across the window, the window's size, the eye box, the ghost, and the sun-entry patch. The project already has the tools; this procedure feeds them the real car. Allow one to three days; record every input and output in the log.</p>
+  <ol class="steps">
+    <li><b>Enter the measurements.</b> In <code>docs/arhud-plan-tft-src/calc.py</code>, replace the assumed values with the measured ones: <code>RAKE</code>, <code>LOOKDOWN</code> (keep 5° unless the patch had to move), <code>L_EYE_GLASS</code>, <code>T_GLASS</code>, and <code>H_CAM</code> (the eye height). Run <code>python3 sim_params.py</code> to regenerate the simulator's parameters and <code>python3 spec.py</code> for the specification.</li>
+    <li><b>Enter the glass curvature</b> in <code>docs/arhud-sim/js/geom.js</code>: <code>GLASS = { Rh: …, Rv: … }</code> in metres. Check that <code>GLASS_TO_MIRROR</code> (0.31 m) still clears the glass: the simulator writes the mirror's clearance into its notes (Vehicle mode).</li>
+    <li><b>Fit the mirror.</b> In <code>docs/arhud-blender</code>: <code>node dump_layout.mjs</code>, then <code>python3 freeform_mirror.py glassRh=&lt;Rh&gt; glassRv=&lt;Rv&gt; name=freeform_car</code>. It fits a nine-term polynomial mirror with the panel's tilt and shift free, against a 7.5 m target. Read the fitted image-distance range across the window and the window size from its output.</li>
+    <li><b>Cross-check in Cycles</b> (Blender, headless): <code>Blender -b -P optics_check.py</code> with the same glass radii and mirror. It measures the image distance dot by dot by stereo parallax, the ghost, the eye box, and the field independently of the fit. Accept the design only if the two agree.</li>
+    <li><b>Sun.</b> <code>python3 sun_focus.py</code> reports the solar spot on the panel (size, irradiance) and the patch of sky whose sun reaches the crop and the whole cell. Record the cell patch: it is the sun-watch rule's input.</li>
+    <li><b>Export for the quote.</b> <code>Blender -b -P mirror_export.py -- name=freeform_car</code> writes the sag table (CSV) and an STL of the mirror surface into <code>export/</code>.</li>
+    <li><b>Regenerate the housing.</b> In <code>docs/arhud-cad</code>: <code>node dump_layout.mjs</code>, then <code>~/.venvs/arhud-cad/bin/python make.py</code>. The beam check must report 0 blocked rays; the envelope check must clear the measured glass, hood and dash. Edit <code>hudcad/geo.py</code> for the real dash profile and hood.</li>
+  </ol>
+  <table class="tight">
+    <thead><tr><th style="width:40%">Trace output to record</th><th>Used in</th></tr></thead>
+    <tbody>
+      <tr><td>Mirror figure (sag table), clear aperture, vertex position and orientation</td><td>B10 request for quote</td></tr>
+      <tr><td>Panel position, tilt and shift; fold position and angle; fold size</td><td>B10 (fold glass size), B11 (CAD)</td></tr>
+      <tr><td>Image distance range across the window; window size in degrees</td><td>B13 acceptance; renderer set-up</td></tr>
+      <tr><td>Eye-box extent without vignetting</td><td>B13</td></tr>
+      <tr><td>Ghost separation at the eye</td><td>B13 ghost photographs</td></tr>
+      <tr><td>Sun-entry patch for the crop and for the whole cell; solar spot size and irradiance</td><td>B4 sun-watch rule; B12 sun test</td></tr>
+      <tr><td>Lookup table from eye position to panel point (exported from the simulator's <code>lut.js</code> via <code>dev/export-lut.mjs</code>)</td><td>B13 renderer projection</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B1.7 Request mirror quotes</h3>
+  <p>Send the request the day the trace is accepted. A quote does not commit the order; ask for lead time explicitly, because it sets the daylight demo date. Shops that list custom concave optics to 500 mm include Avantier and Shanghai Optics (plan, section 8.2). Include:</p>
+  <ul>
+    <li>Clear aperture and outline (the plan's 300 × 200 mm, or what the trace gives), substrate thickness (the CAD's strongback assumes about 12 mm), edge finish.</li>
+    <li>The surface: the sag table and STL from <code>mirror_export.py</code>, with its coordinate frame. If the shop can make only toroids, give R<sub>t</sub> and R<sub>s</sub> from the trace (for the flat-glass layout: {{lay_rt}} and {{lay_rs}} mm). State the speed: about f/1.1, much faster than catalogue parts; ask whether they will figure it.</li>
+    <li>Figure tolerance in the form the image needs. A local slope error α deflects the reflected ray by 2α, which the eye sees directly as an angular error. Keeping that under 0.05° (a sixth of the head-motion budget) asks for local slope errors under about 1.5 arcminutes; ask what the shop can hold and how they measure it.</li>
+    <li>Coating: first-surface protected aluminium (or enhanced aluminium), reflectance ≥ 90% across 450–650 nm (the plan's assumed 0.90), and its reflectance in the near infrared if offered.</li>
+    <li>Ask the shop to report the solar spot at the panel from their own model of the surface (the plan's request): a figure change can spread the spot several-fold at no cost to the image.</li>
+    <li>Quantity 1, plus a price for a second as a spare; lead time; packing for a first-surface mirror.</li>
+  </ul>
+
+  <h3>B1.8 Place the first orders, book the venue, write the checklist</h3>
+  <ol class="steps">
+    <li>Order everything in Chapter 6 marked <i>week 0</i>: it does not depend on the car.</li>
+    <li>Agree the venue and dates for recordings (week 1–2), live drives (week 3 onward) and rehearsals. Confirm permission for a lead car and a volunteer pedestrian if the hazard demo needs them.</li>
+    <li>Confirm who signs off the installation (the plan names the university's risk office for anything beyond a closed course) and give them Appendix F as the draft checklist. Agree the safety driver.</li>
+  </ol>
+
+  <h3>B1.9 Gate G0</h3>
+  <ul class="cl">
+    <li>The car is named and its measurements are in the log: eye point, rake, thickness, two radii, cowl and roof, dash profiles, hood.</li>
+    <li>The ray trace and the Cycles check agree, and their outputs are recorded.</li>
+    <li>Mirror quotes are requested with the surface, tolerance and lead-time questions above.</li>
+    <li>Week-0 orders are placed.</li>
+    <li>The venue is agreed, and the installation checklist exists and has been seen by whoever signs it off.</li>
+  </ul>
+
+  <h3>B1.10 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:36%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Rake outside 25–35°</td><td>The design can still work, but the mirror moves and the sun patch changes. Run the trace and check the mirror clears the glass and the housing fits the dash before committing.</td></tr>
+      <tr><td>Double-spot measurement shows three or more spots, or spots not parallel</td><td>The glass may have a wedge interlayer (a factory HUD windshield). Measure the angle between the two reflected beams over a longer throw (2 m) and give the wedge angle to the trace.</td></tr>
+      <tr><td>The housing does not fit under the glass</td><td>Shorten the path: a shorter-focal-length mirror with a smaller crop (plan, section 6.6 table: a 40 mm crop needs f ≈ 217 mm), at the cost of fewer pixels per degree. Re-run the trace.</td></tr>
+      <tr><td>Fit and Cycles disagree by more than about 0.5 m in image distance</td><td>Do not order. Check the layout file is current (re-run <code>dump_layout.mjs</code>), that both used the same glass radii, and that the mirror mode is the same in both.</td></tr>
+      <tr><td>No shop will figure an f/1.1 freeform</td><td>Ask for a toroid; accept the curved image surface and rely on the lookup-table projection (B13), or fall back to the Stage 1 demo (B8) while a better mirror is sourced.</td></tr>
+    </tbody>
+  </table>
+</section>

@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Windshield AR HUD Simulator</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+/* Layout: one full-bleed 3-D stage with a slim mode bar on top. Two floating columns sit over the stage: controls on the
+   left, readouts (and in the driver view, the mini views) on the right. Each panel collapses to its title, the less-used
+   control groups start folded, and the whole chrome hides with one button, so the stage stays the subject.
+   A single dark look, chosen on purpose: the stage is a cabin and a workshop, and the HUD colours must read against it. */
+:root {
+  --bg: #0a0d11;          /* stage surround */
+  --panel: rgba(13, 17, 22, 0.86);
+  --panel-solid: #11161c;
+  --line: #242c36;
+  --line-soft: rgba(255, 255, 255, 0.07);
+  --fg: #e7eaee;
+  --muted: #8d97a5;
+  --faint: #5b6573;
+  --hud: #5ec8ff;         /* the lane-ribbon blue, the accent */
+  --amber: #ffb347;       /* image light and rays */
+  --ok: #4fd18b;
+  --warn: #ffc04d;
+  --crit: #ff6b6b;
+  --assumed: #c9a6ff;
+  --font: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --r: 10px;
+  --gap: 12px;
+  --left-w: 280px;
+  --right-w: 320px;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 13px/1.45 var(--font); overflow: hidden; -webkit-font-smoothing: antialiased; }
+button, input, select { font: inherit; color: inherit; }
+#app { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr; }
+
+/* ---- top bar ---- */
+#top { display: flex; align-items: center; gap: 14px; padding: 7px 14px; padding-top: calc(7px + env(safe-area-inset-top, 0px)); border-bottom: 1px solid var(--line); background: var(--panel-solid); z-index: 5; min-width: 0; }
+.brand { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.brand b { font-weight: 700; font-size: 14px; letter-spacing: 0.01em; white-space: nowrap; }
+.brand span { color: var(--muted); font-size: 11px; white-space: nowrap; }
+#modes { display: flex; gap: 2px; background: #0c1015; border: 1px solid var(--line); border-radius: 999px; padding: 3px; margin-left: auto; margin-right: auto; overflow-x: auto; max-width: 100%; }
+#modes button { border: 0; background: transparent; padding: 5px 14px; border-radius: 999px; cursor: pointer; color: var(--muted); font-weight: 600; white-space: nowrap; }
+#modes button[aria-selected="true"] { background: var(--hud); color: #04121b; }
+#modes button:focus-visible, .btn:focus-visible, .chip:focus-visible, .seg button:focus-visible, .chev:focus-visible { outline: 2px solid var(--hud); outline-offset: 2px; }
+.topright { display: flex; align-items: center; gap: 10px; color: var(--faint); font-variant-numeric: tabular-nums; font-size: 11px; white-space: nowrap; }
+#fps { min-width: 38px; text-align: right; }
+.seg { display: flex; align-items: center; gap: 2px; background: #0c1015; border: 1px solid var(--line); border-radius: 999px; padding: 2px; }
+.seg .segcap { color: var(--faint); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; padding: 0 6px 0 8px; }
+.seg button { border: 0; background: transparent; padding: 3px 9px; border-radius: 999px; cursor: pointer; color: var(--muted); font-size: 11.5px; font-weight: 600; }
+.seg button[aria-pressed="true"] { background: rgba(94, 200, 255, 0.16); color: var(--fg); }
+body[data-mode="drive"] #labelMode { display: none; }
+.btn.ghost { background: transparent; color: var(--muted); font-size: 11.5px; padding: 4px 10px; }
+.btn.ghost[aria-pressed="true"] { border-color: var(--hud); color: var(--hud); }
+/* Full screen within the page: when the browser refuses true full screen, the top bar goes and the stage fills the viewport. */
+body.immersive #top { display: none; }
+body.immersive #app { grid-template-rows: 1fr; }
+#fsExit { display: none; position: absolute; top: 10px; right: 12px; z-index: 6; background: var(--panel); border: 1px solid var(--line-soft); color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 11.5px; font-weight: 600; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+#fsExit:hover { color: var(--fg); border-color: var(--line); }
+body.immersive #fsExit { display: inline-block; }
+body.immersive #rightCol { top: 44px; }   /* room for the exit pill above the right panel */
+
+/* ---- stage ---- */
+#stage { position: relative; min-height: 0; }
+#stage canvas.gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* ---- labels: a dot at each anchor; the text appears when the dot or the part under the pointer is hovered,
+        when the part is selected, for a few seconds after an overlay is switched on, or always in "All" mode ---- */
+#labels { position: absolute; inset: 0; pointer-events: none; z-index: 2; overflow: hidden; }
+.lbl { position: relative; width: 0; height: 0; pointer-events: none; }
+.lbl .dot { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; background: rgba(8, 11, 15, 0.92); border: 2px solid var(--hud); box-shadow: 0 0 0 1.5px rgba(8, 11, 15, 0.75); pointer-events: auto; cursor: pointer; opacity: 0.8; transition: transform 0.12s, opacity 0.12s; }
+.lbl .txt { position: absolute; left: 9px; bottom: 7px; font-size: 11px; font-weight: 600; line-height: 1.3; padding: 2px 8px; border-radius: 999px; background: rgba(8, 11, 15, 0.88); border: 1px solid rgba(255, 255, 255, 0.12); color: var(--fg); white-space: nowrap; pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 0.12s, visibility 0.12s; }
+.lbl.show .txt, .lbl:hover .txt, #labels.all:not(.compact) .lbl .txt { opacity: 1; visibility: visible; }
+.lbl.show .dot, .lbl:hover .dot { opacity: 1; transform: scale(1.25); }
+.lbl.click .txt { pointer-events: auto; cursor: pointer; }
+.lbl.nodot .dot, #labels.compact .dot { display: none; }
+.lbl.hl .txt { border-color: var(--hud); color: var(--hud); }
+.lbl.hl .dot { background: var(--hud); }
+.lbl.cap .txt { font-weight: 500; color: var(--muted); }
+.lbl.cap .dot { border-color: var(--muted); }
+#labels.off .lbl { display: none !important; }
+
+/* ---- floating panels ---- */
+.panel { background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--r); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35); z-index: 3; display: flex; flex-direction: column; min-height: 0; }
+.panel[hidden] { display: none !important; }
+.ph { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 12px 9px 14px; border-bottom: 1px solid var(--line-soft); flex: none; }
+.ph h2 { margin: 0; }
+.pb { padding: 12px 14px; overflow: auto; min-height: 0; overscroll-behavior: contain; }
+.panel.collapsed .ph { border-bottom: 0; }
+.panel.collapsed .pb { display: none; }
+.chev { flex: none; width: 22px; height: 22px; border: 1px solid transparent; border-radius: 6px; background: transparent; cursor: pointer; position: relative; color: var(--muted); }
+.chev:hover { border-color: var(--line); color: var(--fg); }
+.chev::before { content: ""; position: absolute; left: 7px; top: 5px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg); transition: transform 0.15s; }
+.collapsed .chev::before { transform: rotate(-45deg); top: 8px; }
+#left { position: absolute; left: var(--gap); top: var(--gap); width: var(--left-w); max-height: calc(100% - 2 * var(--gap)); }
+#rightCol { position: absolute; right: var(--gap); top: var(--gap); bottom: var(--gap); width: var(--right-w); display: flex; flex-direction: column; gap: 10px; pointer-events: none; z-index: 3; }
+#rightCol > * { pointer-events: auto; }
+#right { flex: 0 1 auto; }
+#bottom { position: absolute; left: calc(var(--left-w) + 2 * var(--gap)); right: calc(var(--right-w) + 2 * var(--gap)); bottom: var(--gap); }
+#bottom .pb { padding: 10px 14px; overflow: visible; }
+body.ui-hidden #left, body.ui-hidden #rightCol, body.ui-hidden #bottom { display: none !important; }
+
+/* ---- the mini-view dock (driver view) ---- */
+#dock { flex: none; margin-top: auto; background: var(--panel); border: 1px solid var(--line-soft); border-radius: var(--r); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35); overflow: hidden; }
+#dock[hidden] { display: none !important; }
+.dh { display: flex; align-items: center; gap: 2px; padding: 5px 6px 5px 6px; }
+.dh .dtab { border: 0; background: transparent; color: var(--muted); font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.dh .dtab[aria-pressed="true"] { background: rgba(94, 200, 255, 0.16); color: var(--fg); }
+.dh .chev { margin-left: auto; }
+.db { padding: 0 6px 6px; }
+#dock.collapsed .db { display: none; }
+.mini { position: relative; border-radius: 6px; background: #000; overflow: hidden; width: 100%; }
+.mini[hidden] { display: none; }
+.mini canvas { display: block; width: 100%; height: 100%; }
+
+/* ---- content ---- */
+h2 { font-size: 14px; margin: 0 0 4px; text-wrap: balance; font-weight: 700; }
+h3 { font-size: 11px; margin: 14px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+p { margin: 0 0 8px; max-width: 62ch; }
+.hint { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+.muted { color: var(--muted); }
+.sec { border-top: 1px solid var(--line-soft); margin: 8px -14px 0; padding: 0 14px; }
+.sec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 9px 0 8px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; user-select: none; }
+.sec > summary::-webkit-details-marker { display: none; }
+.sec > summary::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); margin-right: 4px; transition: transform 0.15s; }
+.sec[open] > summary::after { transform: rotate(45deg); }
+.sec > summary:hover { color: var(--fg); }
+.sec[open] > summary { color: var(--fg); }
+.secb { padding: 0 0 10px; }
+.secb > h3:first-child { margin-top: 4px; }
+.tag { display: inline-block; font-size: 9.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 1px 5px; border-radius: 4px; border: 1px solid currentColor; vertical-align: 1px; }
+.tag.assumed { color: var(--assumed); }
+.tag.unverified { color: var(--warn); }
+.tag.sim { color: var(--hud); }
+.kv { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 4px 12px; font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.kv > span:nth-child(odd) { color: var(--muted); }
+.kv > span:nth-child(even) { text-align: right; }
+.kv .good { color: var(--ok); } .kv .bad { color: var(--crit); } .kv .warn { color: var(--warn); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: #151b22; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 12px; }
+.btn:hover { border-color: #39444f; }
+.btn.primary { background: var(--hud); border-color: var(--hud); color: #04121b; }
+.btn[aria-pressed="true"] { border-color: var(--hud); color: var(--hud); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { border: 1px solid var(--line); background: transparent; border-radius: 999px; padding: 3px 9px; font-size: 11.5px; cursor: pointer; color: var(--muted); }
+.chip[aria-pressed="true"] { background: rgba(94, 200, 255, 0.14); border-color: var(--hud); color: var(--fg); }
+.ctl { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 8px 0; }
+.ctl label { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; }
+.ctl label b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--hud); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; cursor: pointer; font-size: 12.5px; }
+.toggle input { accent-color: var(--hud); width: 15px; height: 15px; flex: none; }
+.list { display: flex; flex-direction: column; gap: 2px; }
+.item { text-align: left; border: 1px solid transparent; background: transparent; padding: 5px 8px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; gap: 8px; color: var(--fg); }
+.item:hover { background: #151b22; }
+.item[aria-current="true"] { border-color: var(--hud); background: rgba(94, 200, 255, 0.08); }
+.item small { color: var(--faint); }
+.step-title { font-size: 16px; font-weight: 700; margin: 0 0 6px; text-wrap: balance; }
+.progress { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; margin: 6px 0; }
+.progress > i { display: block; height: 100%; background: var(--hud); width: 0; }
+#toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); background: var(--panel-solid); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; z-index: 6; font-weight: 600; transition: opacity 0.3s; pointer-events: none; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 10; color: var(--muted); font-size: 14px; }
+#loading b { display: block; color: var(--fg); font-size: 18px; margin-bottom: 4px; text-align: center; }
+.term { font: 11.5px/1.5 var(--font); background: #070a0d; border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; white-space: pre-wrap; color: #b9e3c8; margin: 6px 0; overflow-x: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11.5px; color: var(--muted); margin: 4px 0; }
+.legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: 3px; margin-right: 5px; }
+.note { border-left: 2px solid var(--warn); padding: 4px 8px; margin: 8px 0; color: var(--fg); background: rgba(255, 192, 77, 0.06); font-size: 12px; }
+.keys { color: var(--faint); font-size: 11.5px; margin: 0 0 6px; }
+.keys kbd { font: inherit; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  #left { top: auto; bottom: calc(44% + 22px); left: var(--gap); right: var(--gap); width: auto; max-height: 32%; }
+  #rightCol { top: auto; left: var(--gap); right: var(--gap); width: auto; max-height: 44%; }
+  #bottom { left: var(--gap); right: var(--gap); bottom: auto; top: var(--gap); }
+  .brand span { display: none; }
+  .seg .segcap { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="top">
+    <div class="brand"><b>Windshield AR HUD</b><span>TFT LCD edition · 3-D simulation of the plan</span></div>
+    <nav id="modes" role="tablist" aria-label="Mode">
+      <button role="tab" data-mode="drive" aria-selected="false">Driver view</button>
+      <button role="tab" data-mode="vehicle" aria-selected="false">Vehicle</button>
+      <button role="tab" data-mode="build" aria-selected="false">Build</button>
+      <button role="tab" data-mode="parts" aria-selected="false">Components</button>
+    </nav>
+    <div class="topright">
+      <div class="seg" id="labelMode" role="group" aria-label="Labels"><span class="segcap">Labels</span><button type="button" data-v="hover" aria-pressed="true" title="Show a part's name when you point at it">Hover</button><button type="button" data-v="all" aria-pressed="false" title="Show every label">All</button><button type="button" data-v="off" aria-pressed="false" title="No labels">Off</button></div>
+      <button class="btn ghost" id="uiBtn" type="button" aria-pressed="false" title="Hide the panels (H)">Hide panels</button>
+      <button class="btn ghost" id="fsBtn" type="button" aria-pressed="false" title="Full screen (F); Escape leaves it">Full screen</button>
+      <span id="fps"></span>
+    </div>
+  </header>
+  <main id="stage">
+    <div id="labels"></div>
+    <aside id="left" class="panel" hidden></aside>
+    <div id="rightCol">
+      <aside id="right" class="panel" hidden></aside>
+      <div id="dock" hidden></div>
+    </div>
+    <div id="bottom" class="panel" hidden></div>
+    <button id="fsExit" type="button" title="Leave full screen (Escape or F)">Exit full screen</button>
+    <div id="toast" style="opacity:0"></div>
+    <div id="loading"><div><b>Building the car and the HUD</b>Loading three.js and generating every part from the plan's numbers</div></div>
+  </main>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

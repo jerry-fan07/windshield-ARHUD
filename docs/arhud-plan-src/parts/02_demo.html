@@ -1,0 +1,128 @@
+<section>
+  <h2 id="s3"><span class="num">3</span>What the demo shows</h2>
+  <p>Everything else in the plan is derived from this list. In a window above the hood line, registered to the real road, the driver sees six things. The window is {{fov2_w}}° × {{fov2_h}}° in the corrected design; revision 2 gave 10° × 4°, and the optics chapter explains why the shape changed.</p>
+
+  <figure>[[FIG mockup]]<figcaption><b>Figure 2.</b> Mockup of the demo window with the five registered and fixed elements labelled. The hazard outline is HUD-only. Proportions follow a flat-road perspective at a 1.22 m eye height; the content is illustrative, not a measured image.</figcaption></figure>
+
+  <h3>3.1 The six items</h3>
+  <ol>
+    <li><strong>Drive path.</strong> openpilot's planned path as a translucent ribbon lying on the road surface, tinted by engagement state. The demo script says the ribbon turns green when openpilot engages. This is the most convincing element, because any error is visible against the real lane paint.</li>
+    <li><strong>Lane lines and road edges.</strong> Thin lines over the real paint. They are drawn only when the model is confident, and they fade with the lane-line probabilities instead of popping on and off.</li>
+    <li><strong>Lead vehicle marker.</strong> A chevron under the lead car's rear bumper, with the following gap in metres and seconds. Studies of attention in driving suggest the lead vehicle is where attention should stay, so cues go there rather than across the whole screen.</li>
+    <li><strong>Speed, set speed and engagement.</strong> A small, fixed block low in the window. It is the only non-conformal content, so it is the only element that does not move with the scene.</li>
+    <li><strong>Hazard cues from the Jetson's own perception.</strong> Pedestrians and signs detected by a TensorRT network on the Jetson, highlighted as outlines. These are HUD-only. They never feed control, and openpilot does not know they exist.</li>
+    <li><strong>Head tracking made visible.</strong> The passenger-side monitor shows the rendered frame and the driver camera with the eye point overlaid, so the audience can watch the parallax correction work as the driver leans.</li>
+  </ol>
+
+  <h3>3.2 Where each item's data comes from</h3>
+  <table>
+    <thead><tr><th style="width:22%">Item</th><th style="width:32%">Input</th><th style="width:16%">Status</th><th>Built by</th></tr></thead>
+    <tbody>
+      <tr><td>Drive path</td><td><code>modelV2</code> path, <code>selfdriveState</code></td><td>Exists</td><td><code>hudd</code> renderer, new</td></tr>
+      <tr><td>Lane lines</td><td><code>modelV2</code> lane lines and probabilities</td><td>Exists</td><td><code>hudd</code>, new</td></tr>
+      <tr><td>Lead chevron</td><td>Lead predictions in <code>modelV2</code>; <code>radarState</code></td><td>Exists</td><td><code>hudd</code>, new</td></tr>
+      <tr><td>Speed block</td><td><code>carState</code>, <code>selfdriveState</code></td><td>Exists in the UI</td><td>Reuses <code>hud_renderer.py</code> fields</td></tr>
+      <tr><td>Hazard outlines</td><td>Detector on the Jetson camera</td><td>New</td><td><code>perceptd</code>, publishes <code>hudDetections</code></td></tr>
+      <tr><td>Head position</td><td>OAK-D Pro, MediaPipe Face Landmarker</td><td>New</td><td><code>headtrackd</code>, publishes <code>hudEyePose</code></td></tr>
+    </tbody>
+  </table>
+  <p class="small">The two new services, <code>hudDetections</code> and <code>hudEyePose</code>, are not in <code>cereal/services.py</code> yet. Adding them is a Phase 1 task.</p>
+
+  <h3>3.3 What is deliberately left out</h3>
+  <ul>
+    <li><strong>Navigation arrows.</strong> openpilot's navigation messages are deprecated in this checkout, so there is no reliable source.</li>
+    <li><strong>Driver-monitoring warnings in the AR window.</strong> They stay on the comma four's screen, where the existing UI already shows them.</li>
+    <li><strong>Full-windshield clutter.</strong> Anything not conformal or safety-relevant is removed or dimmed. The clutter mode in the demo is a deliberate contrast, shown for ten seconds.</li>
+  </ul>
+
+  <div class="callout warn">
+    <p class="h">What the plan does not yet specify</p>
+    <p>These behaviours matter for safety and must be decided and tested in Phase 1, before any car drive. The plan does not currently define them.</p>
+    <ul>
+      <li>What the HUD shows when a source message stops arriving, whether because of the link, the bridge or a crashed process. The plan does not set a stale-data cutoff.</li>
+      <li>Whether the drive path fades out or disappears when openpilot disengages, and what the speed block shows during the handover.</li>
+      <li>The probability thresholds at which lane lines begin and finish fading.</li>
+      <li>The minimum confidence and persistence for a hazard outline, and how a hazard that leaves the view is removed.</li>
+      <li>How the demo's clutter mode is defined: which elements appear, and at what brightness.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2 id="s4"><span class="num">4</span>System architecture</h2>
+
+  <h3>4.1 Two computers, one direction</h3>
+  <p>The architecture has two computers and one data path. The comma four is the driving computer. It is the only computer connected to the car's bus, and it runs openpilot unchanged. The Jetson is the HUD computer. It receives a copy of openpilot's outputs over Ethernet and renders the HUD. Nothing flows back. The optical system at the end is driven only by the Jetson's HDMI output.</p>
+  <figure>[[FIG arch]]<figcaption><b>Figure 3.</b> Two-computer architecture. Data flows one way from the driving computer to the HUD computer, then to the optics. The arrows show the only data paths.</figcaption></figure>
+
+  <p>The split has four reasons, each tied to a fact in the checkout:</p>
+  <ul>
+    <li><strong>The safety boundary is physical.</strong> The panda in the comma four enforces the opendbc safety model on every transmitted frame. The Jetson has no CAN connection at all, so no software fault on the Jetson can reach the bus.</li>
+    <li><strong>Calibrated sensing comes with the comma four.</strong> Its cameras, IMU and GPS are what <code>DEVICE_CAMERAS</code>, calibrationd and locationd expect. The webcam path in this tree captures 1280 × 720, a size for which no model warp file exists, and it reports no sensor name, so it silently assumes the comma camera's 2648 px focal length. Using a webcam on the Jetson would mean building a new calibration path.</li>
+    <li><strong>The transport already exists.</strong> <code>openpilot/cereal/messaging/bridge</code> republishes every service over ZMQ on a per-service port. The same binary, run with an IP address and a whitelist, subscribes and republishes locally as msgq. A HUD process on the Jetson then uses a plain <code>SubMaster</code> with no changes to the messaging code.</li>
+    <li><strong>The Jetson's GPU has a real job.</strong> 4K60 rendering with pre-distortion, head tracking at camera rate, and a detector on TensorRT 10 all fit the Orin NX. None of them fit the comma four's spare capacity.</li>
+  </ul>
+
+  <h3>4.2 The safety boundary</h3>
+  <p>The safety argument has to be easy to state, so the plan separates two paths that meet only at a one-way link. The control path is the chain that decides what the car does. It ends at the panda, which checks every frame. The HUD path reads a copy of messages and draws pixels. Nothing in the HUD path can send a command, and the Jetson has no electrical path to the bus.</p>
+  <figure>[[FIG safety]]<figcaption><b>Figure 4.</b> The control path and the HUD path. The only link between them is the bridge's copy of messages, which flows one way. The panda is the final check on every control frame.</figcaption></figure>
+  <p>Three details follow from this design. The bridge on the comma four publishes a copy of messages that openpilot already publishes; it does not write to the panda. Today <code>process_config.py</code> starts the bridge only for <code>notCar</code> builds, so the plan adds a Params flag that enables it in a car (section 5). Second, if the Jetson stops responding, the car is unaffected, because the Jetson was never in the loop. Third, the acceptance test for this boundary is physical: a power cycle of the Jetson on a closed course, with the openpilot drive continuing unchanged (section 10).</p>
+
+  <h3>4.3 How messages travel</h3>
+  <p>On the comma four, messages move between programs as msgq, a local inter-process queue. Across a network, msgq cannot be used directly. The bridge converts between the two. On the sending side it subscribes to local msgq services and publishes them over ZMQ, a network messaging library. Each service gets its own network port, derived from a hash of the service name. On the receiving side a second bridge instance subscribes to those ZMQ ports and republishes locally as msgq, so the HUD program on the Jetson sees ordinary local messages.</p>
+  <figure>[[FIG transport]]<figcaption><b>Figure 5.</b> Message path from the comma four's local queues, across Ethernet as ZMQ, back into local queues on the Jetson.</figcaption></figure>
+  <ul>
+    <li><strong>Ports.</strong> The port for each service is hashed from its name, and the hashing has a known FIXME in the source. Collisions are unlikely with a short list of services, so the plan checks them once at setup rather than designing around them.</li>
+    <li><strong>Whitelist.</strong> On the receiving side the bridge is started with a whitelist string. In <code>bridge.cc</code> line 13 a service is accepted when its name appears anywhere inside the whitelist string. A short name that sits inside a longer one is therefore accepted too, so the whitelist should use exact, full service names.</li>
+    <li><strong>Stale code.</strong> The <code>ZMQ=1</code> environment flag and <code>SubMaster(addr=...)</code> are dead in this checkout: msgq asserts that the address is 127.0.0.1. <code>tools/camerastream</code> and <code>replay/ui.py</code> depend on them. Video over the link is not needed for the HUD, so the plan notes this rather than fixing it.</li>
+  </ul>
+
+  <h3>4.4 Message timing</h3>
+  <p>Each service has its own rate, set when it is published. The HUD does not need to match them. A <code>SubMaster</code> keeps the latest message from each service and reports how old it is. hudd reads the newest <code>modelV2</code> for the path, the newest <code>carState</code> for speed, and so on, and it renders at 60 Hz regardless. A model message at 20 Hz is therefore drawn three times at the 60 Hz render rate, and each draw is advanced by that message's measured age (section 4.6).</p>
+  <figure>[[FIG rates]]<figcaption><b>Figure 6.</b> Publish rates of the services the HUD reads, one second of messages. Each tick is one message. Rates are from <code>cereal/services.py</code>.</figcaption></figure>
+  <p>The timing picture explains why the age of the model's output is the key quantity. The path comes from a camera frame that is already old when the model publishes it, while the car's speed arrives at 100 Hz and is newer. The HUD combines them, so the path and the speed may describe different moments. Measuring the path's age from the camera frame, and not from when the message arrived, keeps the two consistent.</p>
+
+  <h3>4.5 Latency budget</h3>
+  <p>Road-registered content is convincing only if it stays put when the car moves. The plan's target is set by the difference between when a picture is drawn and when the light reaches the eye, a delay called motion-to-photon latency. The literature puts the perceptual threshold for head-mounted AR near 20 ms, and university-project targets for automotive head-up displays near 50 ms. The stages below are the ones the plan measures; the head tracker is shown separately because it affects parallax, not the road-frame content.</p>
+  <figure>[[FIG latency]]<figcaption><b>Figure 7.</b> Typical age of each stage, as ranges. The total is the sum of the four timed stages, from the camera exposure to the display; the plan rounds it to 70–140 ms.</figcaption></figure>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Stage</th><th class="num">Typical age</th><th>Notes from the plan</th></tr></thead>
+    <tbody>
+      <tr><td>Camera exposure to modelV2 publish</td><td class="num">50–80 ms</td><td>20 Hz model, inference on the comma four. Measured via <code>modelV2.timestampEof</code>.</td></tr>
+      <tr><td>bridge over Ethernet</td><td class="num">1–3 ms</td><td>Wired. Wi-Fi adds jitter, so avoid it.</td></tr>
+      <tr><td>hudd render</td><td class="num">8–16 ms</td><td>60 Hz. Vsync on to avoid tearing in the mirror.</td></tr>
+      <tr><td>Display scan-out</td><td class="num">8–40 ms</td><td>The monitor is fast. Projector input lag must be measured and is the likely worst stage.</td></tr>
+      <tr><td>Head tracker</td><td class="num">30–50 ms</td><td>Affects parallax only, not the road-frame content.</td></tr>
+      <tr><td><strong>Total, four stages, uncompensated</strong></td><td class="num"><strong>{{lat_min}}–{{lat_max}} ms</strong></td><td>At 30 m/s this is 2–4 m of forward travel.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The exact sums in the table are {{lat_min}} to {{lat_max}} ms. The plan's 70–140 ms is the rounded form. At 30 m/s, the 67 to 139 ms span is 2 to 4.2 m of travel, which is the distance by which an uncompensated image would lag the road.</p>
+
+  <h3>4.6 Predicting forward</h3>
+  <p>The image cannot be made faster than the pipeline, so the HUD predicts instead. Each point on the model's path is in the car's frame, with x forward, y to the right and z down. The car has moved since the camera frame was taken, so before projection hudd moves each point to where it is now in the car's current frame: back by the distance the car has travelled, <code>vEgo</code> × age, and rotated by the yaw the car has turned through, <code>yawRate</code> × age. Age is the current time minus <code>modelV2.timestampEof</code>, after the clocks of the two computers are aligned over NTP on the private link.</p>
+  <div class="formula">age = t_now − modelV2.timestampEof
+p_now = Rz(−yawRate · age) · (p_model − [vEgo · age, 0, 0])</div>
+  <p class="small">The plan's wording says the path is "advanced" by <code>vEgo · age</code>. The sign above follows from the car moving forward, so the path points move toward the car. Confirm the sign and the rotation direction on a replayed route before relying on either.</p>
+  <p>The prediction matters a great deal, and the size of its effect is easy to misjudge, so the figure shows both cases. Take a road point 10 m ahead, a camera 1.22 m above the road, and a car at 30 m/s. In 100 ms the car moves 3 m. Without prediction, the point's angle below the horizontal changes from {{dep0}}° to {{dep1}}°, which is a shift of {{uncomp}}° as seen by the driver. That is an obvious error. With prediction, the remaining error comes only from changes the model did not foresee. Given 1 m/s² of unmodelled acceleration over the same 100 ms, the error is {{resid_mm}}, which is {{resid_deg}}° at 10 m. The plan's target is 0.5° static and 0.3° under head motion (section 10).</p>
+  <figure>[[FIG prediction]]<figcaption><b>Figure 8.</b> Side view drawn to true scale. The camera moves 3 m in the time the image is delayed, so the same road point is seen at a steeper angle. The residual figures are for the stated unmodelled acceleration.</figcaption></figure>
+  <p>Prediction has limits, and the plan states them. It corrects for the car's own motion along the path. It does not correct for another road user's motion, for a model that changes its mind, or for a sudden change in acceleration. <code>MIN_DRAW_DISTANCE</code> rises from 10 m to the bottom edge of the virtual window, so nothing is drawn where the hood hides the road.</p>
+
+  <h3>4.7 Head tracking and parallax</h3>
+  <p>The virtual image is fixed in space, but the driver's eye moves. A graphic computed for the nominal eye position therefore lands in a different place on the road when the eye moves. The shift is called parallax. The head tracker measures where the eye is so hudd can compute the mark's position from the actual eye.</p>
+  <p>Parallax is largest for near objects. A 150 mm head shift, which is the plan's test span, moves a point 10 m away by {{par_10}}° as seen from the eye, and a point 30 m away by {{par_30}}°. The head tracker removes most of that shift when it works.</p>
+  <figure>[[FIG parallax]]<figcaption><b>Figure 9.</b> Parallax angle against object distance for a 150 mm head shift, with the plan's distances marked. The curve falls quickly with distance, so near content needs the tracker most.</figcaption></figure>
+  <table>
+    <thead><tr><th class="num">Object distance</th><th class="num">Parallax for 150 mm head shift</th><th>Where it matters in the plan</th></tr></thead>
+    <tbody>
+      <tr><td class="num">7.5 m</td><td class="num">{{par_7_5}}°</td><td>The virtual image's own distance. Its content sits on this plane.</td></tr>
+      <tr><td class="num">10 m</td><td class="num">{{par_10}}°</td><td>Nearest path points and the lead chevron in traffic.</td></tr>
+      <tr><td class="num">15 m</td><td class="num">{{par_15}}°</td><td>Middle of the drive path.</td></tr>
+      <tr><td class="num">20 m</td><td class="num">{{par_20}}°</td><td>Typical lane-line range.</td></tr>
+      <tr><td class="num">30 m</td><td class="num">{{par_30}}°</td><td>Far end of the path. The plan's registration test point.</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Parallax for a point at distance <em>d</em> is atan(0.150 m ÷ <em>d</em>). The table is the plan's own formula evaluated at each distance; see Appendix A.</p>
+  <p>The eye box is the region where the eye can see the whole image. The plan requires at least 120 × 60 mm without tracking. With tracking, the box follows the eye, so the test span of ±75 mm (150 mm total) is larger than the static box and is only met with tracking on. The plan treats that as intended: the tracker is part of the design, not an optional extra.</p>
+</section>

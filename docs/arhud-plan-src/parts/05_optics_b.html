@@ -1,0 +1,61 @@
+<section>
+  <h3>6.6 Three build stages</h3>
+  <p>The optics are built in three stages. Each stage tests a piece of the final design, and the first two can be built before the custom mirror arrives. Stage 0 is a bench rig that tests software on a desk. Stage 1 places a combiner in the car and tests registration at a short virtual distance. Stage 2 adds the relay mirror and the windshield and is the demo target.</p>
+
+  <h4>Stage 0: bench rig (week 1)</h4>
+  <p>The monitor sits face-up in a black enclosure, and a 70/30 teleprompter beamsplitter is set at 45° above it. A camera, or the developer's eye, looks through the beamsplitter from the far side. The flat beamsplitter forms a virtual image of the monitor at the same distance as the monitor, about 0.6 m. Teleprompter glass uses a convention in which the first number is the transmitted share, so 30% of the monitor's light is reflected toward the viewer. That reading is an interpretation of the vendor's convention and should be confirmed with the vendor (<span class="tag">verify vendor</span>).</p>
+  <figure>[[FIG stage0]]<figcaption><b>Figure 14.</b> Stage 0 bench rig. The monitor's light folds 90° off the beamsplitter to the eye. Schematic.</figcaption></figure>
+  <p>The purpose of Stage 0 is software: projection maths, colour and alpha choices, and latency instrumentation. It has no virtual distance and no windshield, so it tests the renderer rather than the optics. The plan notes that teleprompter glass is sold in sizes of 300 mm and above by teleprompter suppliers, while the optics catalogues stop near 85 mm (<span class="tag">verify vendor</span>).</p>
+
+  <h4>Stage 1: Fresnel magnifier and in-car combiner (weeks 4–8)</h4>
+  <p>Stage 1 moves the rig into the car, on the dash top. A 300 mm Fresnel lens sits between the monitor and a combiner, a free-standing glass above the dash. The monitor is 280 mm from the lens, which is inside the 300 mm focal length. An object inside the focal length of a converging lens produces a <em>virtual</em> image on the same side as the object, magnified. That is how a magnifying glass works, and it is how Stage 1 makes a virtual image.</p>
+  <div class="formula">1/v = 1/f − 1/u = 1/300 − 1/280  so  v = −4.2 m   (virtual, on the monitor side)
+magnification M = |v| / u = 4200 / 280 = 15
+image = 80 × 40 mm × 15 = 1.2 × 0.6 m  so  16° × 8° as seen from the eye
+pixels: 80 mm of a 277 ppi panel ≈ 872 px; 872 px ÷ 16° ≈ 54 px per degree</div>
+  <figure>[[FIG stage1]]<figcaption><b>Figure 15.</b> Stage 1 geometry. The monitor sits inside the lens's focal length, so the lens makes a virtual image about 4.2 m away on the monitor side. The combiner folds the light toward the eye. Not to scale; the derivation is in Appendix A.</figcaption></figure>
+  <p>Fifty-four pixels per degree is close to the eye's limit of about 60 for 20/20 vision, so the Stage 1 image is sharp enough to judge registration. Fresnel lenses add ring artefacts and some colour fringing, which is acceptable for a first in-car result and for night demos. Stage 1 leaves the windshield untouched, which keeps the legal question simpler (section 11). The combiner is more exposed than the Stage 2 housing, because it stands above the dash.</p>
+
+  <h4>Stage 2: relay mirror into the windshield (weeks 6–12)</h4>
+  <p>Stage 2 is the README's design and the demo target. The light path is PGU, then a fold mirror, then a concave mirror, then the windshield, then the eye. The concave mirror does the magnification; the windshield is the final reflector and sits between the mirror and the driver.</p>
+  <figure>[[FIG stage2]]<figcaption><b>Figure 16.</b> Stage 2 light path, with the single-mirror numbers. The windshield is drawn in the path but is not part of the calculation, which is the open issue described below.</figcaption></figure>
+  <p>The single-mirror calculation uses the mirror equation, 1/v = 1/f − 1/u, with f = {{f2}}. For a virtual image the object must lie inside the focal length. Setting the virtual image at 7.5 m gives an object distance of {{u2}}, a magnification of {{m2}}, an image of {{img2_w}} × {{img2_h}} at 7.5 m, and a field of {{fov2_w}}° × {{fov2_h}}°.</p>
+  <div class="callout fix">
+    <p class="h">Correction: the revision 2 geometry put the image in the wrong place</p>
+    <p>Revision 2 used u = 346 mm with f ≈ 330 mm. Since 346 mm is outside the focal length, the same equation gives a <em>real</em> image {{plan_v}} from the mirror, not a virtual one. The magnification of about 22 that revision 2 quoted matches a real image about 7.5 m from the mirror, which is not the virtual image the design needs. A real image cannot be seen through the windshield as a virtual image at 7.5 m, so the earlier numbers are withdrawn and replaced by the calculation above.</p>
+  </div>
+  <p>The single-mirror calculation is still not enough to order a mirror. The windshield is a second reflecting surface between the concave mirror and the eye. Its curvature and its position change where the eye perceives the image, and neither is in the calculation. The ray trace that fixes f, u and the mirror's shape must include the windshield's actual curvature for the chosen car, the eye point, and the eye box. Until that ray trace exists, the mirror is a design estimate.</p>
+  <div class="callout warn">
+    <p class="h">Sequencing consequence</p>
+    <p>The windshield's curvature depends on the car, so the car decision must come before the mirror is specified. Revision 2 scheduled the mirror order for week 1, in the same phase as the car choice. The mirror order should move to after the ray trace, which needs the car. Section 9 shows the consequence for the schedule.</p>
+  </div>
+  <p>Two further facts about the mirror come from the plan. It is a custom spherical first-surface mirror, about 300 × 200 mm, quoted by an optics shop; for a spherical mirror the radius of curvature is twice the focal length, so about 660 mm; no catalogue mirror is that size. A spherical mirror used off-axis has astigmatism and keystone, a distortion in which the image's top and bottom have different widths. The keystone is corrected in software, since hudd pre-distorts the image, and the residual astigmatism is accepted for the demo. A freeform mirror from an automotive HUD supplier is the stretch option.</p>
+
+  <h3>6.7 The sun-focus hazard</h3>
+  <p>The concave mirror is a converging reflector. Sunlight that enters through the windshield and strikes the mirror is focused toward the mirror's focal point, the same way a magnifying glass focuses the sun onto paper. For the Stage 2 geometry, that focal point is 330 mm from the mirror, and the PGU sits at {{u2}}. The diffuser is therefore {{focus_gap}} short of the focal point, close enough that a focused spot falls on or near it. The plan's risk register names this, and this section quantifies it.</p>
+  <figure>[[FIG sunhazard]]<figcaption><b>Figure 17.</b> The sun-focus path and the geometric estimate. The estimate is an upper bound: it assumes an on-axis sun, parallel rays, and no losses.</figcaption></figure>
+  <p>The estimate used a ray trace of parallel rays on a 300 × 200 mm spherical mirror of radius 660 mm. At the PGU plane, 90% of the rays land within {{r90_pgu}} mm of the axis. The sun's own angular size, 0.53°, adds blur: at the focal plane, its image is about 3.1 mm across. Taking the mirror's aperture against the 90% spot gives a concentration of about {{conc_pgu}} times the sunlight intensity. Since the trace has no windshield losses and no sun disk, that number is an upper bound. The real value is lower, because of windshield losses and the sun's disk, but the trace does not say by how much. The conclusion does not depend on that number: the diffuser would see sunlight concentrated far beyond ordinary exposure.</p>
+  <p>In power terms, the mirror's 300 × 200 mm aperture collects about {{sun_w}} of direct sunlight at 1,000 W/m², after an assumed {{ws_t_sun}} windshield transmission, and the trace puts most of it inside a spot about {{sun_spot_mm}} mm across at the PGU plane. That is the power of a small soldering iron delivered to a patch of plastic film, and it is why the thermocouple test below is an acceptance test and not a precaution.</p>
+  <p>Two points in the plan need correcting before the hazard is managed:</p>
+  <ul>
+    <li><strong>Terminology.</strong> The plan asks for a "cold mirror" in front of the diffuser. A cold mirror reflects visible light and transmits infrared. Keeping infrared off the diffuser needs the opposite: a hot mirror, which reflects infrared and passes visible light, or an IR-cut filter. Confirm the term with the optics vendor before ordering.</li>
+    <li><strong>Filters reduce heat; they do not remove the focus.</strong> A filter lowers the heat load on the diffuser. It does not stop visible sunlight from converging at the PGU. The plan's shading of the housing aperture by the dash lip is likely to help only at some sun positions; the plan does not quantify it.</li>
+  </ul>
+  <div class="callout fix">
+    <p class="h">Proposed for review, not in the plan</p>
+    <p>Keep sunlight from entering the mirror's aperture at low sun, for example with a shutter or a shade that the driver cannot override, and measure the diffuser's temperature with a thermocouple in the sun before any sun exposure of the assembled Stage 2 unit. The thermocouple test is the acceptance test; the shutter is a proposal.</p>
+  </div>
+
+  <h3>6.8 Packaging</h3>
+  <p>The whole optical train sits in a 3D-printed, matte-black housing on the dash top. The mirror aperture is under a dust-cover glass at the base of the windshield. The housing comes off without tools so the car can return to stock, which matters for the vehicle modification sign-off (section 11). Matte black inside the housing is meant to limit stray light, which would otherwise appear as haze or a faint second image.</p>
+
+  <h3>6.9 Calibration</h3>
+  <p>Three transforms take a point from the car's frame to a pixel on the panel. Each is measured once and stored in Params on the Jetson, except the first, which the head tracker adjusts live. Figure 18 shows the chain and how each step is measured.</p>
+  <figure>[[FIG calib]]<figcaption><b>Figure 18.</b> The projection chain from the car frame to the panel, with each transform's measurement method. The matrix is D @ K_eye @ view_from_eye @ eye_from_car, applied in that order to a point.</figcaption></figure>
+  <ol>
+    <li><strong>Car frame to eye.</strong> A fixed translation from the comma four's camera origin to the nominal eye point. It is measured with a tape and refined with a target board at 30 m. The head tracker supplies a live offset from the nominal point.</li>
+    <li><strong>Eye to virtual display plane.</strong> A pinhole intrinsic for the virtual image. Its focal length in pixels is half the display height divided by the tangent of half the vertical field of view. It is measured by putting a camera at the eye point and photographing a rendered grid against a real grid on the ground.</li>
+    <li><strong>Display pre-distortion.</strong> A two-dimensional mesh warp that cancels the mirror's and windshield's curvature. It is fitted from the same photograph and applied as a final full-screen pass in the renderer, not folded into the matrix.</li>
+  </ol>
+  <p>The calibration depends on the windshield, so it must be redone for every car and every windshield change. It is part of the Stage 2 re-calibration in phase 5 (section 9).</p>
+</section>

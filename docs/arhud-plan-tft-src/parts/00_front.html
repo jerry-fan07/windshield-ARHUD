@@ -1,0 +1,44 @@
+<section class="cover">
+  <div class="band"></div>
+  <div class="eyebrow">windshield-ARHUD · project plan</div>
+  <h1 style="margin-top:12px">Windshield AR HUD</h1>
+  <p class="sub">A road-registered augmented-reality head-up display for a car that a person drives. One computer, its own cameras, and a TFT LCD picture generator relayed into the windshield by a concave mirror.</p>
+  <p class="sub" style="font-size:11pt">This plan does not include self-driving. Nothing in it reads from or writes to the car's buses, and no driver-assistance stack is installed. The HUD perceives the road itself and draws what it sees.</p>
+  <p class="meta">HUD-only, TFT LCD edition · written 2026-10-21. A parallel plan to the self-driving edition, not a revision of it.<br>
+  Prepared by Claude Fable 5.1; parts and reference research by Claude agents on the same day, with the pages they read listed in Appendix D. The previous plan (revision 2, PDF edition, 2026-10-09) built the HUD on top of openpilot with a comma four driving the car and a laser DLP projector as the picture generator. This edition replaces both decisions and keeps what still applies.<br>
+  Facts that could not be verified today are marked <span class="tag">unverified</span>. The Jetson facts are from 2026-10-07; the board was unreachable again when this plan was written.</p>
+  <figure>[[FIG cover]]<figcaption>Illustrative driver's-eye view of the HUD window: lane ribbon, lane lines, lead chevron with the gap, a hazard outline and the speed block. Not a measured image.</figcaption></figure>
+</section>
+
+<section>
+  <h2 id="about"><span class="num"></span>About this edition</h2>
+  <p>This is a new plan, not a revision of the self-driving one. It answers the same question, how to build a convincing road-registered HUD with the equipment on hand, under two changed constraints: the car is driven by a person, and the picture generation unit (PGU) is a TFT liquid-crystal panel instead of a laser DLP projector. Both changes reach into every chapter, so the document was rewritten rather than patched. Where a section of the previous plan still holds, it is kept with its numbers, and the text says so.</p>
+  <p>Every section explains the mechanism behind a decision before it gives the number, and Appendix A derives each number so a reader can check the arithmetic. Figures are schematics unless their caption says otherwise; those that plot numbers are computed from the same values as the text.</p>
+
+  <div class="callout">
+    <p class="h">What changed from the self-driving plan, and why it matters</p>
+    <ol>
+      <li><strong>No comma four, no openpilot in the car, no harness.</strong> The previous plan took its lane lines, path, leads and vehicle speed from openpilot's messages over a bridge from the comma four. This plan runs its own perception on the Jetson: a stereo road camera, a lane network, an object detector, and a GNSS receiver with an inertial unit for speed and turn rate. The car does not have to be on openpilot's supported list, and the three openpilot-specific blockers of the previous plan (no CUDA model build, SPI-only panda daemon, no PC sensors) disappear with it. What is lost is openpilot's planned path, which was the hero element of the previous demo. Its replacement is a lane ribbon drawn between the detected lane lines (chapter 3).</li>
+      <li><strong>The safety argument becomes an inspection, not a test.</strong> Previously the Jetson was kept off the car's bus by design, and the test was a power cycle during an openpilot drive. Now nothing in the system has a wire to any vehicle bus. The only connection to the car is a fused 12 V accessory feed. Chapter 4 states it in one figure.</li>
+      <li><strong>TFT LCD picture generator.</strong> A liquid-crystal panel emits polarised light, so the polariser sheet that the projector's diffuser made necessary, and its 42% loss, are gone; the panel's polarisation axis has to be oriented instead. Its brightness is set by its backlight, which dims by pulse width over any range the night ceiling needs, so the projector's dimming-floor risk is gone too. In exchange, an off-the-shelf panel is far too dim for daylight, and the plan designs a small high-power LED backlight for a 60 × 30 mm region of a 5.5-inch panel (section 6.6). The custom concave mirror, the windshield reflection and the sun-focus hazard are unchanged, because they belong to the mirror, not to the picture generator.</li>
+      <li><strong>The windshield is not replaced in the base plan.</strong> Checking the ghost-image geometry shows that for a virtual image at 7.5 m the two reflections of a plain laminated windshield are only {{ghost_7_5}} arcminutes apart, about {{ghost_px}} pixels of this design (section 6.4). The wedge-PVB windshield of the previous plan is now an option, taken only if the measured ghost is objectionable. That removes one of the two long-lead custom parts and the need for a factory-HUD trim.</li>
+      <li><strong>The schedule starts with recordings, not purchases.</strong> Perception can be developed from stereo recordings made from the passenger seat of any car in week 1, before anything is mounted. The optics chain, car choice, ray trace, mirror order, mirror lead time, is still the critical path, as it was.</li>
+    </ol>
+    <p>Numbers that carry over unchanged from the previous plan: the virtual image distance and field, the mirror focal length and the PGU distance, the windshield reflectances, the parallax and motion-compensation figures, and the sun-focus ray trace. Numbers that changed: the luminance budget, the latency budget, the cost table, the acceptance criteria and the phases.</p>
+  </div>
+
+  <h3>How to read the tags and units</h3>
+  <table>
+    <thead><tr><th style="width:26%">Marker</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">unverified</span></td><td>A fact, price or product claim that could not be checked when the plan was written. Do not rely on it without checking.</td></tr>
+      <tr><td><span class="tag">verify</span></td><td>A condition that depends on hardware or software behaviour not yet tested on this equipment, such as the frame rate of a network on the Jetson.</td></tr>
+      <tr><td><span class="tag">assumed</span></td><td>A design assumption used in a calculation, such as a mirror's reflectance or a panel's transmittance. The plan names the measurement that replaces it.</td></tr>
+      <tr><td><span class="tag">confirm locally</span></td><td>A legal point that depends on the jurisdiction. The plan gives the position as understood, not legal advice.</td></tr>
+      <tr><td><span class="tag acc">checked</span></td><td>A claim about this repository that was checked against the checkout on 2026-10-21, with the line number given.</td></tr>
+    </tbody>
+  </table>
+  <p class="small" style="margin-top:10px">Units: luminance in cd/m² (candela per square metre, also called a nit); angles in degrees, or in arcminutes (′, one sixtieth of a degree) where small; distances in metres or millimetres as written; frequencies in Hz; latency in milliseconds; power in watts. Monetary values are US dollars, last seen on the date given, not quotes.</p>
+
+  [[TOC]]
+</section>

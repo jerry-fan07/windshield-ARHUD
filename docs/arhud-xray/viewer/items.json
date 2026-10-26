@@ -1,0 +1,1599 @@
+{
+ "categories": [
+  [
+   "hud",
+   "HUD optical unit"
+  ],
+  [
+   "sensor",
+   "Sensors"
+  ],
+  [
+   "compute",
+   "Computer"
+  ],
+  [
+   "controller",
+   "Controller & LED driver"
+  ],
+  [
+   "power",
+   "Power"
+  ],
+  [
+   "network",
+   "Network & audience"
+  ],
+  [
+   "cables",
+   "Cables"
+  ],
+  [
+   "optics",
+   "Windshield & light path"
+  ],
+  [
+   "bench",
+   "Bench & instruments"
+  ],
+  [
+   "vehicle",
+   "Car (context)"
+  ]
+ ],
+ "items": [
+  {
+   "id": "hudUnit",
+   "name": "HUD optical unit",
+   "parent": null,
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The finished optical unit on the dash: TFT PGU at the rear and lowest, the cold-mirror fold above it, the concave mirror at the front, the shutter and dust cover in the lid. Light leaves the crop, folds forward, is magnified by the concave mirror and leaves through the dust cover to the windshield, which reflects it to the driver.",
+   "facts": [],
+   "where": "dash top, in front of the driver, removable without tools",
+   "short": "HUD optical unit"
+  },
+  {
+   "id": "housing",
+   "name": "3-D printed housing, baffles and lid",
+   "parent": "hudUnit",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The whole optical train lives in one printed, matte-black shell on the dash top. Panel and backlight sit at the rear, lowest, venting through the base; the fold sits above them; the concave mirror sits at the front; the dust cover and shutter close the top. It comes off without tools, so the car returns to stock.",
+   "facts": [
+    [
+     "Outside size",
+     "459 × 303 × 370 mm (L × H × W)"
+    ],
+    [
+     "Lid slope",
+     "12.5° (stays under the glass, over the fold)"
+    ],
+    [
+     "Aperture (traced)",
+     "262 × 329 mm"
+    ],
+    [
+     "Material",
+     "printed matte black, layer lines inside break up reflections"
+    ],
+    [
+     "Mounting",
+     "four feet with soft pads; no tools, nothing bonded to the glass"
+    ],
+    [
+     "Price",
+     "$150–300 (estimate)"
+    ]
+   ],
+   "where": "dash top",
+   "short": "Housing, baffles, lid"
+  },
+  {
+   "id": "pgu",
+   "name": "Picture generation unit (TFT)",
+   "parent": "hudUnit",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The finished picture generator: the stock cell on the custom backlight, the half-wave retarder on top if the axis needs it, an NTC thermistor on the cell's back for the controller's derating, and the HDMI board on a bracket. Only the crop is lit and drawn; the rest of the panel is black.",
+   "facts": [
+    [
+     "Panel luminance (design)",
+     "10,000 cd/m² on axis; uniformity ±20% over the crop"
+    ],
+    [
+     "At the eye",
+     "1,944 cd/m² (path 19.4%: two 90% mirrors × 23.6% glass)"
+    ],
+    [
+     "Image",
+     "946 × 473 px of 1920 × 1080 at 60 Hz over HDMI"
+    ],
+    [
+     "Cell temperature",
+     "thermistor derates, then blanks; 30 min at full power in a 40 °C box must stay under the rating"
+    ],
+    [
+     "Black level",
+     "1.9 cd/m² at the eye by day, 0.05 at night (IPS 1,000:1, ASSUMED)"
+    ],
+    [
+     "Heat",
+     "12.6 W LED, about 3.0 W absorbed in the cell"
+    ]
+   ],
+   "where": "rear of the housing, lowest",
+   "short": "Picture generator (PGU)"
+  },
+  {
+   "id": "backlight",
+   "name": "Custom direct-lit LED backlight",
+   "parent": "pgu",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The stock edge-lit backlight gives a few hundred cd/m². This replacement lights only the crop, from directly behind: eight high-power white LEDs on an aluminium board, a white mixing cavity, a diffuser plate, two crossed prism films and an infrared-cut glass, cooled by a finned heat sink and a 40 mm fan.",
+   "facts": [
+    [
+     "Design luminance at the panel",
+     "10,000 cd/m²"
+    ],
+    [
+     "Backlight luminance",
+     "10,000 ÷ 6% cell (ASSUMED) = 166,667 cd/m²"
+    ],
+    [
+     "Flux",
+     "Φ = π·L·A = 942 lm from 18 cm²"
+    ],
+    [
+     "LED power",
+     "12.6 W at 50% efficiency, 150 lm/W (ASSUMED); 6.3 W with films"
+    ],
+    [
+     "Prism films",
+     "crossed pair, gain 2.0 (ASSUMED; 3M about 1.5 per film)"
+    ],
+    [
+     "Emission cone needed",
+     "±11.6° × ±6.3° (design ±15°); Lambertian puts 6.7% inside"
+    ],
+    [
+     "Driver",
+     "constant current, analogue + PWM dimming above 2 kHz (Recom RCD-24 class)"
+    ],
+    [
+     "Price",
+     "$150–300 (estimate)"
+    ]
+   ],
+   "where": "under the LCD cell",
+   "short": "LED backlight"
+  },
+  {
+   "id": "lcdCell",
+   "name": "LCD cell, 60 × 30 mm crop lit",
+   "parent": "pgu",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The panel with its stock backlight removed. The cell makes no light: each subpixel is a voltage-controlled shutter between two crossed polarisers. Only a 60 × 30 mm crop in the middle is lit and drawn; the rest stays black.",
+   "facts": [
+    [
+     "Crop",
+     "60 × 30 mm = 946 × 473 px, 22% of the panel"
+    ],
+    [
+     "Pixel pitch",
+     "63.4 µm (from the assumed active area)"
+    ],
+    [
+     "Resolution in the window",
+     "87 px/deg, 1.51 mm per px at 7.5 m"
+    ],
+    [
+     "Cell transmittance",
+     "6% (ASSUMED; Phase 5 measures stock luminance ÷ backlight luminance)"
+    ],
+    [
+     "Contrast",
+     "1,000:1 (ASSUMED IPS); black at night 0.05 cd/m² at the eye"
+    ],
+    [
+     "Heat in the cell",
+     "about 3.0 W absorbed over 18 cm² at full backlight"
+    ],
+    [
+     "Polarisation",
+     "linear; the axis is measured in Phase 5 (often 45° to the edges)"
+    ]
+   ],
+   "where": "on the backlight",
+   "short": "LCD cell"
+  },
+  {
+   "id": "retarder",
+   "name": "Half-wave retarder film",
+   "parent": "pgu",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The windshield reflects s-polarised light (perpendicular to the plane of incidence) 19 times better than p. The panel already emits linearly polarised light, but its axis may sit at 45° to the edges. A half-wave film rotates that axis to s at no cost in brightness.",
+   "facts": [
+    [
+     "Windshield reflectance at 65°",
+     "s 23.6%, p 1.2% (ratio 19)"
+    ],
+    [
+     "Rule",
+     "output angle = 2 × fast-axis angle − input angle"
+    ],
+    [
+     "Needed when",
+     "the measured panel axis is not already along s (Phase 5)"
+    ],
+    [
+     "Sheet sources",
+     "Edmund WP280 600 × 500 mm about £324; Knight Optical 305 mm £213"
+    ],
+    [
+     "Price",
+     "$150–450 (range)"
+    ]
+   ],
+   "where": "on the cell",
+   "short": "Half-wave retarder"
+  },
+  {
+   "id": "pguBoard",
+   "name": "HDMI driver board and flex",
+   "parent": "pgu",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "HDMI in from the Jetson, 1920 × 1080 at 60 Hz.",
+   "facts": [
+    [
+     "Active area",
+     "121.8 × 68.5 mm (ASSUMED from the 5.5-inch diagonal)"
+    ],
+    [
+     "Resolution, pitch",
+     "1920 × 1080, 63.4 µm"
+    ],
+    [
+     "Stock luminance",
+     "450 cd/m² (vendor); 87 cd/m² at the eye through the windshield path"
+    ],
+    [
+     "Interface",
+     "HDMI in, MIPI DSI to the panel over a 40-pin FPC; 5 V on micro-USB"
+    ]
+   ],
+   "where": "beside the PGU",
+   "short": "HDMI board + flex"
+  },
+  {
+   "id": "pguBracket",
+   "name": "PGU bracket and cell thermistor",
+   "parent": "pgu",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "Screws to the heat sink base. 10 kΩ NTC taped to the cell beside the crop, read by the controller.",
+   "facts": [],
+   "where": "PGU",
+   "short": "Bracket + thermistor"
+  },
+  {
+   "id": "coldMirror",
+   "name": "Cold-mirror fold and IR absorber",
+   "parent": "hudUnit",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The flat fold between the panel and the concave mirror is a dielectric cold mirror: it reflects visible light and transmits infrared. Sunlight that the concave mirror focuses back into the housing loses its infrared half here, into a black absorber, before it can reach the cell.",
+   "facts": [
+    [
+     "Size (from the traced footprint)",
+     "149 × 88 mm, 3 mm glass"
+    ],
+    [
+     "Incidence",
+     "35.0° at the centre"
+    ],
+    [
+     "Visible passed on (sun)",
+     "48% of the focused solar power (ASSUMED): 42 W → 20 W"
+    ],
+    [
+     "With the IR-cut glass",
+     "31% passes (TI DLPA096): 13 W"
+    ],
+    [
+     "Polarisation",
+     "plane of incidence aligned with the windshield's; s-reflectance checked against the vendor curve"
+    ],
+    [
+     "Price",
+     "$150–400 (estimate)"
+    ]
+   ],
+   "where": "above the panel",
+   "short": "Cold-mirror fold"
+  },
+  {
+   "id": "concaveMirror",
+   "name": "Concave relay mirror, 300 × 200 mm",
+   "parent": "hudUnit",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The one custom optic. With the panel 316 mm away, inside its 330 mm focal length, the mirror forms a magnified virtual image 7.5 m behind itself, which the windshield folds into the driver's view. Used 15.5° off axis, a plain sphere splits that image into two focal distances; a toroid with different radii in the two planes brings them together.",
+   "facts": [
+    [
+     "Focal length, radius (plan)",
+     "f = 330 mm, R = 660 mm (spherical)"
+    ],
+    [
+     "Object distance",
+     "u = 316 mm, 14 mm inside focus"
+    ],
+    [
+     "Magnification, image",
+     "23.7; 1.42 m × 0.71 m at 7.5 m"
+    ],
+    [
+     "Incidence in this layout",
+     "15.5°"
+    ],
+    [
+     "Sphere at this incidence",
+     "tangential image 52.7 m, sagittal 4.1 m behind the mirror"
+    ],
+    [
+     "Toroid correction",
+     "Rt 685 mm, Rs 636 mm: both images at 7.5 m"
+    ],
+    [
+     "Aperture needed",
+     "320 × 165 mm at 1 m (traced here: about 331 mm wide)"
+    ],
+    [
+     "Sun focus",
+     "42 W into a 6 mm spot (131 W/cm²) before filters"
+    ],
+    [
+     "Price",
+     "$1,000–4,000 (estimate)"
+    ]
+   ],
+   "where": "front of the housing",
+   "short": "Concave mirror"
+  },
+  {
+   "id": "shutter",
+   "name": "Sun shutter and servo",
+   "parent": "hudUnit",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "Two thin black leaves cover the mirror aperture under the dust cover. A micro servo opens them through a Scotch-yoke lever; a constant-force spring pulls them shut, so the shutter fails closed if power or the controller stops. It closes whenever the HUD is off and whenever the sun-watch rule finds the sun in the entry patch.",
+   "facts": [
+    [
+     "Why",
+     "focused sun: 5.5 W in a 6 mm spot even after the filters (≈ 170 suns)"
+    ],
+    [
+     "Closed when",
+     "the HUD is off (parked car is the long-exposure case), sun-watch says so, cell too hot, or USB silent 5 s"
+    ],
+    [
+     "Entry patch",
+     "21° × 11° of sky, 51° elevation behind the car; crossed in about 83 min"
+    ],
+    [
+     "Actuator",
+     "SG90-class micro servo on the HUD controller, 140 mm Scotch-yoke lever"
+    ],
+    [
+     "Fail-safe",
+     "constant-force spring closes it with no power"
+    ],
+    [
+     "Price",
+     "$40–80 (range) (servo is in the controller line)"
+    ]
+   ],
+   "where": "under the lid aperture",
+   "short": "Sun shutter"
+  },
+  {
+   "id": "dustCover",
+   "name": "Dust cover, s-pass polariser, light sensor",
+   "parent": "hudUnit",
+   "cat": "hud",
+   "kind": "component",
+   "default": true,
+   "desc": "The window in the top of the housing. It keeps dust off the mirror, and a polariser laminated to its inside passes the HUD's own s-polarised light while absorbing more than half of any unpolarised sunlight trying to get in. The ambient-light sensor looks out through a window at one edge.",
+   "facts": [
+    [
+     "Polariser",
+     "s-pass (axis across the car); 42% of unpolarised light (ASSUMED)"
+    ],
+    [
+     "HUD light",
+     "s-polarised, so it passes almost unchanged"
+    ],
+    [
+     "Sun after the filters",
+     "13 W → 5.5 W"
+    ],
+    [
+     "Sensor window",
+     "ambient-light sensor (TSL2591 or VEML7700) for the dimming curve"
+    ],
+    [
+     "Demo rule",
+     "no polarised sunglasses: they block exactly this light"
+    ],
+    [
+     "Price",
+     "$150–450 (range)"
+    ]
+   ],
+   "where": "lid aperture",
+   "short": "Dust cover + polariser"
+  },
+  {
+   "id": "zed2i",
+   "name": "Stereolabs ZED 2i road camera",
+   "parent": null,
+   "cat": "sensor",
+   "kind": "component",
+   "default": true,
+   "desc": "The road camera and the HUD's main sensor. Its left lens is the origin of every coordinate in the plan. roadd reads its stereo pair for depth, fits the road plane each frame, lifts the lane and object detections onto it, and streams its IMU to egod.",
+   "facts": [
+    [
+     "Lens",
+     "4 mm: 80° × 52° (store page) vs 72° × 44° (datasheet), CONFLICT; f ≈ 1,144 px at 1080p from 80°"
+    ],
+    [
+     "Stereo",
+     "baseline 120 mm; depth 1.0/1.5–35 m; rolling shutter"
+    ],
+    [
+     "Depth error",
+     "1.64 m at 30 m for 0.25 px disparity (ASSUMED) → 0.047° at the eye"
+    ],
+    [
+     "IMU",
+     "400 Hz; gyro gives egod a low-latency yaw rate"
+    ],
+    [
+     "Interface",
+     "USB 3; ZED SDK 5.5.1 supports JetPack 6.2.x (installer needs an exact L4T match)"
+    ],
+    [
+     "Mount",
+     "high on the windshield centreline, clamped to the mirror stalk; camera-to-eye 54 cm in this layout (plan ASSUMED 45 cm; keep within ≈ 0.5 m)"
+    ],
+    [
+     "Ground plane",
+     "own RANSAC fit per frame (the SDK plane API needs tracking at ≈ 44% GPU)"
+    ],
+    [
+     "Cost",
+     "$499 (firm; plan line \"Stereolabs ZED 2i, 4 mm lens\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "high on the windshield centreline, clamped to the mirror stalk",
+   "short": "ZED 2i road camera"
+  },
+  {
+   "id": "oakdPro",
+   "name": "Luxonis OAK-D Pro driver camera",
+   "parent": null,
+   "cat": "sensor",
+   "kind": "component",
+   "default": true,
+   "desc": "The driver camera. It finds the driver's face and eyes on its own processor and reports the eye midpoint, so hudd can re-project every graphic for where the eyes actually are; without it, a 150 mm head move shifts graphics by over a degree.",
+   "facts": [
+    [
+     "Cameras",
+     "global-shutter stereo pair (75 mm), RGB centre camera"
+    ],
+    [
+     "Illumination",
+     "IR flood + dot projector, for the head tracker at night"
+    ],
+    [
+     "Compute",
+     "on-device depth and NN inference (RVC2): face detection and landmarks; BNO086 IMU"
+    ],
+    [
+     "Output",
+     "eye midpoint in the car frame + confidence, 30 Hz (eyePose); nominal eye after 500 ms stale"
+    ],
+    [
+     "Why",
+     "parallax for a 150 mm head shift: 1.15° at 7.5 m, 0.29° at 30 m"
+    ],
+    [
+     "Latency",
+     "30–50 ms (parallax only)"
+    ],
+    [
+     "Note",
+     "MediaPipe is unsupported on Jetson; on-camera landmarks are primary, OpenSeeFace the CPU alternative"
+    ],
+    [
+     "Cost",
+     "$349–429 (range; plan line \"Luxonis OAK-D Pro (driver camera)\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "column shroud, aimed at the driver",
+   "short": "OAK-D Pro driver cam"
+  },
+  {
+   "id": "gnssAntenna",
+   "name": "GNSS antenna",
+   "parent": null,
+   "cat": "sensor",
+   "kind": "component",
+   "default": true,
+   "desc": "The antenna for the GNSS board. It sits on the dash under the windshield, where it sees most of the sky, and feeds the ZED-F9R through a thin coaxial lead.",
+   "facts": [
+    [
+     "Bands",
+     "multi-band L1/L2, as the ZED-F9R needs"
+    ],
+    [
+     "Placement",
+     "dash top near the glass, passenger side; open-sky course preferred"
+    ],
+    [
+     "Mount",
+     "magnetic base on a pad: nothing bonded"
+    ],
+    [
+     "Cost",
+     "$300–380 (range; plan line \"u-blox ZED-F9R board (SparkFun) + antenna\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "dash top near the glass, passenger side",
+   "short": "GNSS antenna"
+  },
+  {
+   "id": "zedF9r",
+   "name": "u-blox ZED-F9R GNSS board",
+   "parent": null,
+   "cat": "sensor",
+   "kind": "component",
+   "default": true,
+   "desc": "Satellite positioning with its own inertial unit. egod uses its Doppler speed as the unbiased reference, its heading and clock for the sun-watch rule, and its dead reckoning to ride through tunnels and tree cover. It is also the speed shown in the HUD's speed block.",
+   "facts": [
+    [
+     "Output",
+     "fused speed, heading and position at ≤ 30 Hz"
+    ],
+    [
+     "Accuracy",
+     "velocity 0.05 m/s; heading 0.2°; dead reckoning ≈ 2% of distance"
+    ],
+    [
+     "Role",
+     "unbiased speed reference for age compensation; heading and time for the sun-watch rule"
+    ],
+    [
+     "Latency",
+     "unspecified by u-blox (≈ 12 ms reported by one user): measured with the LED test"
+    ],
+    [
+     "Fallback",
+     "NEO-M9N ($71, 25 Hz, no dead reckoning)"
+    ],
+    [
+     "Speed shown",
+     "within 1 m/s of a reference GNSS trace while moving; dash without a fix"
+    ],
+    [
+     "Cost",
+     "$300–380 (range; plan line \"u-blox ZED-F9R board (SparkFun) + antenna\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "passenger footwell, beside the Jetson",
+   "short": "ZED-F9R GNSS board"
+  },
+  {
+   "id": "jetson",
+   "name": "Seeed reComputer J4012 (Jetson Orin NX)",
+   "parent": null,
+   "cat": "compute",
+   "kind": "component",
+   "default": true,
+   "desc": "The only computer in the car. It runs every HUD process: stereo depth and the ground plane, the lane and object networks, ego-motion, head tracking, the 60 Hz renderer and the logs. It drives the panel over its single HDMI port and streams the audience view over Ethernet.",
+   "facts": [
+    [
+     "Module",
+     "Jetson Orin NX 16 GB (8-core Arm, 1024-core Ampere GPU)"
+    ],
+    [
+     "Carrier",
+     "Seeed J401: 1x HDMI 2.1, no DisplayPort, 4x USB 3.2, GbE, CAN (unused)"
+    ],
+    [
+     "Power",
+     "9–19 V input, from the ignition-sensed DC-DC"
+    ],
+    [
+     "Mode",
+     "MAXN; Seeed says the carrier cannot cool MAXN SUPER"
+    ],
+    [
+     "Software",
+     "JetPack 6.2 (Ubuntu 22.04, Python 3.10, TensorRT 10)"
+    ],
+    [
+     "GPU budget",
+     "24–50 ms serial per frame (ASSUMED except ZED depth and YOLO11s); 33 ms at 30 Hz"
+    ],
+    [
+     "Cited",
+     "ZED NEURAL_LIGHT 23% / NEURAL 59% GPU at 30 fps; YOLO11s FP16 7.9 ms"
+    ],
+    [
+     "State",
+     "Recorded 2026-10-07 on JetPack 5.1.3; unreachable since: verify before flashing"
+    ],
+    [
+     "Cost",
+     "owned"
+    ]
+   ],
+   "where": "passenger footwell bracket",
+   "short": "Jetson Orin NX"
+  },
+  {
+   "id": "controller",
+   "name": "HUD controller (RP2040) and sensors",
+   "parent": null,
+   "cat": "controller",
+   "kind": "component",
+   "default": true,
+   "desc": "A Raspberry Pi Pico that owns the HUD's analogue world: it reads ambient light and the cell temperature, drives the backlight and the sun shutter, and enforces the thermal and watchdog rules on its own, so a stuck Jetson cannot cook the panel.",
+   "facts": [
+    [
+     "MCU",
+     "Raspberry Pi Pico (RP2040), USB serial to controllerd at 10 Hz"
+    ],
+    [
+     "Inputs",
+     "TSL2591 or VEML7700 ambient light; 10 kΩ NTC on the cell; MAX31855 thermocouple for the sun test"
+    ],
+    [
+     "Outputs",
+     "backlight PWM above 2 kHz and analogue dim to the LED driver; shutter servo"
+    ],
+    [
+     "Dimming",
+     "night ceiling 257 cd/m² at the panel (2.6% of full) up to full at ≥ 10,000 lux; 1 s update, 1 s ramp"
+    ],
+    [
+     "Fail-safe",
+     "above threshold 1 halve the duty; above threshold 2 backlight off and shutter closed; USB silent 5 s, the same"
+    ],
+    [
+     "Thresholds",
+     "set from the bought panel's rating (not published for the kit); values shown here are examples"
+    ],
+    [
+     "Cost",
+     "$40–80 (range; plan line \"HUD controller: RP2040, sensors, shutter servo\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "beside the housing, ambient sensor at the dust cover",
+   "short": "HUD controller"
+  },
+  {
+   "id": "ledDriver",
+   "name": "Constant-current LED driver",
+   "parent": null,
+   "cat": "controller",
+   "kind": "component",
+   "default": true,
+   "desc": "Holds the backlight LEDs at a constant current, whatever their temperature, and dims them in two ways: an analogue level that lowers the current, and PWM that switches it on and off thousands of times a second.",
+   "facts": [
+    [
+     "Type",
+     "constant-current buck with analogue + PWM dimming (Recom RCD-24 class, about $18)"
+    ],
+    [
+     "PWM",
+     "above 2 kHz to avoid a beat with the cameras; Mean Well NLDD-H rejected (PWM ≤ 1 kHz)"
+    ],
+    [
+     "LED power",
+     "12.6 W Lambertian design; 6.3 W with prism films (gain 2, ASSUMED)"
+    ],
+    [
+     "Supply",
+     "12 V rail from the DC-DC converter"
+    ],
+    [
+     "Current variant",
+     "0.70 A shown (example); choose with the LED string"
+    ],
+    [
+     "Cost",
+     "$150–300 (estimate; plan line \"Backlight: LEDs, driver, films, heat sink, fan\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "behind the housing",
+   "short": "LED driver"
+  },
+  {
+   "id": "dcdc",
+   "name": "Mini-Box DCDC-USB-200 converter",
+   "parent": null,
+   "cat": "power",
+   "kind": "component",
+   "default": true,
+   "desc": "Sits between the car's 12 V accessory feed and the Jetson. It watches the ignition line: on key-on it powers up; on key-off it waits a set delay, tells the Jetson to shut down cleanly, then cuts power. It also cuts out if the battery sags below 11.2 V.",
+   "facts": [
+    [
+     "Job",
+     "ignition-sensed 12 V supply with configurable shutdown delays and a deep-discharge cut-off"
+    ],
+    [
+     "Cut-off",
+     "11.2 V"
+    ],
+    [
+     "Feeds",
+     "the Jetson (9–19 V input) and the LED driver"
+    ],
+    [
+     "Why",
+     "a bare converter would corrupt the Jetson's filesystem at key-off"
+    ],
+    [
+     "Vehicle link",
+     "only the fused 12 V accessory feed; no wire to any vehicle bus"
+    ],
+    [
+     "Cost",
+     "$89 (firm; plan line \"DC-DC converter with ignition sense\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "under the dash, centre",
+   "short": "DC-DC converter"
+  },
+  {
+   "id": "fuseTap",
+   "name": "12 V plug and inline fuse",
+   "parent": null,
+   "cat": "power",
+   "kind": "component",
+   "default": true,
+   "desc": "The single connection to the car: a plug in the accessory socket with a fuse in the positive lead. Everything else in the HUD runs from the converter downstream of it.",
+   "facts": [
+    [
+     "Role",
+     "the only vehicle interface: a fused, ignition-sensed 12 V accessory feed"
+    ],
+    [
+     "Load",
+     "about 3 A at 12 V (estimate: Jetson ≤ 25 W plus 12.6 W of LEDs)"
+    ],
+    [
+     "Fuse",
+     "sized to the measured draw (7.5 A shown as an example)"
+    ],
+    [
+     "Checklist",
+     "fuse in place, no connector to any vehicle bus, signed before each drive"
+    ],
+    [
+     "Cost",
+     "$90–120 (range; plan line \"USB-C PD charger, Ethernet switch, cables\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "centre-console 12 V accessory socket, fused",
+   "short": "12 V plug + fuse"
+  },
+  {
+   "id": "pdCharger",
+   "name": "USB-C PD car charger",
+   "parent": null,
+   "cat": "power",
+   "kind": "component",
+   "default": true,
+   "desc": "Powers the passenger-side audience display chain, so it does not load the Jetson's converter.",
+   "facts": [
+    [
+     "Feeds",
+     "mini PC 2 and monitor 2 (audience view)"
+    ],
+    [
+     "Check",
+     "that the mini PC accepts USB-C PD input (many take a barrel jack) (UNVERIFIED)"
+    ],
+    [
+     "Cost",
+     "$90–120 (range; plan line \"USB-C PD charger, Ethernet switch, cables\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "second accessory socket",
+   "short": "USB-C PD charger"
+  },
+  {
+   "id": "ethSwitch",
+   "name": "Gigabit Ethernet switch",
+   "parent": null,
+   "cat": "network",
+   "kind": "component",
+   "default": true,
+   "desc": "A small gigabit switch that links the Jetson to the passenger-side mini PC, which shows the audience view on the second monitor.",
+   "facts": [
+    [
+     "Role",
+     "Ethernet link from the Jetson to mini PC 2 for the audience view"
+    ],
+    [
+     "Stream",
+     "MJPEG over HTTP at 15 Hz (the J401 has one HDMI port, used by the panel)"
+    ],
+    [
+     "Power",
+     "USB or 12 V from the PD charger side of the wiring"
+    ],
+    [
+     "Cost",
+     "$90–120 (range; plan line \"USB-C PD charger, Ethernet switch, cables\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "passenger footwell",
+   "short": "Ethernet switch"
+  },
+  {
+   "id": "miniPC",
+   "name": "Mini PC 2 (audience view)",
+   "parent": null,
+   "cat": "network",
+   "kind": "component",
+   "default": true,
+   "desc": "One of the two owned x86 mini PCs. In the car, unit 2 receives the Jetson's audience stream over Ethernet and shows it on the passenger-side monitor; on the bench, it renders recorded logs for regression clips.",
+   "facts": [
+    [
+     "Unit 1",
+     "x86 renderer bench and CI: topic replay, hudd from logs, clip tool, unit tests"
+    ],
+    [
+     "Unit 2",
+     "audience view in the car (Ethernet stream to monitor 2) and nightly clip regressions"
+    ],
+    [
+     "GPU",
+     "no CUDA: no perception on these"
+    ],
+    [
+     "Cost",
+     "owned (two units)"
+    ]
+   ],
+   "where": "behind the passenger seat",
+   "short": "Mini PC 2"
+  },
+  {
+   "id": "monitor",
+   "name": "Monitor 2 (audience view)",
+   "parent": null,
+   "cat": "network",
+   "kind": "component",
+   "default": true,
+   "desc": "One of the two owned 16-inch 4K monitors. Unit 2 shows the audience view: the rendered HUD frame, the driver camera with the eye point, and live registration, age and contrast numbers.",
+   "facts": [
+    [
+     "Panel",
+     "16-inch 3840 × 2400, 277 ppi, 1,200 cd/m² peak"
+    ],
+    [
+     "Unit 1",
+     "Stage 0/1 picture generator (80 × 40 mm crop), Phase 3 footwell display"
+    ],
+    [
+     "Unit 2",
+     "audience and debug display on the passenger side"
+    ],
+    [
+     "Through a 30% combiner",
+     "360 cd/m² at the eye (24% of the sky target)"
+    ],
+    [
+     "Cost",
+     "owned (two units)"
+    ]
+   ],
+   "where": "back of the passenger headrest, for the audience",
+   "short": "Monitor 2"
+  },
+  {
+   "id": "cables_power",
+   "name": "12 V and DC power (4)",
+   "parent": null,
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "12 V and DC power runs, as routed in the car.",
+   "facts": [],
+   "where": "",
+   "short": "12 V and DC power (4)"
+  },
+  {
+   "id": "cable_p12",
+   "name": "12 V accessory feed, fused, to the DC-DC converter",
+   "parent": "cables_power",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "12 V accessory feed, fused, to the DC-DC converter.",
+   "facts": [
+    [
+     "Length as routed",
+     "0.74 m"
+    ]
+   ],
+   "where": "",
+   "short": "12 V → DC-DC"
+  },
+  {
+   "id": "cable_pJetson",
+   "name": "Converter output to the Jetson (9–19 V input)",
+   "parent": "cables_power",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "Converter output to the Jetson (9–19 V input).",
+   "facts": [
+    [
+     "Length as routed",
+     "0.27 m"
+    ]
+   ],
+   "where": "",
+   "short": "DC-DC → Jetson"
+  },
+  {
+   "id": "cable_pLed",
+   "name": "Converter output to the LED driver",
+   "parent": "cables_power",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "Converter output to the LED driver.",
+   "facts": [
+    [
+     "Length as routed",
+     "1.04 m"
+    ]
+   ],
+   "where": "",
+   "short": "DC-DC → LED driver"
+  },
+  {
+   "id": "cable_pdPC",
+   "name": "USB-C PD to mini PC 2 and monitor 2",
+   "parent": "cables_power",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "USB-C PD to mini PC 2 and monitor 2.",
+   "facts": [
+    [
+     "Length as routed",
+     "1.27 m"
+    ]
+   ],
+   "where": "",
+   "short": "PD charger → mini PC"
+  },
+  {
+   "id": "cables_usb",
+   "name": "USB (4)",
+   "parent": null,
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "USB runs, as routed in the car.",
+   "facts": [],
+   "where": "",
+   "short": "USB (4)"
+  },
+  {
+   "id": "cable_usbZed",
+   "name": "ZED 2i USB 3 to the Jetson",
+   "parent": "cables_usb",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "ZED 2i USB 3 to the Jetson.",
+   "facts": [
+    [
+     "Length as routed",
+     "2.83 m"
+    ]
+   ],
+   "where": "",
+   "short": "ZED 2i → Jetson"
+  },
+  {
+   "id": "cable_usbOak",
+   "name": "OAK-D Pro USB 3 to the Jetson",
+   "parent": "cables_usb",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "OAK-D Pro USB 3 to the Jetson.",
+   "facts": [
+    [
+     "Length as routed",
+     "1.26 m"
+    ]
+   ],
+   "where": "",
+   "short": "OAK-D → Jetson"
+  },
+  {
+   "id": "cable_usbGnss",
+   "name": "ZED-F9R USB to the Jetson",
+   "parent": "cables_usb",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "ZED-F9R USB to the Jetson.",
+   "facts": [
+    [
+     "Length as routed",
+     "0.12 m"
+    ]
+   ],
+   "where": "",
+   "short": "GNSS board → Jetson"
+  },
+  {
+   "id": "cable_video",
+   "name": "USB-C video, mini PC 2 to monitor 2",
+   "parent": "cables_usb",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "USB-C video, mini PC 2 to monitor 2.",
+   "facts": [
+    [
+     "Length as routed",
+     "0.69 m"
+    ]
+   ],
+   "where": "",
+   "short": "Mini PC → monitor"
+  },
+  {
+   "id": "cables_hdmi",
+   "name": "HDMI video (1)",
+   "parent": null,
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "HDMI video runs, as routed in the car.",
+   "facts": [],
+   "where": "",
+   "short": "HDMI video (1)"
+  },
+  {
+   "id": "cable_hdmi",
+   "name": "HDMI, Jetson to the panel board (1920 × 1080 at 60 Hz)",
+   "parent": "cables_hdmi",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "HDMI, Jetson to the panel board (1920 × 1080 at 60 Hz).",
+   "facts": [
+    [
+     "Length as routed",
+     "1.09 m"
+    ]
+   ],
+   "where": "",
+   "short": "Jetson → panel board"
+  },
+  {
+   "id": "cables_eth",
+   "name": "Ethernet (1)",
+   "parent": null,
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "Ethernet runs, as routed in the car.",
+   "facts": [],
+   "where": "",
+   "short": "Ethernet (1)"
+  },
+  {
+   "id": "cable_eth",
+   "name": "Ethernet, Jetson to the switch to mini PC 2 (audience stream)",
+   "parent": "cables_eth",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "Ethernet, Jetson to the switch to mini PC 2 (audience stream).",
+   "facts": [
+    [
+     "Length as routed",
+     "1.13 m"
+    ]
+   ],
+   "where": "",
+   "short": "Jetson → mini PC"
+  },
+  {
+   "id": "cables_serial",
+   "name": "USB serial (1)",
+   "parent": null,
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "USB serial runs, as routed in the car.",
+   "facts": [],
+   "where": "",
+   "short": "USB serial (1)"
+  },
+  {
+   "id": "cable_serial",
+   "name": "USB serial, Jetson to the HUD controller",
+   "parent": "cables_serial",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "USB serial, Jetson to the HUD controller.",
+   "facts": [
+    [
+     "Length as routed",
+     "1.30 m"
+    ]
+   ],
+   "where": "",
+   "short": "Jetson → controller"
+  },
+  {
+   "id": "cables_rf",
+   "name": "GNSS coax (1)",
+   "parent": null,
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "GNSS coax runs, as routed in the car.",
+   "facts": [],
+   "where": "",
+   "short": "GNSS coax (1)"
+  },
+  {
+   "id": "cable_rfGnss",
+   "name": "GNSS antenna coax to the ZED-F9R",
+   "parent": "cables_rf",
+   "cat": "cables",
+   "kind": "cable",
+   "default": true,
+   "desc": "GNSS antenna coax to the ZED-F9R.",
+   "facts": [
+    [
+     "Length as routed",
+     "1.11 m"
+    ]
+   ],
+   "where": "",
+   "short": "Antenna → GNSS board"
+  },
+  {
+   "id": "windshield",
+   "name": "Windshield (the combiner)",
+   "parent": null,
+   "cat": "optics",
+   "kind": "component",
+   "default": false,
+   "desc": "The car's stock laminated windshield is the HUD's final reflector. Its inner surface reflects about a quarter of the s-polarised image toward the eye; the outer surface reflects a second, parallel copy offset by 3.1 mm. At a 7.5 m image that is 1.4 arcminutes, about two pixels, so the plan keeps the stock glass and draws thick lines and area fills.",
+   "facts": [
+    [
+     "s reflectance at 65°",
+     "23.6%"
+    ],
+    [
+     "p reflectance at 65°",
+     "1.2% (ratio 19)"
+    ],
+    [
+     "Brewster angle",
+     "56.7°"
+    ],
+    [
+     "Laminate",
+     "4.96 mm = 2.1 + 0.76 + 2.1 (ASSUMED)"
+    ],
+    [
+     "Ghost offset",
+     "3.1 mm → 1.4′ at 7.5 m"
+    ],
+    [
+     "Ghost brightness",
+     "58% of the main image"
+    ],
+    [
+     "Both surfaces counted",
+     "37%"
+    ],
+    [
+     "Wedge-PVB windshield",
+     "$600–1,500, only if the Stage 2 photo needs it"
+    ]
+   ],
+   "where": "rake 28° (ASSUMED); the HUD reflects off its inner surface",
+   "short": "Windshield"
+  },
+  {
+   "id": "lightPath",
+   "name": "Traced light path, panel to eye",
+   "parent": null,
+   "cat": "optics",
+   "kind": "overlay",
+   "default": true,
+   "desc": "Rays traced back from the eye box through the corners and centre of the 10.8° × 5.4° window: eye ← windshield ← concave mirror ← fold ← panel. Light travels the other way.",
+   "facts": [
+    [
+     "Eye to glass",
+     "750 mm (ASSUMED)"
+    ],
+    [
+     "Glass to mirror",
+     "310 mm (simulation; the plan's 250 mm does not clear the glass)"
+    ],
+    [
+     "Panel to mirror (u)",
+     "316 mm"
+    ],
+    [
+     "Mirror focal length",
+     "330 mm"
+    ],
+    [
+     "Virtual image",
+     "7.5 m ahead (plan)"
+    ]
+   ],
+   "where": "",
+   "short": "Light path"
+  },
+  {
+   "id": "eyeBox",
+   "name": "Eye box, 130 × 70 mm",
+   "parent": null,
+   "cat": "optics",
+   "kind": "overlay",
+   "default": true,
+   "desc": "The region the driver's eyes can move in and still see the whole window, centred on the nominal eye point 1.22 m above the road.",
+   "facts": [
+    [
+     "Design",
+     "130 × 70 mm"
+    ],
+    [
+     "Requirement",
+     "≥ 120 × 60 mm without tracking"
+    ]
+   ],
+   "where": "driver's eye point",
+   "short": "Eye box"
+  },
+  {
+   "id": "stage0Rig",
+   "name": "Stage 0 bench rig",
+   "parent": null,
+   "cat": "bench",
+   "kind": "component",
+   "default": true,
+   "desc": "The first optics are a desk rig for software: the panel lies face-up in a black enclosure under a 70/30 teleprompter beamsplitter at 45°. A camera or the developer's eye looks through the glass and sees the panel reflected, floating over whatever is behind. There is no virtual distance and no windshield; it tests the renderer, colours and latency, not the optics.",
+   "facts": [
+    [
+     "Beamsplitter",
+     "70/30 teleprompter glass at 45°; the first number is usually the transmitted share (verify with the vendor)"
+    ],
+    [
+     "Virtual image",
+     "about 0.6 m from the camera (no magnification)"
+    ],
+    [
+     "Purpose",
+     "projection maths, colour and alpha, latency instrumentation"
+    ],
+    [
+     "Luminance through it",
+     "360 cd/m² from the 1,200-nit monitor (24% of the sky target)"
+    ],
+    [
+     "Price",
+     "$110–1,030 (range)"
+    ]
+   ],
+   "where": "bench (not installed in the car)",
+   "short": "Stage 0 rig"
+  },
+  {
+   "id": "stage1Rig",
+   "name": "Stage 1 Fresnel and combiner rig",
+   "parent": null,
+   "cat": "bench",
+   "kind": "component",
+   "default": true,
+   "desc": "Before the custom mirror exists, a 300 mm Fresnel lens makes the virtual image: the panel sits 280 mm below it, inside its 300 mm focal length, like an object under a magnifying glass. A free-standing combiner glass above the dash folds the light to the driver. It tests registration at a 4.2 m image at night and in overcast light.",
+   "facts": [
+    [
+     "Lens",
+     "Fresnel, 300 mm square, f = 300 mm; panel at u = 280 mm"
+    ],
+    [
+     "Virtual image",
+     "v = 4.2 m on the panel side; M = 15"
+    ],
+    [
+     "Image",
+     "1.2 m × 0.6 m, 16° × 8°, 54 px/deg on the monitor"
+    ],
+    [
+     "Combiner",
+     "70/30 teleprompter glass above the dash (30% reflected)"
+    ],
+    [
+     "Luminance",
+     "360 cd/m² from the monitor: night and overcast only"
+    ],
+    [
+     "Price",
+     "Fresnel $160–320 (range)"
+    ]
+   ],
+   "where": "bench (not installed in the car)",
+   "short": "Stage 1 rig"
+  },
+  {
+   "id": "panelKit",
+   "name": "5.5-inch HDMI panel kit, as unboxed",
+   "parent": null,
+   "cat": "bench",
+   "kind": "component",
+   "default": true,
+   "desc": "The picture generator starts as a hobby HDMI kit: a 5.5-inch 1920 × 1080 IPS panel with its stock edge-lit backlight and an HDMI-to-MIPI driver board. The plan buys two; one stays stock for Stage 0 and as a spare, the other is taken apart so only a 60 × 30 mm crop of its cell is lit by the custom backlight.",
+   "facts": [
+    [
+     "Active area",
+     "121.8 × 68.5 mm (ASSUMED from the 5.5-inch diagonal)"
+    ],
+    [
+     "Resolution, pitch",
+     "1920 × 1080, 63.4 µm"
+    ],
+    [
+     "Stock luminance",
+     "450 cd/m² (vendor); 87 cd/m² at the eye through the windshield path"
+    ],
+    [
+     "Interface",
+     "HDMI in, MIPI DSI to the panel over a 40-pin FPC; 5 V on micro-USB"
+    ],
+    [
+     "Price",
+     "$95 each; panels line $190–265 (range)"
+    ],
+    [
+     "Why this panel",
+     "the only small 1080p HDMI kit found; no 5-inch 1080p kit exists"
+    ],
+    [
+     "Stock backlight",
+     "edge-lit light guide, a few hundred cd/m²; removed for Stage 2"
+    ]
+   ],
+   "where": "bench (not installed in the car)",
+   "short": "Panel kit (unboxed)"
+  },
+  {
+   "id": "latencyProbe",
+   "name": "Latency probe (photodiode + LED)",
+   "parent": null,
+   "cat": "bench",
+   "kind": "component",
+   "default": true,
+   "desc": "Measures motion-to-photon latency end to end. The Pico flashes an LED in front of the road camera; perception sees it, hudd flips a test marker, and a photodiode on the panel catches the change. The time between is the latency the age compensation must cover.",
+   "facts": [
+    [
+     "Method",
+     "flash an LED at the road camera; time the panel change with a photodiode"
+    ],
+    [
+     "Target",
+     "whole chain ≤ 90 ms; estimate 37–99 ms uncompensated"
+    ],
+    [
+     "Bench mode",
+     "a synthetic lanes step measures renderer + panel alone"
+    ],
+    [
+     "Cross-check",
+     "the age hudd reports in hudStats"
+    ],
+    [
+     "Why",
+     "replay has no live latency: only this test measures the real chain"
+    ],
+    [
+     "Cost",
+     "$300 (estimate; plan line \"Latency probe, rangefinder, target board\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "bench (not installed in the car)",
+   "short": "Latency probe"
+  },
+  {
+   "id": "lumMeter",
+   "name": "Spot luminance meter on tripod",
+   "parent": null,
+   "cat": "bench",
+   "kind": "component",
+   "default": true,
+   "desc": "Proves the contrast criterion. From the eye point it reads the luminance of a white patch in the virtual image and of the sky or road behind it; the ratio must reach 1.15 at noon.",
+   "facts": [
+    [
+     "Instrument",
+     "Konica Minolta LS-150: 1° spot, focus 1 m to ∞, ≈ $3,900 (assumed instrument)"
+    ],
+    [
+     "Budget option",
+     "Sekonic L-858D, $689, 1° spot, if it can focus on a virtual image (UNVERIFIED)"
+    ],
+    [
+     "Sky target",
+     "≥ 1,500 cd/m² at the eye at noon (contrast 1.15 vs 10,000)"
+    ],
+    [
+     "Road target",
+     "≥ 750 cd/m² against sunlit asphalt (5,000 ASSUMED)"
+    ],
+    [
+     "Design",
+     "1,944 cd/m² at the eye: 10,000 at the panel × 19.4% path"
+    ],
+    [
+     "Night",
+     "white ≤ 50 cd/m²; unlit window ≤ 0.1 cd/m²"
+    ],
+    [
+     "Last resort",
+     "a calibrated camera, within about 20% above 5,000 cd/m²"
+    ],
+    [
+     "Cost",
+     "$690–4,000 (range; plan line \"Luminance meter (spot meter to lab meter)\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "bench (not installed in the car)",
+   "short": "Luminance meter"
+  },
+  {
+   "id": "targetBoard",
+   "name": "30 m registration target board",
+   "parent": null,
+   "cat": "bench",
+   "kind": "component",
+   "default": true,
+   "desc": "A surveyed target set 30 m in front of the car. The road camera detects its rings while a camera at the eye point photographs the rendered markers over them; the difference is the registration error.",
+   "facts": [
+    [
+     "Use",
+     "refines the nominal eye point (calibration step 1) and checks static registration"
+    ],
+    [
+     "Criterion",
+     "static registration at 30 m ≤ 0.5°; ≤ 0.3° under ±75 mm head motion"
+    ],
+    [
+     "Method",
+     "camera at the eye point vs the surveyed board; marker from the road camera's detection and from the survey"
+    ],
+    [
+     "Before demos",
+     "target check for camera-mount drift"
+    ],
+    [
+     "Cost",
+     "$300 (estimate; plan line \"Latency probe, rangefinder, target board\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "bench (not installed in the car)",
+   "short": "Target board"
+  },
+  {
+   "id": "rangefinder",
+   "name": "Laser rangefinder",
+   "parent": null,
+   "cat": "bench",
+   "kind": "component",
+   "default": true,
+   "desc": "Surveys distances for calibration: the target board at 30 m and the reference ranges the stereo depth is scored against.",
+   "facts": [
+    [
+     "Use",
+     "surveys the 30 m target board and range checks for the stereo depth"
+    ],
+    [
+     "Plan check",
+     "range within 10% of the stereo median (Phase 1 score)"
+    ],
+    [
+     "Cost",
+     "$300 (estimate; plan line \"Latency probe, rangefinder, target board\", last seen 2026-10-21)"
+    ]
+   ],
+   "where": "bench (not installed in the car)",
+   "short": "Rangefinder"
+  },
+  {
+   "id": "carBody",
+   "name": "Car body shell",
+   "parent": null,
+   "cat": "vehicle",
+   "kind": "context",
+   "default": false,
+   "desc": "The car the HUD is installed in (a generic left-hand-drive sedan from the simulator).",
+   "facts": [],
+   "where": "",
+   "short": "Body shell"
+  },
+  {
+   "id": "carInterior",
+   "name": "Dashboard, seats and trim",
+   "parent": null,
+   "cat": "vehicle",
+   "kind": "context",
+   "default": false,
+   "desc": "Dash, centre stack, column shroud, steering wheel, seats and rear-view mirror.",
+   "facts": [],
+   "where": "",
+   "short": "Dash, seats, trim"
+  },
+  {
+   "id": "driver",
+   "name": "Driver",
+   "parent": null,
+   "cat": "vehicle",
+   "kind": "context",
+   "default": false,
+   "desc": "The driver mannequin, eyes at the nominal eye point.",
+   "facts": [],
+   "where": "",
+   "short": "Driver"
+  },
+  {
+   "id": "wheels",
+   "name": "Wheels",
+   "parent": null,
+   "cat": "vehicle",
+   "kind": "context",
+   "default": false,
+   "desc": "Wheels, tyres and brakes.",
+   "facts": [],
+   "where": "",
+   "short": "Wheels"
+  }
+ ]
+}

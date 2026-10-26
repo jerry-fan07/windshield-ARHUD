@@ -1,0 +1,125 @@
+<section>
+  <h2 id="b11"><span class="num">B11</span>Print and assemble the housing</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Holds the optics in alignment, keeps stray light and dust out, carries the shutter, lifts off the dash (2.1, 2.7, 2.12)</div>
+    <div><b>Weeks</b>5–9 (about {{cad_hours}} printer hours; start as soon as the CAD is regenerated for the car)</div>
+    <div><b>Closes</b>No gate; B12 checks the assembled housing with the optics</div>
+    <div><b>Needs</b>B1's trace and dash measurements in the CAD; the fold-to-panel decision below</div>
+    <div><b>Produces</b>An assembled, empty housing with its shutter, dust cover and light-sensor pod</div>
+    <div><b>People</b>Builder; access to an enclosed printer</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> The optics only work if four parts hold their positions to a fraction of a millimetre and a fraction of a degree: the panel, the fold, the mirror and the opening under the glass. The housing is the frame that holds them, a dark box that stops sunlight and cabin light from reaching the eye by any path except the intended one, and the support for the shutter that protects the panel. It is printed in {{cad_pieces}} pieces because the envelope ({{cad_size}} mm) is larger than any desktop printer.</p>
+  <figure>[[IMG arhud-cad/out/preview/assembled.png|The assembled housing, rendered from the CAD]]<figcaption><b>Figure B11.1.</b> The assembled housing (CAD render). The lid's large opening carries the dust-cover glass; the light-sensor pod sits behind it.</figcaption></figure>
+
+  <h3>B11.1 Decide the fold height, then regenerate</h3>
+  <div class="box">
+    <p class="h"><span class="tag solid">decision</span> Fold-to-panel spacing: {{lay_fold_to_panel}} mm (as modelled) or 65–70 mm</p>
+    <p>The CAD's beam check finds {{cad_panel_rays}} of its {{cad_rays}} traced rays passing through the front edge of the panel's own cell glass. They are rays from the top of the eye box to the top of the window: with the fold only {{lay_fold_to_panel}} mm over the panel, the mirror-to-fold leg skims the panel's front edge. At 65–70 mm the leg clears with margin; the panel moves about 14–19 mm forward and 20–27 mm down. Recommended: 65 mm. Change <code>FOLD_TO_PANEL</code> in <code>docs/arhud-sim/js/geom.js</code> (with B1's car values already in), then in <code>docs/arhud-cad</code> run <code>node dump_layout.mjs</code> and <code>make.py</code>, and confirm the report shows 0 blocked rays and 0 panel-glass rays. Keeping 50 mm means the top of the window vignettes from the top of the eye box.</p>
+  </div>
+  <ol class="steps">
+    <li>Confirm <code>make.py</code> reports: beam 0 blocked; panel-glass rays 0 (after the decision); windshield clearance ≥ 8 mm; hood and dash clearances positive for the measured car; no overlapping parts; every printed part fits the printer.<span class="chk"><code>make.py</code> report saved in the log</span></li>
+    <li>Open <code>out/BOM.md</code>; it is the list to print and to buy against. The STL files in <code>out/stl/</code> are already oriented on their print faces and yawed to fit the bed.</li>
+  </ol>
+
+  <h3>B11.2 Printing</h3>
+  [[TBL printed]]
+  <table class="tight">
+    <thead><tr><th style="width:30%">Setting</th><th>Value and reason</th></tr></thead>
+    <tbody>
+      <tr><td>Material</td><td>ASA, matte black, about 5 kg (the solid mass is {{cad_mass_kg}} kg before infill savings; buy margin for failed prints). ASA holds to about 95 °C; dash tops pass 80 °C in summer sun and PETG softens near 75 °C. Grommets in TPU 95A.</td></tr>
+      <tr><td>Printer</td><td>Enclosed, 250 mm cube or larger, hardened or brass 0.4 mm nozzle, with extraction or in a ventilated room</td></tr>
+      <tr><td>Temperatures</td><td>Follow the filament maker's sheet; ASA typically prints at 240–260 °C nozzle, 90–110 °C bed, enclosure warm, part-cooling fan low</td></tr>
+      <tr><td>Layers and walls</td><td>0.2 mm layers; at least 4 perimeters everywhere an insert goes (the inserts need solid plastic around them); 4 top and bottom layers; 25–40% gyroid infill</td></tr>
+      <tr><td>Adhesion and warping</td><td>Brim of 5–8 mm on the body quarters and lid pieces; draught-free enclosure; let parts cool in the closed printer</td></tr>
+      <tr><td>Supports</td><td>Only where the table says so (fold bracket and mirror stand: tree supports under one feature)</td></tr>
+      <tr><td>Check each part</td><td>Measure two critical dimensions per part against the STL with calipers; reprint any part warped by more than 0.5 mm over its length</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B11.3 Bought and sheet parts, and fasteners</h3>
+  <table class="tight">
+    <thead><tr><th style="width:30%">Part</th><th style="width:6%">Qty</th><th>Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Levelling feet</td><td>4</td><td>M5 threaded rubber levelling foot, 20 mm pad</td></tr>
+      <tr><td>Shutter leaves, rear and front</td><td>2</td><td>0.5 mm aluminium 5052, laser cut from <code>out/shutter-leaves.dxf</code>, black anodised (send to a laser-cutting service; deburr the edges)</td></tr>
+      <tr><td>Dust-cover glass</td><td>1</td><td>3 mm float glass, {{cad_glass_l}} × {{cad_glass_w}} mm (the BOM rounds to 270 × 270), arrised edges, s-pass polariser laminated underneath (B10)</td></tr>
+      <tr><td>Foam gasket tape</td><td>2 m</td><td>3 × 2 mm closed-cell, black, for the glass rebate</td></tr>
+      <tr><td>VHB tape</td><td>1 roll</td><td>For the light-trap vanes</td></tr>
+      <tr><td>Black flock paper (optional)</td><td>1 sheet</td><td>Inside the mirror bay's side walls if the vanes are not enough</td></tr>
+    </tbody>
+  </table>
+  [[TBL fasteners]]
+  <p class="small">Two rows of the CAD's hardware list carry M3 sizes for screws its own names describe differently: the HDMI board's four screws ("M2.5 self-tapping") and the servo's two tab screws ("M2 self-tapping"). Buy M2.5 × 6 and M2 × 8 self-tapping screws for those (an SG90 usually comes with its own).</p>
+
+  <h3>B11.4 Assembly, step by step</h3>
+  <p>The eighteen steps below are the CAD's own build order. Each lists the parts and fasteners it uses, drawn directly from the CAD data. Work on a clean, soft surface; the body quarters are large and their seam strips are the light seals, so keep them free of debris.</p>
+  <figure>[[IMG arhud-cad/out/preview/exploded.png|Exploded view of the housing]]<figcaption><b>Figure B11.2.</b> Exploded view (CAD render): body quarters at the bottom, the PGU bay and fold bracket in the middle, the mirror stand and strongback at the front, the lid pieces, rails, leaves and glass above.</figcaption></figure>
+
+  <h4>Step 1 · Heat-set inserts</h4>
+  <p>Print the four body quarters (side wall down, no supports). Press brass inserts into every boss with the insert tip at 245 °C: seams, cap tabs, feet, bay and stand mounts. Hold the iron square to the hole, let the insert sink under its own weight plus light pressure until it is flush, lift the iron straight out, and press the insert flat with a cool flat tool for five seconds. An insert that tilts more than about 2° is reheated and straightened before it cools.</p>
+  [[TBL cadstep_inserts]]
+  <h4>Step 2 · Join the body</h4>
+  <p>Bolt the quarters together along the internal seam strips with M3 button screws into the inserts. Snug the screws in a cross pattern, then tighten; do not strip the inserts. The rear quarters' front strip is the stray-light baffle, 6 mm under the lowest mirror-to-fold ray; the continuous strips keep light out of the seams. Hold a torch inside in a dark room and look for light at the seams.<span class="chk">No light leaks at the seams</span></p>
+  [[TBL cadstep_body]]
+  <h4>Step 3 · Levelling feet</h4>
+  <p>Screw the four M5 rubber feet into the floor inserts. Set them on the car's dash later (B13) so the housing sits level and still, with about 14 mm under the floor for the fan's air.</p>
+  [[TBL cadstep_feet]]
+  <h4>Step 4 · PGU bay</h4>
+  <p>The sealed bay for the backlight's heat sink, fan and HDMI board bolts to the floor over the floor opening. The fan blows out through the grille in the duct; fresh air comes in through the slots fore and aft. The HDMI board stands on edge against the bay's right wall, its HDMI socket toward the floor. (The PGU itself goes in during B12.)</p>
+  [[TBL cadstep_bay]]
+  <h4>Step 5 · Cable grommets and access plugs</h4>
+  <p>Push the TPU grommets into the HDMI and LED-lead exits in the bay floor and the sensor-lead port in the left wall. The three printed plugs close the front-wall holes the ball-end key uses to reach the mirror adjusters; leave them out until B13's alignment is done.</p>
+  [[TBL cadstep_grommets]]
+  <h4>Step 6 · Panel carrier</h4>
+  <p>The carrier closes the bay. Its pocket holds the cell by its edges at the traced height, 0.5 mm over the backlight's cover glass. Test-fit it now; it is installed with the PGU in B12.</p>
+  [[TBL cadstep_carrier]]
+  <h4>Step 7 · Panel mask</h4>
+  <p>The mask clamps the cell's edges; its opening is the traced footprint on the panel plus 3 mm, so it never clips a ray from the eye box. In this guide the hot-mirror IR-cut plate sits on the mask over the opening (B10), held by the mask's screws through two thin printed strips or by black foam tape at its edges. Test-fit only.</p>
+  [[TBL cadstep_mask]]
+  <h4>Step 8 · Fold bracket</h4>
+  <p>The bracket holds the cold mirror over the panel at {{lay_fold_inc}}° incidence. Its cheeks stand on the carrier and share the bay's corner screws, so panel and fold are one rigid module. The absorber plate mounts on the tabs behind the glass with M3 screws and nuts. Test-fit; the glass goes in during B12.</p>
+  [[TBL cadstep_fold]]
+  <h4>Step 9 · Mirror stand</h4>
+  <p>The stand screws to the front floor across the centre seam. Its legs sit outboard of the adjusters so the key can reach every screw head.</p>
+  [[TBL cadstep_stand]]
+  <h4>Step 10 · Strongback and adjusters</h4>
+  <p>Press the three M4 inserts into the strongback. Fit the three M4 × 30 socket screws with their springs through the stand into the strongback (bed-levelling style: the springs push the strongback away from the stand, the screws pull it back). Set all three to the same height for now. The mirror is bonded to the strongback in B12 on three RTV pads.</p>
+  [[TBL cadstep_strongback]]
+  <h4>Step 11 · Mirror edge clips</h4>
+  <p>Two clips catch the mirror's bottom edge outside the traced footprint, in case the bond lets go. Fit them after the mirror (B12).</p>
+  [[TBL cadstep_clips]]
+  <h4>Step 12 · Light-trap vanes</h4>
+  <p>Stick the saw-tooth vanes to the side walls of the mirror bay with VHB tape, teeth facing the mirror. They trap sunlight that would otherwise light the walls the driver sees around the mirror.</p>
+  [[TBL cadstep_vanes]]
+  <h4>Step 13 · Lid pieces</h4>
+  <p>Print the four lid pieces face down. Press the short inserts for the shutter rails, glass clamps and lid laps, and the cap-to-body inserts. Join the pieces with their half laps and countersunk screws, so the underside the shutter runs on stays flat; check it with the straightedge.<span class="chk">Lid underside flat within 0.3 mm under the straightedge</span></p>
+  [[TBL cadstep_lid]]
+  <h4>Step 14 · Shutter rails and brackets</h4>
+  <p>Screw two rails per side under the lid, each with a slot for each leaf. Hang the servo bracket under the right rail and the spring's anchor post under the front rim. Mount the SG90 in its bracket; the servo body sits behind the pivot, out of the beam, and its lever runs under the leaves.</p>
+  [[TBL cadstep_rails]]
+  <h4>Step 15 · Shutter leaves</h4>
+  <p>Slide the two black-anodised leaves into the rails; the front leaf carries the slot the servo's lever pin drives. Hook the return spring between the front leaf and the anchor post: with no power, the spring pulls the shutter closed. Work the shutter by hand through its full travel twenty times; it must close on its own from any position.<span class="chk">Shutter closes under the spring alone from fully open, every time</span></p>
+  [[TBL cadstep_leaves]]
+  <h4>Step 16 · Lid onto the body</h4>
+  <p>Lower the lid so its spigot tabs drop inside the body walls; drive the M3 button screws through the walls into the tabs. No tools are needed to lift the whole housing off the dash, only to open it.</p>
+  [[TBL cadstep_capOn]]
+  <h4>Step 17 · Dust-cover glass</h4>
+  <p>Lay foam gasket tape in the lid's rebate. Place the glass, polariser side down and its pass axis across the car (B10), flush with the top. Fit the eight clamps over its edges and snug their screws evenly; do not stress the glass.</p>
+  [[TBL cadstep_glass]]
+  <h4>Step 18 · Light-sensor pod</h4>
+  <p>The TSL2591 board sits in its pod on the lid behind the glass, looking up through its 6 mm window; its lead runs down the left wall's channel to the grommet.</p>
+  [[TBL cadstep_als]]
+
+  <figure>[[IMG arhud-cad/out/preview/cutaway.png|Cutaway of the housing]]<figcaption><b>Figure B11.3.</b> Cutaway (CAD render): the PGU bay at the rear under the fold, the mirror on its stand at the front, the shutter under the lid opening.</figcaption></figure>
+
+  <h3>B11.5 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Body quarters warp or the seams gap</td><td>Lower the part-cooling fan, add brim, keep the enclosure closed until cool; sand seam strips flat; a bead of black silicone on the outside of a seam as a last resort.</td></tr>
+      <tr><td>Insert pulls out or spins</td><td>The boss needs more perimeters; reprint, or fill with epoxy and redrill for a self-tapping screw.</td></tr>
+      <tr><td>Shutter sticks</td><td>Rails not parallel or the lid not flat; shim a rail, deburr the leaves, a dry PTFE lubricant on the rails.</td></tr>
+      <tr><td>Housing does not fit the dash</td><td>Re-measure the profile, edit <code>hudcad/geo.py</code>, regenerate; the feet take up a few millimetres.</td></tr>
+    </tbody>
+  </table>
+</section>

@@ -1,0 +1,176 @@
+<section>
+  <h2 id="appA"><span class="num">A</span>Derivations</h2>
+  <p>Each formula used in the plan, with the worked numbers. The values are the ones printed in the text and computed in the build script, so a reader can check any figure by hand. Inputs marked assumed are design assumptions; the section that uses each one names the measurement that replaces it.</p>
+
+  <h3>A.1 Fresnel reflectance</h3>
+  <p>For light from air (n₁ = 1) reaching glass (n₂ = 1.52) at incidence angle θᵢ, with the transmitted angle θ<sub>t</sub> from Snell's law, the reflected fractions are:</p>
+  <div class="formula">sin θ<sub>t</sub> = sin θᵢ ÷ n₂
+R<sub>s</sub> = [(cos θᵢ − n₂ cos θ<sub>t</sub>) ÷ (cos θᵢ + n₂ cos θ<sub>t</sub>)]²
+R<sub>p</sub> = [(n₂ cos θᵢ − cos θ<sub>t</sub>) ÷ (n₂ cos θᵢ + cos θ<sub>t</sub>)]²</div>
+  <p>At θᵢ = 65°: sin θ<sub>t</sub> = 0.906 ÷ 1.52 = 0.596, so θ<sub>t</sub> = {{theta_t}}°. Then R<sub>s</sub> = {{rs65}} and R<sub>p</sub> = {{rp65}}, a ratio of {{rs65_x}}. R<sub>p</sub> is zero at the Brewster angle, arctan(1.52) = {{brewster}}°. These are per surface. A laminated windshield has two: the first reflects R<sub>s</sub>, and the second returns (1 − R<sub>s</sub>)² R<sub>s</sub> after two passes through the first, so the second image carries {{ghost_rel}} of the first's brightness and the two together reflect {{rs65_two}}.</p>
+
+  <h3>A.2 Ghost separation</h3>
+  <p>A ray entering the inner surface at θᵢ refracts to θ<sub>t</sub>, crosses the laminate of thickness t, reflects off the outer surface, and returns to the inner surface a distance 2t·tan θ<sub>t</sub> along the glass from where it entered. It exits parallel to the first reflection, so the two reflected rays are parallel and separated, perpendicular to their direction, by that distance times cos θᵢ:</p>
+  <div class="formula">t = 2.1 + 0.76 + 2.1 = {{t_glass}}   (assumed build; the interlayer's index is taken as the glass's)
+along the glass:  2 × {{t_glass}} × tan {{theta_t}}° = {{ghost_surf}}
+between the rays: {{ghost_surf}} × cos 65° = {{ghost_perp}}
+seen at image distance D:  atan({{ghost_perp}} ÷ D)
+   D = 2 m: {{ghost_2}}′     D = 2.5 m: {{ghost_2_5}}′     D = 7.5 m: {{ghost_7_5}}′     D = 10 m: {{ghost_10}}′</div>
+  <p>Two parallel copies of a diverging bundle are seen as two copies of the image displaced by the separation at the image's own distance, which is why the angle falls with D. Check against a published example: Lumetrics' note on wedge-angle measurement works a case with t = 4.9 mm, 65° incidence, the image 2 m beyond the glass and the eye 0.75 m from it, and reports a separation of 0.0643°. The formula above with D = 2.75 m gives {{ghost_lum_check_deg}}°, or {{ghost_lum_check}}′. One arcminute at 7.5 m is {{arcmin_mm_75}} mm. The wedge angle that would make the two rays converge at the eye is set by the glass maker and is not derived here.</p>
+
+  <h3>A.3 Mirror equation, Stage 2, and the PGU width table</h3>
+  <p>For a concave mirror of focal length f, an object at distance u in front of the mirror forms an image at distance v, with 1/u + 1/v = 1/f. Magnification is M = −v/u. When the object is inside the focal length, v is negative and the image is virtual, on the object's side, and magnified.</p>
+  <div class="formula">Virtual image at 7.5 m, f = {{f2}}:
+  1/u = 1/f + 1/7500 = 0.0030303 + 0.0001333  so  u = {{u2}}
+  M = 7500 ÷ 316.1 = {{m2}}
+  image width  = 60 mm × 23.7 = {{img2_w}}  so  field 2·atan(0.711 ÷ 7.5) = {{fov2_w}}°
+  image height = 30 mm × 23.7 = {{img2_h}}  so  field 2·atan(0.356 ÷ 7.5) = {{fov2_h}}°
+  pixels per degree = ({{crop_px_w}} px across the crop) ÷ {{fov2_w}}° = {{ppd2}}
+
+For another active width w, keeping the same image width at 7.5 m:
+  M = 1.42 m ÷ w;   u = 7.5 m ÷ M;   1/f = 1/u − 1/7500
+  w = 40 mm:  M = {{w40_M}}, u = {{w40_u}} mm, f = {{w40_f}} mm
+  w = {{panel_w}} mm (the full panel width): M = {{w110_M}}, u = {{w110_u}} mm, f = {{w110_f}} mm</div>
+  <p>The mirror's aperture does not depend on the PGU: it must cover the eye box plus the field at the mirror's distance from the eye. At an assumed 1 m along the folded path: {{mir_w}} × {{mir_h}} mm, from 130 + 2 × 1000 × tan({{fov2_w}}°/2) and 70 + 2 × 1000 × tan({{fov2_h}}°/2).</p>
+
+  <h3>A.4 Lens equation, Stage 1</h3>
+  <p>A thin converging lens of focal length f, with an object at distance u on the object side, follows the same equation. With f = 300 mm and u = 280 mm:</p>
+  <div class="formula">1/v = 1/300 − 1/280 = −0.000238  so  v = −4200 mm  (virtual, object side)
+M = 4200 ÷ 280 = {{s1_M}}
+image = 80 mm × 15 = {{s1_w}} wide, 40 mm × 15 = {{s1_h}} high
+field = 2·atan(0.6 ÷ 4.2) = {{s1_angw}}° wide, 2·atan(0.3 ÷ 4.2) = {{s1_angh}}° high
+pixels per degree: (80 mm ÷ 0.0917 mm per px) ÷ 16.3° = 872 ÷ 16.3 ≈ {{s1_ppd}}</div>
+
+  <h3>A.5 Window size</h3>
+  <p>The width of a window of field θ at distance D is 2D·tan(θ/2). At 7.5 m, the 10° window is 2 × 7.5 × tan 5° = {{win_10x4_w}} wide. The 4° height is {{win_10x4_h}}, and the 5° height is {{win_10x5_h}}. Dividing by the magnification {{m2}} gives the crop: a 10° × 4° window is a {{crop_10x4_w}} × {{crop_10x4_h}} mm crop of the panel.</p>
+
+  <h3>A.6 The luminance chain and the panel requirement</h3>
+  <p>An ideal imaging element changes an image's size but not its luminance, so the chain from the panel to the eye is a product of the reflectances along it:</p>
+  <div class="formula">windshield path:   0.90 × 0.90 × 0.236 = {{path_ws}}        (two mirrors, one glass surface, s-polarised)
+both surfaces:     0.90 × 0.90 × 0.37  = {{path_ws_two}}
+combiner path:     0.30                                  (Stage 0 and 1)
+panel needed for 1,500 at the eye:  1,500 ÷ {{path_ws}} = {{need_panel_day}};  with both surfaces {{need_panel_day_two}}
+panel needed for {{l_road_eye}} at the eye:    {{l_road_eye}} ÷ {{path_ws}} = {{need_panel_road}}
+panel needed for 50 at the eye:     {{need_panel_night}}
+custom backlight at {{l_panel_design}}: {{bl_ws}} at the eye, {{bl_headroom}}× the sky target;  beats an ambient of {{bl_ws}} ÷ 0.15 = {{bl_amb}}</div>
+  <p>The "ambient it beats" column of section 6.5 is each eye luminance divided by 0.15, the overlay share required by the 1.15 contrast ratio.</p>
+
+  <h3>A.7 Contrast ratio and the two targets</h3>
+  <p>The plan defines contrast as (overlay + background) ÷ background. For a background of 10,000 cd/m² and a required ratio of 1.15, the overlay must supply 0.15 × 10,000 = 1,500 cd/m² at the eye. For a sunlit road at an assumed 5,000 cd/m² the overlay must supply {{l_road_eye}}.</p>
+
+  <h3>A.8 Backlight flux and power</h3>
+  <p>For a Lambertian emitter of area A and luminance L, the total flux into the hemisphere is πLA. The cell passes a fraction T, so the backlight behind it must have luminance L<sub>panel</sub> ÷ T:</p>
+  <div class="formula">L_bl = {{l_panel_design}} ÷ {{t_lcd}} = {{l_bl}} cd/m²
+Φ_out = π × {{l_bl}} × (0.060 × 0.030 m²) = {{phi_out}} lm
+Φ_led = {{phi_out}} ÷ {{eta_bl}} = {{phi_led}} lm;   P = {{phi_led}} ÷ {{led_lmw}} lm/W = {{p_led}}
+with prism films (gain {{gain_film}}): {{p_led_film}};   collimated (gain {{gain_collim}}): {{p_led_collim}}
+absorbed in the cell: {{phi_out}} × (1 − {{t_lcd}}) ÷ 300 lm/W ≈ {{p_abs_cell}}, or {{irr_cell}} W/m² over the crop
+the whole 5.5-inch panel instead of the crop: {{p_led_full}}</div>
+  <p>The emission cone that reaches the eye box: a panel point at u = {{u2}} must cover a patch on the mirror the size of the eye box, so the half-angles are atan(65 ÷ 316) = {{cone_h}}° and atan(35 ÷ 316) = {{cone_v}}°. The share of a Lambertian emitter's flux inside a cone of half-angle θ is sin²θ; for the ±{{cone_design}}° design cone that is {{lamb_frac}}, so the ideal gain from perfect collimation is 1 ÷ sin²{{cone_design}}° = {{collim_ideal}}×.</p>
+
+  <h3>A.9 Camera-to-eye baseline and range error</h3>
+  <p>An object at range z, seen by a camera offset from the eye by a baseline b perpendicular to the line of sight, lies at a bearing that differs between the two by about b ÷ z. If the range is read as z + Δz, the eye-side bearing is computed as b ÷ (z + Δz), and the error is:</p>
+  <div class="formula">Δθ ≈ b ÷ z − b ÷ (z + Δz) ≈ b · Δz ÷ z²
+b = {{b_ce}}:  z = 10 m, Δz = 1 m: {{reg_10_1m}}°;   z = 20 m, Δz = 2 m: {{reg_20_10pct}}°;   z = 30 m, Δz = 3 m: {{reg_30_10pct}}°</div>
+
+  <h3>A.10 Stereo range error, and the pitch fallback</h3>
+  <p>Stereo range follows from disparity, z = f·B ÷ d, so an error δd in disparity gives δz = z²·δd ÷ (f·B). With the 4 mm lens at 1080p (80° horizontal, f = 960 ÷ tan 40° ≈ 1,144 px), B = 0.12 m, and an assumed δd = 0.25 px:</p>
+  <div class="formula">z = 10 m: {{sdz_10}} m ({{sdz_10_pct}});  20 m: {{sdz_20}} m ({{sdz_20_pct}});  30 m: {{sdz_30}} m ({{sdz_30_pct}});  50 m: {{sdz_50}} m ({{sdz_50_pct}})
+registration from the stereo error at 30 m: {{sreg_30}}°;  at 10 m: {{sreg_10}}°</div>
+  <p>Fallback mode with a static ground plane: a camera at height h sights a road point at distance z at depression atan(h ÷ z). A pitch error ε moves the back-projected point to z′ = h ÷ tan(atan(h ÷ z) + ε). For h = 1.30 m, z = 20 m, ε = 1°: z′ = {{pitch_z1}} m, an error of {{pitch_dz}} m, which through A.9 is {{pitch_reg}}° at the eye.</p>
+
+  <h3>A.11 Parallax, motion compensation, and latency sums</h3>
+  <p>A head shift of Δ moves the line of sight to a point at distance d by atan(Δ ÷ d) if the image is not corrected. For Δ = 0.150 m: at 7.5 m, {{par_7_5}}°; at 10 m, {{par_10}}°; at 30 m, {{par_30}}°.</p>
+  <p>An eye at height h = 1.22 m sights a road point at horizontal distance d. The depression angle is θ = atan(h ÷ d). At 30 m/s the car travels {{travel}} in 100 ms, so the point's distance drops from 10 m to 7.0 m:</p>
+  <div class="formula">Uncompensated: θ(10 m) = {{dep0}}°;  θ(7.0 m) = {{dep1}}°;  change = {{uncomp}}°
+Residual for unmodelled a = 1 m/s² over t = 0.1 s:  Δx = ½ a t² = {{resid_mm}};  Δθ ≈ h ÷ (d² + h²) × Δx = {{resid_deg}}°
+Residual for a speed error of 1 m/s over 0.1 s:  Δx = 0.1 m;  Δθ = {{resid_speed_deg}}°</div>
+  <p>The five timed latency stages sum to a minimum of 10 + 10 + 1 + 8 + 8 = {{lat_min}} ms and a maximum of 30 + 25 + 3 + 16 + 25 = {{lat_max}} ms. At 30 m/s these are {{lat_travel_min}} m and {{lat_travel_max}} m of travel. The head tracker is excluded because it affects parallax, not the road-frame content.</p>
+
+  <h3>A.12 Sun focus, and the sun's entry direction</h3>
+  <p>The sun subtends 0.53° (9.25 mrad). Its focused image at the focal plane is about f × 9.25 mrad = 330 × 0.00925 = {{sun_focal}} mm across. For the ray-trace estimate, parallel on-axis rays strike a spherical mirror of radius {{r2}} over a 300 × 200 mm aperture. Each reflected ray is intersected with the panel plane {{u2}} from the vertex. The radius that contains 90% of the rays is {{r90_pgu}} mm at that plane ({{r90_focus}} mm at the paraxial focal plane, because marginal rays focus nearer the mirror).</p>
+  <div class="formula">concentration C = (300 × 200 mm²) ÷ (π × r90²) ≈ {{conc_pgu}}
+collected power = 0.300 m × 0.200 m × 1,000 W/m² × {{ws_t_sun}} = {{sun_w}};  spot ≈ {{sun_spot_mm}} mm;  {{sun_wcm2}} W/cm²
+after the cold-mirror fold alone (visible share {{vis_frac}}, assumed): {{sun_after_cold}}
+after the cold mirror and the panel-side IR-cut glass ({{filt_frac}}, TI DLPA096's filter budget): {{sun_after_filt}}
+after the aperture polariser (passes {{pol_t}} of unpolarised light, assumed): {{sun_after_pol}};  {{sun_after_pol_wcm2}} W/cm² ≈ {{sun_suns}} suns</div>
+  <p>Entry direction. Take the windshield as a plane raked α = {{rake}}° above horizontal with its top toward the rear, and the eye ray to the HUD patch depressed δ = {{lookdown}}° below horizontal. Reflecting the eye ray's direction in the glass gives the direction of the ray that continues to the mirror: δ − 2α = {{lookdown}} − 56 = −{{mirror_dir}}°, that is {{mirror_dir}}° below horizontal, forward and down, into the dash. The incidence angle on the glass is the angle between the eye ray and the glass normal, {{inc_check}}°, consistent with the 65° design point. The mirror's rays travel the reverse, backward and up at {{mirror_dir}}°, and the part that transmits through the glass continues in that direction, so the sun reaches the mirror only from {{sun_elev}}° above the horizon behind the car. The sky patch that can reach the panel is the eye box as seen from the glass plus the field: 2·atan(65 ÷ 750) + {{fov2_w}} = {{patch_w}}° wide and 2·atan(35 ÷ 750) + {{fov2_h}} = {{patch_h}}° tall, with the eye-to-glass distance of 750 mm assumed. The sun moves 15° per hour, so it crosses the patch's width in about {{patch_minutes}} minutes at a fixed heading.</p>
+
+  <h3>A.13 Black level</h3>
+  <div class="formula">daylight setting: panel white {{l_panel_design}} ÷ contrast {{cr_panel}} = 10 cd/m² black at the panel; × {{path_ws}} = {{black_day_eye}} cd/m² at the eye
+night setting:    panel white {{night_panel}} (for 50 at the eye) ÷ {{cr_panel}} = 0.26 at the panel; × {{path_ws}} = {{black_night_eye}} cd/m² at the eye</div>
+
+  <h3>A.14 Acquisition totals</h3>
+  <p>The sum of the low ends of the cost ranges in section 8.2 is ${{cost_low}}, and the sum of the high ends is ${{cost_high}}. The optional wedge windshield and HUD-grade module add ${{cost_opt_low}}–${{cost_opt_high}}. The previous plan's comma four and harness, projector and windshield, at their low ends, were ${{cost_removed}} that this plan does not spend.</p>
+</section>
+
+<section>
+  <h2 id="appB"><span class="num">B</span>Glossary</h2>
+  <table>
+    <thead><tr><th style="width:26%">Term</th><th>Meaning in this plan</th></tr></thead>
+    <tbody>
+      <tr><td>Accommodation</td><td>The eye's change of focus with distance.</td></tr>
+      <tr><td>Age (of a message)</td><td>Current time minus the capture time of the sensor frame the message came from.</td></tr>
+      <tr><td>Backlight</td><td>The light source behind a liquid-crystal cell. Here, a custom direct-lit LED unit behind the crop.</td></tr>
+      <tr><td>Beamsplitter</td><td>Partly reflecting, partly transmitting glass. A 70/30 part transmits 70% and, in the teleprompter convention, reflects 30%.</td></tr>
+      <tr><td>BEF</td><td>Brightness enhancement film: a prism film that narrows a backlight's emission cone and raises its on-axis luminance.</td></tr>
+      <tr><td>Brewster angle</td><td>The incidence angle at which the p-polarised reflection of a surface is zero.</td></tr>
+      <tr><td>Cold mirror</td><td>A mirror coating that reflects visible light and transmits infrared. Used as the fold mirror.</td></tr>
+      <tr><td>Combiner</td><td>A partly reflecting glass that merges the image from a display with the view through it.</td></tr>
+      <tr><td>Conformal</td><td>Graphics that must sit on the thing they describe, such as the ribbon on the lane.</td></tr>
+      <tr><td>Contrast ratio</td><td>In this plan, (overlay + background) ÷ background. Both targets use 1.15.</td></tr>
+      <tr><td>Crop</td><td>The 60 × 30 mm region of the panel that is lit and drawn; the rest stays black.</td></tr>
+      <tr><td>DC-DC converter</td><td>Here, the ignition-sensed supply that powers the Jetson and lets it shut down cleanly.</td></tr>
+      <tr><td>Dead reckoning</td><td>Carrying a position and speed estimate through a satellite outage with inertial sensors.</td></tr>
+      <tr><td>Disparity</td><td>The pixel offset of a feature between the two images of a stereo camera; range is inversely proportional to it.</td></tr>
+      <tr><td>Eye box</td><td>The region the eye can move through while still seeing the whole image.</td></tr>
+      <tr><td>Field of view</td><td>The angle the image covers as seen from the eye.</td></tr>
+      <tr><td>Fresnel equations</td><td>The formulas for reflected and transmitted fractions at a boundary between two media.</td></tr>
+      <tr><td>Fresnel lens</td><td>A thin lens whose power comes from concentric grooves. Used as a magnifier in Stage 1.</td></tr>
+      <tr><td>Ghost image</td><td>The second, fainter copy of the HUD image reflected by the windshield's outer surface.</td></tr>
+      <tr><td>GNSS</td><td>Global navigation satellite systems; the receiver gives position and, from Doppler, speed.</td></tr>
+      <tr><td>Ground plane</td><td>The road surface as a plane in the camera's frame, fitted each frame from stereo depth.</td></tr>
+      <tr><td>Half-wave retarder</td><td>A film that rotates linear polarisation by twice the angle between its axis and the light's.</td></tr>
+      <tr><td>Hot mirror, IR-cut glass</td><td>A filter that reflects or absorbs infrared and passes visible light. Held in reserve for the panel side.</td></tr>
+      <tr><td>IMU</td><td>Inertial measurement unit: gyroscope and accelerometer; here, the one inside the ZED 2i.</td></tr>
+      <tr><td>Keystone</td><td>A trapezoidal distortion of an image from an off-axis mirror. Corrected in software by hudd.</td></tr>
+      <tr><td>Lambertian</td><td>A surface whose luminance is the same in every direction.</td></tr>
+      <tr><td>Luminance (cd/m²)</td><td>Brightness of a surface as seen by the eye. Also called a nit.</td></tr>
+      <tr><td>Motion-to-photon latency</td><td>Delay from the moment the scene changes to the moment the image shows it.</td></tr>
+      <tr><td>Nominal eye point</td><td>The design eye position, from which the calibration is measured.</td></tr>
+      <tr><td>PGU</td><td>Picture generation unit: the device that makes the image, here the TFT panel with its backlight.</td></tr>
+      <tr><td>Pre-distortion</td><td>A warp applied to the image so that the optics' own distortion cancels it.</td></tr>
+      <tr><td>PVB, wedge PVB</td><td>Polyvinyl butyral, the plastic interlayer in laminated glass. A wedge-shaped version removes the ghost at the design eye point. Optional here.</td></tr>
+      <tr><td>Registration</td><td>How accurately a graphic lines up with the thing it marks.</td></tr>
+      <tr><td>Relay mirror</td><td>The concave mirror that re-images the panel's picture into the windshield. Stage 2.</td></tr>
+      <tr><td>Ribbon</td><td>The translucent fill between the driver's two lane lines. The demo's hero element.</td></tr>
+      <tr><td>s- and p-polarisation</td><td>The two perpendicular polarisations of light. The windshield reflects s much more strongly.</td></tr>
+      <tr><td>Sun-watch</td><td>The rule that closes the shutter when the computed sun direction falls inside the mirror's entry patch.</td></tr>
+      <tr><td>TensorRT</td><td>NVIDIA's inference runtime, which runs the lane and object networks on the Jetson's GPU.</td></tr>
+      <tr><td>TFT LCD</td><td>Thin-film-transistor liquid-crystal display: a shutter array in front of a backlight.</td></tr>
+      <tr><td>Topic</td><td>A named stream of messages on the HUD's bus, such as <code>lanes</code> or <code>ego</code>.</td></tr>
+      <tr><td>Tracker</td><td>The step that gives each detected object a stable identity and a velocity across frames.</td></tr>
+      <tr><td>Virtual image</td><td>An image that the eye perceives at a distance, though no light originates there.</td></tr>
+      <tr><td>ZeroMQ, msgpack</td><td>The messaging library and the serialisation format of the HUD's bus.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="appC"><span class="num">C</span>Repository pointers</h2>
+  <p>The HUD's code is new and lives in <code>hud/</code>. The openpilot tree is reference only; the files below are the ones worth reading, and the ones the alternative of section 5.7 would touch. Line references were checked against the checkout on 2026-10-21 where marked.</p>
+  <table>
+    <thead><tr><th style="width:42%">File</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><code>openpilot/selfdrive/car/card.py</code> lines 113–117</td><td>The passive mode: with the enable toggle off, <code>CP.passive</code> is set and the panda's safety model becomes <code>noOutput</code>. <span class="tag acc">checked</span>. The basis of the comma-four-as-sensor alternative.</td></tr>
+      <tr><td><code>openpilot/selfdrive/selfdrived/selfdrived.py</code> line 46</td><td><code>IGNORED_SAFETY_MODES</code> lists <code>silent</code> and <code>noOutput</code>. <span class="tag acc">checked</span>.</td></tr>
+      <tr><td><code>opendbc_repo/opendbc/car/car.capnp</code> line 633</td><td><code>noOutput @19</code> in the <code>SafetyModel</code> enum, "like silent but without silent CAN TXs". <span class="tag acc">checked</span>.</td></tr>
+      <tr><td><code>openpilot/system/manager/process_config.py</code> line 118</td><td>The bridge is started only for <code>notCar</code>. <span class="tag acc">checked</span>. Only relevant to the alternative.</td></tr>
+      <tr><td><code>openpilot/selfdrive/ui/onroad/model_renderer.py</code></td><td>The nearest working example of drawing lane lines and a path from 3D points with a transform matrix. Read for the approach; nothing is imported.</td></tr>
+      <tr><td><code>openpilot/selfdrive/ui/onroad/hud_renderer.py</code></td><td>Layout of a speed block.</td></tr>
+      <tr><td><code>openpilot/system/ui/lib/application.py</code></td><td>How openpilot drives raylib from Python: window, frame rate, vsync, scaling. hudd follows the same pattern with full-screen and monitor selection added.</td></tr>
+      <tr><td><code>openpilot/common/transformations/camera.py</code></td><td>Frame conventions (x forward, y right, z down), which the HUD keeps so the reference code reads the same way.</td></tr>
+      <tr><td><code>docs/arhud-plan-src/</code></td><td>The previous plan's source, including its revision-2 correction history, kept for reference.</td></tr>
+    </tbody>
+  </table>
+</section>

@@ -1,0 +1,18 @@
+<h2 id="orient"><span class="num">7</span>Which way the grooves face</h2>
+<p>A Fresnel lens works in either orientation, but not equally well. Edmund Optics' rule is that the grooved side should face the longer of the two distances the lens works between. In Stage 1 the short side is the panel, {{u}} mm away, and the long side is the eye and the virtual image beyond it. So the grooves face up, toward the combiner, and the flat side faces the panel. This is the orientation the lens was designed for, if its design conjugate is the usual one (parallel light on the grooved side).</p>
+<p>Figure [[N orient]] shows why, with rays from the centre of the panel traced through the real teeth near the lens edge. With the grooves toward the eye, both surfaces share the bending: the flat face takes a little, each facet the rest, at moderate angles. Turned over, the flat face is now on the eye side and leaves almost all the bending to the facets, which meet the light at grazing angles. Much of it reflects, a large share strikes the draft walls and is trapped and guided sideways inside the sheet, and what does come through is badly focused.</p>
+<figure>[[FIG orient]]<figcaption><b>Figure [[N orient]].</b> Rays from the centre of the panel through the real teeth at r = 150 mm, at the same scale across and in depth, with the grooves toward the eye (A) and toward the panel (B).</figcaption></figure>
+<figure>[[FIG orientchart]]<figcaption><b>Figure [[N orientchart]].</b> Share of the light from the panel's centre that passes cleanly through the teeth, against radius, for both orientations (groove-level trace).</figcaption></figure>
+<table>
+  <thead><tr><th></th><th>Grooves toward the eye</th><th>Grooves toward the panel</th></tr></thead>
+  <tbody>
+    <tr><td>Passes cleanly at r = 100 / 150 / 200 mm</td><td>{{fw_c_100}} / {{fw_c_150}} / {{fw_c_200}}</td><td>{{fw_f_100}} / {{fw_f_150}} / {{fw_f_200}}</td></tr>
+    <tr><td>Reflection loss at r = 150 mm (two surfaces)</td><td class="num">{{or_c_T150}} transmitted</td><td class="num">{{or_f_T150}} transmitted</td></tr>
+    <tr><td>Steepest angle of incidence at r = 150 mm</td><td class="num">{{or_c_i150}}°</td><td class="num">{{or_f_i150}}°</td></tr>
+    <tr><td>Image distance at the field edge, tangential / sagittal</td><td class="num">{{isurf_w_t}} / {{isurf_w_s}} m</td><td class="num">{{flip_w_t}} / {{flip_w_s}} m</td></tr>
+    <tr><td>Astigmatism at the field edge</td><td class="num">0.05 D</td><td class="num">{{flip_astig_D}} D</td></tr>
+    <tr><td>Total internal reflection begins at</td><td class="num">not reached</td><td class="num">r ≈ {{flip_tir_r}} mm</td></tr>
+  </tbody>
+</table>
+<p class="small"><b>Table 2.</b> The two orientations compared, from the ray traces in Appendix A.</p>
+<p>The astigmatism is the decisive number. With the grooves toward the eye the two foci at the field edge are 0.05 D apart, invisible. Flipped, they are {{flip_astig_D}} D apart, which the eye sees as a smear along one direction at the edges of the picture. The lens also looks different in the hand: the grooves feel rough, the flat side smooth. Mount it rough side up, and since the upward-facing grooves will collect dust, keep the box's lid closed when the HUD is off (section 10 gives a stronger reason).</p>

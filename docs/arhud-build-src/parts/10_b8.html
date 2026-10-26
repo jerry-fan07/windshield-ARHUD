@@ -1,0 +1,67 @@
+<section>
+  <h2 id="b8"><span class="num">B8</span>Stage 1 combiner in the car (gate G4)</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>A real in-car virtual image before the custom mirror exists (2.1), the first registration on the road (2.3, 2.10)</div>
+    <div><b>Weeks</b>4–8</div>
+    <div><b>Closes</b>Gate G4: static error at 30 m ≤ 1.0°; ribbon on the lane through curves at 25 m/s, at night</div>
+    <div><b>Needs</b>B7 (everything else in the car), B6 (renderer)</div>
+    <div><b>Produces</b>A working night and overcast HUD at about 4.2 m; the demo fallback if the mirror is late</div>
+    <div><b>People</b>Builder, driver, safety driver</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> Optical Stage 1 makes the virtual image with a cheap flat Fresnel lens instead of the custom mirror, and shows it on a separate glass (the <i>combiner</i>) standing on the dash, instead of on the windshield. The panel sits just inside the lens's focal length, so the lens works as a magnifying glass and the image appears about 4 m ahead. It is dim (night and overcast only) and has ring artefacts, but it puts a registered overlay on a real road weeks before Stage 2 can, and it is the demonstration if the mirror is late.</p>
+
+  <h3>B8.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Item</th><th style="width:7%">Qty</th><th>Specification and source</th></tr></thead>
+    <tbody>
+      <tr><td>Fresnel lens, 300 mm square, f ≈ 300 mm</td><td>1 (2 bought)</td><td>Knight Optical LFQ300300 (£118.50) or Edmund 11-inch (£121.60); the second is a spare</td></tr>
+      <tr><td>Panel</td><td>1</td><td>The YODOIT monitor (unit 1) with an 80 × 40 mm crop drawn in its centre; or the Newhaven 5-inch 1,100-nit HDMI module ($74.75) for night; or the 5.5-inch kit with the custom backlight once B9 is done</td></tr>
+      <tr><td>Combiner glass, about 30% reflecting</td><td>1</td><td>The second teleprompter glass; the better 30R/70T glass (twowaymirrors.com, about $514 for 16 × 21 inch) only if Stage 1 will be shown to an audience</td></tr>
+      <tr><td>Enclosure</td><td>1</td><td>Matte-black box, 280 mm inside height from the panel's face to the lens, footprint to suit the panel; 6 mm plywood or printed panels; a ledge at the top for the lens</td></tr>
+      <tr><td>Combiner mount</td><td>1</td><td>Two side arms with friction hinges (or a printed hinge with a clamping screw) so the glass tilt can be set and locked</td></tr>
+      <tr><td>Anti-slip mat, two webbing straps</td><td>1 set</td><td>Holding the enclosure on the dash</td></tr>
+      <tr><td>Edge protection</td><td>1 m</td><td>U-channel rubber edging for the combiner glass</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B8.2 Build and install</h3>
+  <figure>[[FIG g_stage1d]]<figcaption><b>Figure B8.1.</b> Optical Stage 1. The numbers are the plan's thin-lens result for a 300 mm lens and a 280 mm panel distance.</figcaption></figure>
+  <ol class="steps">
+    <li>Build the enclosure. Blacken every inside face. The panel lies face-up at the bottom; the lens rests on the top ledge, 280 mm above the panel's face (measure to the lens's grooved structure, not to its frame).</li>
+    <li>Orient the Fresnel: lens makers specify which face goes toward the longer conjugate (here the viewer's side). Follow the maker's note; if in doubt, try both ways on the bench and keep the one that gives the sharper grid.</li>
+    <li>Fit the combiner's hinge arms to the enclosure's front. Edge the glass with the rubber U-channel and clamp it in the arms. Set its tilt to about 40–45° from horizontal, top toward the driver: light rising from the lens then reflects back toward the eye.</li>
+    <li>Set the enclosure on the anti-slip mat on the dash in front of the driver, low enough that the combiner's top edge stays below the driver's line of sight to the road beyond 10 m except through the glass. Strap it. Pull-test it as in B13.2.<span class="chk">No movement at 1.5 × weight</span></li>
+    <li>Configure <code>hudd</code> for Stage 1: crop 80 × 40 mm on the monitor (about 872 × 436 px at 277 ppi), one reflection (set the flip with the test card), focal length from the 16° × 8° field.</li>
+    <li>At night, from the eye point, tilt the combiner until the window is centred in the line of sight. Measure the image distance by parallax (Figure B12.1) with the pole at 4.2 m; move the panel up or down a few millimetres to bring the image to about 4 m. Expect about 15× magnification: the 80 × 40 mm crop appears 1.2 × 0.6 m wide.</li>
+  </ol>
+  <div class="box warn">
+    <p class="h">A loose combiner is a projectile</p>
+    <p>Glass standing on the dash can strike the driver in a hard stop. Edge it, lock its hinge, strap the enclosure, pull-test it, and keep it out of the steering wheel's and the passenger airbag's paths. Stage 1 is also the more legally exposed configuration (plan, 11.2): closed course only.</p>
+  </div>
+
+  <h3>B8.3 Calibrate and drive</h3>
+  <ol class="steps">
+    <li>Set up the 30 m board (B13.3 A); camera at the eye point. Photograph the panel grid through the combiner against the ground grid; fit the warp mesh (a 2-D correction like B13.3 C, but on a single plane: Stage 1 has no custom mirror to trace).</li>
+    <li>Refine the eye point with the board's rings.</li>
+    <li>Measure static registration at 30 m with the camera, then with the camera moved ±75 mm on the rail, with the head tracker off and on.</li>
+    <li>Drive the course at night and in overcast at up to 25 m/s with prediction on. The passenger watches the audience view's residuals; the driver reports where the ribbon leaves the lane.</li>
+  </ol>
+
+  <h3>B8.4 Gate G4</h3>
+  <ul class="cl">
+    <li>Static error at 30 m ≤ 1.0° from the eye point.</li>
+    <li>The ribbon stays on the lane through the course's curves at 25 m/s, at night.</li>
+    <li>Decision recorded: whether Stage 1 will be shown, and whether Stage 2 continues on schedule.</li>
+  </ul>
+
+  <h3>B8.5 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Image too near or too far</td><td>Panel distance: 1 mm closer to the lens moves the image about 0.2 m nearer around this point. Shim the panel.</td></tr>
+      <tr><td>Rings or colour fringes</td><td>Expected from a Fresnel; check its orientation; keep lines thick.</td></tr>
+      <tr><td>Double image</td><td>Both faces of the combiner reflect; tilt slightly, or use glass with an anti-reflection coating on the far face.</td></tr>
+      <tr><td>Error grows toward the window's edges</td><td>Refit the warp with more grid points.</td></tr>
+    </tbody>
+  </table>
+</section>

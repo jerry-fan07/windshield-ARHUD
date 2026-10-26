@@ -1,0 +1,97 @@
+<section>
+  <h2 id="s1"><span class="num">1</span>Recommendation in brief</h2>
+
+  <p><strong>Build the HUD as a self-contained instrument on one computer.</strong> The Jetson Orin NX captures a stereo view of the road, finds the lane lines and the vehicles, people and signs in it, measures its own speed and turn rate from a GNSS receiver and an inertial unit, tracks the driver's head, and draws a registered overlay on a small TFT LCD panel. A concave mirror relays the panel's picture into the windshield, where the driver sees it as a virtual image 7.5 m ahead. A person drives the car throughout; the HUD never touches the car.</p>
+  <p>The design is organised around three facts. First, a windshield reflects polarised light twenty times more strongly in one orientation than the other, and a liquid-crystal panel emits polarised light, so the panel is oriented to the windshield and no polariser is wasted. Second, luminance is conserved through a mirror, so daylight visibility is decided at the panel: an ordinary panel at a few hundred cd/m² cannot reach the target, and the plan's answer is a custom LED backlight behind the small region of the panel that is actually used. Third, registration depends on where the camera is relative to the eye more than on how accurately it measures distance, so the road camera is mounted close to the driver's line of sight.</p>
+
+  <div class="kpi">
+    <div><div class="v">1,500</div><div class="l">cd/m² at the eye, the sky target for noon, against 10,000 cd/m² ambient at a contrast ratio of 1.15. The road target is {{l_road_eye}}.</div></div>
+    <div><div class="v">{{fov2_w}}° × {{fov2_h}}°</div><div class="l">demo window, virtual image at 7.5 m, {{ppd2}} pixels per degree from a 60 × 30 mm crop of a 5.5-inch 1080p panel</div></div>
+    <div><div class="v">{{lat_min}}–{{lat_max}} ms</div><div class="l">estimated motion-to-photon latency across the five timed stages, all on one computer, before the HUD predicts forward</div></div>
+  </div>
+
+  <h3>Why not keep openpilot as a sensor?</h3>
+  <p>The previous plan's reason for the comma four was driving. Without driving, the comma four could still serve as a calibrated sensor head: this checkout has a passive mode in which the car interface parses the bus but never transmits (<code>selfdrive/car/card.py</code> lines 113–117 set the panda's safety model to <code>noOutput</code> when openpilot's toggle is off, <span class="tag acc">checked</span>). That option is kept in section 5.7 and it is not the recommendation, for three reasons. It costs $1,098 (the comma shop's price as read on 2026-10-08; not re-checked) and ties the project to openpilot's supported-car list and harnesses, for a car that will not be driven by it. It keeps the whole openpilot runtime in the loop for a demo that uses four of its outputs. And the project's own description says the camera neural network runs on the Jetson; this plan does that.</p>
+
+  <h3>Why a TFT LCD, and what it costs</h3>
+  <p>A laser DLP projector on a diffuser was chosen before because it was the only source class with daylight headroom after a 24% windshield reflection. A TFT panel reaches the same place by a different route. Its light is already polarised, so the 42% polariser loss of the projector path does not exist. Its brightness is set by its backlight, which can be built to the luminance needed, and dimmed by pulse width over the whole range from noon to night. It has no speckle, no diffuser, no fan, no input-lag unknown, and it is the technology every production HUD uses. The costs are real too: an off-the-shelf panel delivers about {{stock_pct}} of the sky target through the windshield; the backlight that fixes that must be designed, built and kept cool; and a liquid-crystal cell has a black level, so the HUD window glows faintly at night unless the backlight follows the ambient light. Sections 6.5 and 6.6 give the budget and the design.</p>
+
+  <h3>What the Jetson does that openpilot did before</h3>
+  <table>
+    <thead><tr><th style="width:26%">Previous source</th><th style="width:34%">This plan's source</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr><td><code>modelV2</code> lane lines and road edges</td><td>Lane network on the ZED 2i's left image, lifted to the stereo ground plane</td><td>Same drawing, confidence-faded. Section 5.2.</td></tr>
+      <tr><td><code>modelV2</code> planned path</td><td>Lane ribbon between the detected lane lines</td><td>Not a plan. It marks the lane, not where the car will go.</td></tr>
+      <tr><td>Lead from <code>modelV2</code> and <code>radarState</code></td><td>Object detector plus stereo depth at the vehicle's base</td><td>Gap in metres and seconds. Section 5.3.</td></tr>
+      <tr><td><code>carState.vEgo</code>, <code>yawRate</code></td><td>GNSS speed fused with the inertial unit's gyroscope</td><td>Feeds age compensation and the speed block. Section 5.4.</td></tr>
+      <tr><td>Engagement state, set speed</td><td>Removed. The last recognised speed-limit sign takes the slot.</td><td>Section 5.6.</td></tr>
+      <tr><td><code>extrinsicsCalibration</code></td><td>Stereo plane fit each frame, plus a one-time camera-to-car calibration</td><td>Section 6.10.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <p class="h">Three decisions needed before ordering</p>
+    <p>Which car: any car with a dash top that can carry the housing and a windshield rake near the design value; the car fixes the windshield curvature, which the relay mirror's ray trace depends on, so the mirror cannot be specified until the car is chosen. Where the demo will be driven: a closed course or private lot. Who signs off the installation at the university. Everything else in this plan can start on the bench today, and the recordings that perception is developed from can be made in any car this week.</p>
+  </div>
+
+  <h3>How the plan is organised</h3>
+  <table>
+    <thead><tr><th style="width:24%">Chapter</th><th>What you learn from it</th></tr></thead>
+    <tbody>
+      <tr><td>2 Background</td><td>What a head-up display is, what a virtual image is, what registration means, and what changes when the car is driven by a person.</td></tr>
+      <tr><td>3 Demo</td><td>The six things the driver sees, where each comes from, and the behaviours that must be defined before any drive.</td></tr>
+      <tr><td>4 Architecture</td><td>One computer, the interfaces to the car, the perception pipeline, topic timing, latency, prediction and head tracking.</td></tr>
+      <tr><td>5 Perception</td><td>The road sensor, lane and object networks, ego-motion, the registration error analysis, sign recognition, the GPU budget and the alternatives considered.</td></tr>
+      <tr><td>6 Optics</td><td>Constraints, reflection physics, the ghost image, the luminance budget, the TFT picture generator and its backlight, three build stages, the sun hazard and calibration.</td></tr>
+      <tr><td>7 Software</td><td>Processes, topics, the projection chain, drawing rules, the controller firmware, recording and replay, and bring-up facts.</td></tr>
+      <tr><td>8 Hardware</td><td>What is owned, what to buy and why, wiring and power, and the order of purchases.</td></tr>
+      <tr><td>9 Phases</td><td>The twelve-week critical path, gates, and phase-by-phase acceptance criteria.</td></tr>
+      <tr><td>10 Validation</td><td>Measurable targets, how each one is measured, and the five-minute demo script.</td></tr>
+      <tr><td>11 Risks</td><td>Risks with mitigations, the legal position to confirm, and open questions.</td></tr>
+      <tr><td>A–D</td><td>Derivations of every number, a glossary, repository pointers and sources.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="s2"><span class="num">2</span>Background for readers new to the project</h2>
+  <p>This chapter explains the ideas the rest of the plan relies on: what a head-up display does, where its image appears and why that matters, what registration means, and what it means that this HUD perceives the road itself. A reader who already knows these can skip to chapter 3.</p>
+
+  <h3>2.1 What a head-up display does</h3>
+  <p>A head-up display (HUD) puts information in the driver's line of sight so the driver does not have to look down at a dashboard. There are two design questions. First, where the image appears to be, meaning its focus distance. Second, how large it is, meaning its field of view, the angle it covers as seen from the eye.</p>
+  <p>An augmented-reality HUD goes further: it places each graphic where the thing it describes is. A ribbon drawn on the lane, or a box drawn around a pedestrian, only works if the overlay stays on the object as the car moves and the driver's head moves. The technical word for that is <em>registration</em>, covered in section 2.3.</p>
+
+  <h3>2.2 Where the image appears</h3>
+  <p>Light from a display reaches the eye as a bundle of rays. If the rays diverge as if they came from a point 7.5 m away, the eye perceives the image at 7.5 m. Such an image is called a <em>virtual image</em>: no light actually originates there, but the eye cannot tell. A virtual image is the mechanism that lets a HUD draw content at road distance.</p>
+  <p>The eye focuses on whatever it is looking at, a process called accommodation. A screen 0.6 m away forces the eye to refocus when the driver looks up at the road, which can take a fraction of a second and causes eye strain. A virtual image at 7.5 m is in the range where road objects sit, so the eye can keep one focus across the road and the graphics.</p>
+  <figure>[[FIG concept]]<figcaption><b>Figure 1.</b> Schematic of a virtual image plane between the eye and the road. To draw a mark on the road point, the HUD places it where the line from the eye to the point crosses the plane. Positions are not to scale; heights in the captions are true-geometry values.</figcaption></figure>
+  <p>The plan's convention is that a road point at distance <em>d</em> is drawn where the line of sight crosses a plane at distance <em>D</em>. On a flat road with the eye at height <em>h</em> = 1.22 m, the crossing is at height <em>h</em>(1 − <em>D</em>/<em>d</em>) above the road. With <em>D</em> = 7.5 m, a point 10 m away is drawn 0.31 m above the road on the plane, and a point 30 m away is drawn 0.92 m above it. Far points therefore sit higher on the plane, and their marks shift less when the head moves.</p>
+
+  <h3>2.3 Registration and conformal graphics</h3>
+  <p>Registration error is the angle between where a graphic is drawn and where the thing it marks actually is, measured from the eye. A one-degree error at 30 m is about half a metre on the road. The plan calls graphics that must register <em>conformal</em>, and graphics that stay fixed <em>non-conformal</em>. Each element in the demo is one or the other.</p>
+  <table>
+    <thead><tr><th style="width:24%">Element</th><th style="width:30%">Where it appears</th><th>Must it register?</th></tr></thead>
+    <tbody>
+      <tr><td>Lane ribbon</td><td>On the road surface, filling the driver's lane</td><td>Yes. Its edges are judged against the lane paint.</td></tr>
+      <tr><td>Lane lines and road edges</td><td>Over the real paint</td><td>Yes. Drawn only where the network is confident.</td></tr>
+      <tr><td>Lead vehicle chevron</td><td>Under the lead car's rear bumper</td><td>Yes. Its gap is read by the driver as the car ahead's position.</td></tr>
+      <tr><td>Hazard outlines</td><td>Around a detected pedestrian, cyclist or sign</td><td>Yes. Informational only.</td></tr>
+      <tr><td>Speed and the last speed limit</td><td>Small fixed block low in the window</td><td>No. This is the only non-conformal content.</td></tr>
+      <tr><td>Status glyphs</td><td>Corner of the fixed block</td><td>No. Sensor health and stale-data marks.</td></tr>
+    </tbody>
+  </table>
+  <p>Registration is the reason the rest of the plan is so detailed. A ribbon edge that is 1° off at 30 m looks wrong to a driver who is watching the lane paint, even though the same error would be invisible on a dashboard gauge.</p>
+
+  <h3>2.4 What "no self-driving" changes</h3>
+  <p>In the previous plan the HUD was a subscriber to openpilot, which was both the driver and the perception system. Every drawn element was a copy of something openpilot had already computed for its own purpose, and the vehicle's speed and turn rate came from the car's bus. In this plan there is no such source. The HUD has to perceive the road for itself, which means three new jobs: finding lane lines in an image and placing them on the ground, finding objects and measuring how far away they are, and measuring the car's own motion without a connection to the car.</p>
+  <p>Two consequences follow. There is no planned path, because nobody is planning: the hero element becomes the lane itself, drawn as a ribbon between the detected lines. And the car no longer needs to be a particular car. Any car with a dash top that can carry the housing will do, and the installation is reversible without tools.</p>
+  <p>A third consequence is subtler. openpilot's model output was already in three dimensions in the car's frame. A lane network outputs points in the image, and lifting them to the road needs either a known camera-to-ground geometry or a measured one. The plan uses a stereo camera and fits the ground plane from its depth each frame, so the lift does not depend on a calibration that drifts as the car pitches (section 5.2).</p>
+
+  <h3>2.5 What the system does not do</h3>
+  <ul>
+    <li>It does not steer, brake, accelerate or warn the car's own systems. It has no wire to any bus and no actuator.</li>
+    <li>It does not know the car's speed from the car. Speed comes from satellites and an inertial unit, which is accurate while moving and reads zero when stopped.</li>
+    <li>It does not navigate. Turn-by-turn arrows are listed as a stretch goal in section 11.3 and are not part of the demo.</li>
+    <li>It does not replace the driver's attention. Hazard outlines are drawn because they are a convincing demonstration of registration, not because the driver should rely on them.</li>
+  </ul>
+</section>

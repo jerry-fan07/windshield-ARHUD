@@ -1,0 +1,38 @@
+<h2 id="eye"><span class="num">5</span>What the eye sees through the grooves</h2>
+<p>The HUD's light does pass through the ridges, so it is fair to ask whether the driver sees them. This section answers that in four steps: how far the head can move before the image is cut off, how much of the lens each image point uses, why the ridges blur out, and what remains. The renders at the end show all of it at once.</p>
+
+<h3>The eye box</h3>
+<p>Every head position sees the same virtual image, from a slightly different angle. The light for the left and right edges of the image always comes from the edges of the crop, but it crosses the lens at different places as the head moves. Once one of those rays would have to pass outside the 300 mm lens, that edge of the image disappears (Figure [[N eyebox]]). Traced, the whole image stays visible over a box {{eyebox_w}} mm wide and {{eyebox_h}} mm tall at the eye, larger than the plan's 130 × 70 mm for Stage 2. The combiner's size and the housing opening can cut it further, so check the box once the rig is built.</p>
+<figure>[[FIG eyebox]]<figcaption><b>Figure [[N eyebox]].</b> Top view of the unfolded path, to scale, with the rays to the image's left and right edges traced from three eye positions. Outside the eye box one edge ray misses the lens.</figcaption></figure>
+
+<h3>Each image point uses a small patch of many grooves</h3>
+<p>The eye's pupil is 3 to 6 mm wide. The rays from one image point that enter it cross the lens in a patch only a little smaller: {{fp_4}} mm for a 4 mm pupil and {{fp_6}} mm for a 6 mm night pupil (Figure [[N footprint]]). At {{pitch}} mm per groove, that patch spans {{fp_g_4}} to {{fp_g_6}} grooves. Each groove delivers its own sliver of the same image point and the eye adds them together, so no single groove, and no single draft wall, decides what a pixel looks like.</p>
+<figure>[[FIG footprint]]<figcaption><b>Figure [[N footprint]].</b> A: the cone of light from one image point to the pupil, and the patch it uses on the lens. B: that patch on the real teeth near the field edge.</figcaption></figure>
+<p>The eye also focuses on the image, {{d_eye_img}} m away, not on the lens {{eye_z}} mm away. The lens is {{defocus_D}} D out of focus, which smears each point on it over about {{blur_arcmin_4}}′, while the grooves are only {{groove_arcmin}}′ apart. A regular pattern seven times finer than the blur nearly vanishes: the traced draft-wall gaps, which a pinhole camera would see as dark lines covering {{eyelost_90}} + {{eyefar_90}} of the lens at the field edge, become an even dimming with a ripple below {{mtf4_05}} (Figure [[N grooveblur]]).</p>
+<figure>[[FIG grooveblur]]<figcaption><b>Figure [[N grooveblur]].</b> Brightness of a white image across five grooves near the field edge, as a pinhole camera at the eye point would record it and as the eye, focused on the image, sees it. The dark gaps are where sight lines hit draft walls (section 8).</figcaption></figure>
+
+<h3>What limits the sharpness</h3>
+<p>Two effects blur the image across the grooves, and neither depends on the eye's focus (Figure [[N pitch]]). The first is diffraction: each groove is a {{pitch}} mm wide slit, and light through a slit spreads by about its wavelength divided by the width, {{diff_05}}′ here. The second depends on how the lens was made. If each facet is cut as a straight cone rather than following the curved surface it replaces, the image jumps by about the pitch divided by the focal length at every groove: {{flat_blur}}′ traced for this lens, about {{flat_blur_px}} pixels of the 5.5-inch panel. A lens with curved facets has almost none ({{curved_res}}′). Both act across the grooves only, so lines pointing at the lens centre stay sharper than lines running around it.</p>
+<figure>[[FIG pitch]]<figcaption><b>Figure [[N pitch]].</b> Blur against groove pitch: diffraction, the step from flat facets, and how much of the groove pattern survives the eye's blur (worst case for a 4 mm pupil).</figcaption></figure>
+<p>A few arcminutes is coarser than one pixel (0.7–1′) but fine for HUD graphics, whose lines are several pixels wide, and far inside the plan's 1° registration budget. It does mean small text should be drawn larger than on a phone screen. Whether the plan's lens has curved facets is not stated; the supplier can say.</p>
+
+<h3>The renders</h3>
+<p>Figure [[N thr_eye]] (on the cover) and Figure [[N thr_pinhole]] are Blender Cycles renders of exactly this situation. The lens is built as real geometry, all {{n_grooves_edge}} teeth out to a radius of 160 mm, each facet carrying the solved curved-surface slope, with PMMA's refractive index. The panel shows a HUD test frame on the 80 × 40 mm crop {{u}} mm below. The camera sits at the eye point. Each picture is three renders merged, at PMMA's index for red, green and blue light, so colour effects are real. Cycles traces geometric rays, so diffraction is not included.</p>
+<figure>[[FIG thr_pinhole]]<figcaption><b>Figure [[N thr_pinhole]].</b> The same view with a pinhole camera instead of an eye: everything in focus, including the lens itself. Compare with Figure [[N thr_eye]], rendered with a 4 mm pupil focused at the virtual image.</figcaption></figure>
+<div class="two">
+  <figure style="margin:4px 0">[[FIG thr_pinhole_centre]]<figcaption><b>Figure [[N thr_pinhole_centre]].</b> Centre, pinhole, 3× enlarged.</figcaption></figure>
+  <figure style="margin:4px 0">[[FIG thr_eye_centre]]<figcaption><b>Figure [[N thr_eye_centre]].</b> Centre, 4 mm pupil, 3× enlarged.</figcaption></figure>
+  <figure style="margin:4px 0">[[FIG thr_pinhole_edge]]<figcaption><b>Figure [[N thr_pinhole_edge]].</b> Left edge, pinhole, 3× enlarged.</figcaption></figure>
+  <figure style="margin:4px 0">[[FIG thr_eye_edge]]<figcaption><b>Figure [[N thr_eye_edge]].</b> Left edge, 4 mm pupil, 3× enlarged.</figcaption></figure>
+</div>
+<p>What the renders show, from most to least visible:</p>
+<ul>
+  <li><b>Colour fringes toward the edges.</b> Blue lands outside red by up to {{lc_edge}}° at the field edge. This is lateral colour, the subject of section 6, and it is the largest optical flaw in the picture.</li>
+  <li><b>Bowed straight lines.</b> The crop border and the grid curve outward at the corners: pincushion distortion, also section 6. The renderer's pre-distortion mesh removes it.</li>
+  <li><b>Faint copies of bright graphics</b> in the corners and as dim extensions of the lane lines: reflection ghosts from the lens's own surfaces, about {{ghost_line}} as bright as the graphics they copy (section 8).</li>
+  <li><b>No visible grooves</b> in the eye render. In the pinhole render, which focuses on the lens as well, the edge shows the fine concentric structure the eye blurs away.</li>
+</ul>
+<div class="two">
+  <figure style="margin:4px 0">[[FIG thr_flat_pinhole_centre]]<figcaption><b>Figure [[N thr_flat_pinhole_centre]].</b> The same centre through a lens with flat (conical) facets, pinhole: the image steps at every groove.</figcaption></figure>
+  <figure style="margin:4px 0">[[FIG thr_flat_eye_centre]]<figcaption><b>Figure [[N thr_flat_eye_centre]].</b> Flat facets seen with a 4 mm pupil: no stripes, but every edge is softened by about {{flat_blur}}′.</figcaption></figure>
+</div>

@@ -1,0 +1,79 @@
+<section>
+  <h2 id="b3"><span class="num">B3</span>Sensors and recordings</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Gives perception real data from the real course (2.2, 2.3, 2.4) before any optics exist</div>
+    <div><b>Weeks</b>1–2 (recordings), labelling through week 3</div>
+    <div><b>Closes</b>No gate; its labelled frames are G1's test set</div>
+    <div><b>Needs</b>B2; the ZED 2i, OAK-D Pro, GNSS receiver and antenna; the car and the course</div>
+    <div><b>Produces</b>Sensors mounted where they will stay, a configured GNSS receiver, recordings by day, dusk and night, 300 labelled frames</div>
+    <div><b>People</b>Builder in the passenger seat, a driver, a labeller</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> Neural networks are only as good as the roads they were trained on. The fastest way to find out whether they work on the demo course is to record the course early, with the camera exactly where it will live, and to label a few hundred frames by hand. Mounting the sensors in their final positions now also means the recordings, the calibration and the demo all share one geometry.</p>
+
+  <h3>B3.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Item</th><th style="width:6%">Qty</th><th>Specification</th></tr></thead>
+    <tbody>
+      <tr><td>Stereolabs ZED 2i, 4 mm lenses</td><td>1</td><td>$499. The USB cable is no longer in the box: buy Stereolabs' locking USB-C cable, 1.5 m ($20) or 3 m ($30)</td></tr>
+      <tr><td>Mirror-stalk clamp for the ZED</td><td>1</td><td>A rigid clamp lined with rubber that grips the rear-view mirror's stalk, with a ¼-inch-20 camera screw on a short arm; a dash-cam mirror mount can be adapted, or print one in ASA with a steel ¼-20 screw</td></tr>
+      <tr><td>Luxonis OAK-D Pro</td><td>1</td><td>$349–429; USB-C cable; Luxonis's Y-adapter for external power (it draws 4–7.5 W); a mini ball head on its ¼-20 thread; a base clamped or strapped to the column shroud (no adhesive on the car)</td></tr>
+      <tr><td>u-blox ZED-F9R breakout (SparkFun GPS-22660, SMA connector, $299.95) and an L1/L2 multi-band active antenna with at least 17 dB gain</td><td>1 each</td><td>SparkFun's "GNSS Multi-Band Magnetic Mount Antenna, 5 m (SMA)" fits; the plan's line is $300–380 for both</td></tr>
+      <tr><td>GNSS antenna ground plane</td><td>1</td><td>A 100 mm steel disc or plate under a magnetic antenna, on a non-slip pad</td></tr>
+      <tr><td>Footwell base plate</td><td>1</td><td>A 4–6 mm aluminium or plywood plate clamped to the passenger seat's rail bolts or strapped down, carrying the Jetson, the GNSS board and the switch; it must not move relative to the car (the GNSS receiver's dead reckoning needs it rigid)</td></tr>
+      <tr><td>Cable clips, braided sleeve, cable ties, gaffer tape</td><td>1 set</td><td>Routing</td></tr>
+      <tr><td>Power for the recording sessions</td><td>1</td><td>The B7 power chain, or a temporary inverter-free 12 V supply to the Jetson through the DC-DC converter</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B3.2 Mount the road camera on the mirror stalk</h3>
+  <ol class="steps">
+    <li>Fit the clamp to the mirror's stalk, as close to the glass as it goes, on the car's centreline. The plan wants the camera within about 0.5 m of the driver's eye and high: every range error turns into an angle at the eye in proportion to this distance, and a dash-top camera doubles every number (plan, 5.4).</li>
+    <li>Screw the ZED 2i onto the clamp's ¼-20 screw. Level it across the car (roll within 0.5°) with the angle gauge on its top; aim it straight ahead (yaw within about 1° of the centreline, sighting along its top at the far end of the course); pitch it down 1–3° so the road from about 5 m out fills the lower half of the image. Lock every joint.</li>
+    <li>Wiggle test: push the camera gently in each direction; it must spring back exactly. A camera that moves invalidates the calibration.<span class="chk">Camera returns to position after a push</span></li>
+    <li>Route its USB cable along the top edge of the windshield into the headliner's edge, then down the side of the A-pillar trim to the footwell, held by clips. Do not route a cable over or inside an A-pillar trim that covers a curtain airbag, and do not remove any trim. Use Stereolabs' own locking cable in the length the route needs (1.5 or 3 m); an unbranded passive USB 3 extension is a common cause of dropped frames.</li>
+  </ol>
+
+  <h3>B3.3 Mount the driver camera</h3>
+  <ol class="steps">
+    <li>Fix the ball-head base to the steering-column shroud with a strap or clamp so the camera looks at the driver's face through the wheel's upper opening, about 0.5–0.7 m from the eyes. The wheel's spokes must not block the face at straight-ahead.</li>
+    <li>Aim at the eye midpoint with the driver seated; check the face fills about a third of the image width in the DepthAI preview.</li>
+    <li>Route its USB-C cable down the column, clear of the wheel's tilt and telescope range and the pedals, to the footwell. Use the Y-adapter: its data leg to the Jetson, its power leg to the 5 V buck (B7). Luxonis rates the camera at 6 W typical and 7.5 W maximum with the IR emitters, more than a 900 mA USB port supplies.</li>
+  </ol>
+
+  <h3>B3.4 Install and configure the GNSS receiver</h3>
+  <ol class="steps">
+    <li>Screw the F9R breakout to the footwell base plate, flat, its x axis forward (the silkscreen shows the IMU's axes), square to the car within about 3°. u-blox requires the module to be mounted rigidly in a fixed position and orientation relative to the car's body; its dead reckoning learns how the IMU sits and assumes it never moves.</li>
+    <li>Put the antenna on its ground plate on the dash top near the glass with a clear view of the sky, away from the HUD footprint. Run its cable along the same route as the camera's to the board. If the windshield has a metallised (heat-reflecting) coating, GNSS reception through it is poor; check the fix quality inside the car before relying on it.</li>
+    <li>Configure it from a Windows laptop with u-blox's legacy <b>u-center</b> (its Generation 9 Advanced Configuration view; u-center 2 supports only generation 10 and 20 receivers, not the F9R), or from the Jetson with <code>pyubx2</code> configuration messages. Set <code>CFG-NAVSPG-DYNMODEL = 4</code> (automotive; automatic alignment works only in this model), <code>CFG-SFIMU-AUTO_MNTALG_ENA = 1</code> (automatic IMU-mount alignment), and the priority navigation rate <code>CFG-RATE-NAV_PRIO</code> (1–30 Hz; start at 10 Hz). Enable the position-velocity-time and the fusion-status messages on USB. Save the configuration to the board's flash.</li>
+    <li><b>Wheel ticks: none, by design.</b> The F9R is designed to use an odometer (wheel ticks or vehicle speed); without it, it runs in untethered mode, whose accuracy during GNSS outages u-blox describes as compromised. Wheel ticks would mean a wire into the car, which this design forbids. GNSS Doppler speed with a fix is unaffected; plan the course with an open sky.</li>
+    <li><b>Calibration drive</b> (u-blox's procedure): stand with the engine running and a clear sky for at least 3 minutes until a good 3-D fix; drive at 30 km/h or more with about ten left and right turns of at least 90°; drive at least 100 m straight at 40 km/h or more. The fusion status then reads 1 (fusion). Stops of 30 s or more, mixed curves and some driving above 50 km/h refine the alignment.</li>
+    <li>Check speed against a phone's GNSS log on a straight run; they should agree within about 0.2 m/s.</li>
+  </ol>
+
+  <h3>B3.5 Record the course</h3>
+  <ol class="steps">
+    <li>Plan the sessions: the demo course in daylight, at dusk, and at night, and an ordinary public road from the passenger seat (the driver drives normally; the HUD is not shown to the driver). About 30 minutes each.</li>
+    <li>Record the ZED as SVO files (they replay through the same capture call <code>roadd</code> uses), and log GNSS and IMU through <code>logd</code> with monotonic timestamps. If <code>logd</code> is not ready, record GNSS separately with a timestamp marker (cover the camera with a hand for one second at the start: the dark frames and the log's note line up the clocks).</li>
+    <li>Record the OAK-D Pro's view of the driver for a few minutes in each lighting condition, with the driver's consent, to develop the head tracker.</li>
+    <li>After each session, copy the files to the host and check them: no dropped-frame warnings, sharp images, a GNSS fix throughout.<span class="chk">Day, dusk and night recordings checked</span></li>
+  </ol>
+
+  <h3>B3.6 Label 300 frames</h3>
+  <ol class="steps">
+    <li>Pick 300 frames spread evenly across the three course sessions (more from curves and from frames with a lead car or a pedestrian than from empty straights). Export them as images with their SVO frame index.</li>
+    <li>Label in a polygon tool (CVAT or similar): every visible lane line as a polyline, marked ego left, ego right or other; road edges; every vehicle and person within 50 m as a box with its class.</li>
+    <li>Have a second person check 10% of the frames; fix the labelling rules where the two disagree.</li>
+    <li>Store the labels in the repository with the frame indices; B4's scoring tool reads them.</li>
+  </ol>
+
+  <h3>B3.7 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>ZED drops frames or disconnects</td><td>USB cable too long or passive extension; try another USB 3 port on the Jetson; check that the ZED and OAK-D together do not saturate the carrier's USB controller (plan, 8.3) by running both at full rate.</td></tr>
+      <tr><td>Images vibrate or blur</td><td>Clamp not rigid; shorten its arm; reduce exposure time in bright light.</td></tr>
+      <tr><td>GNSS fusion never initialises</td><td>Board not rigid or not square; poor sky view; repeat the calibration drive with more turns.</td></tr>
+      <tr><td>Face not found at night</td><td>Turn on the OAK-D's IR flood; check its power.</td></tr>
+    </tbody>
+  </table>
+</section>

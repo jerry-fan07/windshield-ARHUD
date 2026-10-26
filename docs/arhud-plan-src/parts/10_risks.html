@@ -1,0 +1,51 @@
+<section>
+  <h2 id="s11"><span class="num">11</span>Risks, legal, open questions</h2>
+
+  <h3>11.1 Risks</h3>
+  <p>The first seven risks are from revision 2, with their mitigations. The rest are added in this edition, each from a gap found while checking the plan's numbers. Each added risk is tagged.</p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th style="width:24%">Risk</th><th>What could happen, and the mitigation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Custom mirror lead time or quality</strong></td><td>The mirror arrives late or does not match the ray trace. Mitigation: Stage 1 is the demo fallback, and the 70/30 combiner with the projector PGU gives daylight brightness without the windshield.</td></tr>
+      <tr><td><strong>Projector input lag</strong></td><td>Some units exceed 50 ms, which pushes the motion-to-photon age over target. Mitigation: measure before buying, prefer a model with a game mode. Prediction covers part of the lag (section 4.6).</td></tr>
+      <tr><td><strong>Head tracker at night</strong></td><td>Tracking quality at night is not yet characterised. Mitigation: the OAK-D Pro's IR illuminator is the reason for choosing it. MediaPipe degrades past 45° of yaw, which is acceptable for a driver looking ahead.</td></tr>
+      <tr><td><strong>Sunlight focused onto the PGU</strong></td><td>The concave mirror concentrates sunlight near the diffuser (section 6.7). Mitigation in the plan: cold mirror and IR-cut glass, and the housing aperture shaded by the dash lip. The "cold mirror" term is wrong for this purpose, and filters do not remove the focus. Added: thermocouple test before any sun exposure, and a shutter proposed for review.</td></tr>
+      <tr><td><strong>Jetson state unknown</strong></td><td>The facts are from 2026-10-07: JetPack 5.1.3, 15 W mode, no camera, and a 3840 × 2400 panel on HDMI. Mitigation: verify before flashing.</td></tr>
+      <tr><td><strong>Bridge port collisions</strong></td><td>Ports are hashed from service names, with a known FIXME. Mitigation: the whitelist is short, so collisions are checked once at setup.</td></tr>
+      <tr><td><strong>Attention capture</strong></td><td>Superimposed symbology draws attention away from the scene; aviation research on HUDs is the basis. Mitigation: keep everything conformal and near the lead vehicle, with no full-windshield content.</td></tr>
+      <tr><td><strong>Relay geometry depends on the windshield</strong> <span class="tag fix">added</span></td><td>The single-mirror calculation cannot place the image correctly without the windshield in the model. Mitigation: a ray trace with the chosen car's windshield before the mirror is ordered (section 6.6).</td></tr>
+      <tr><td><strong>Dual-monitor output unverified</strong> <span class="tag fix">added</span></td><td>The Jetson may not have a second display output for the audience monitor. Mitigation: check the carrier's outputs before designing the audience view (section 8.3).</td></tr>
+      <tr><td><strong>Prediction sign or rotation wrong</strong> <span class="tag fix">added</span></td><td>A sign error would move the path in the wrong direction, by an amount comparable to the uncompensated error, about 3° at 10 m. Mitigation: confirm the sign on a replayed route before any car drive (section 4.6).</td></tr>
+      <tr><td><strong>Parity tolerance undefined</strong> <span class="tag fix">added</span></td><td>Track B's go/no-go could be argued either way. Mitigation: set a numeric tolerance before the test (section 5.3).</td></tr>
+      <tr><td><strong>Stale or missing data</strong> <span class="tag fix">added</span></td><td>The HUD could draw the last known path after its source has stopped. Mitigation: define the stale-data cutoff and the disengagement behaviour before Phase 1 (section 3.3).</td></tr>
+      <tr><td><strong>Ghost image off the nominal eye height</strong> <span class="tag fix">added</span></td><td>The wedge removes the ghost only at the design eye point, so the driver may see a double image when the head moves. Mitigation: the eye-box test and the ghost photograph at several heights.</td></tr>
+      <tr><td><strong>Polarised sunglasses</strong> <span class="tag fix">added</span></td><td>The design relies on an s-polarised image, and polarised sunglasses are made to block exactly that polarisation, so a driver wearing them sees a dim or absent HUD. Production HUDs that tolerate sunglasses use p-polarised glass with a special coating (AGC, in the sources), which is out of this plan's scope. Mitigation: no polarised eyewear for the driver or in front of the eye-point camera during the demo, stated in the script (section 10.3).</td></tr>
+      <tr><td><strong>Monitor polarisation orientation</strong> <span class="tag fix">added</span></td><td>An LCD monitor emits linearly polarised light. Mounted in the wrong orientation, its windshield reflection falls from {{rs65}} to {{rp65}}. Mitigation: measure the panel's axis and orient it, or add a half-wave retarder, before it is used as the night PGU (section 6.3).</td></tr>
+      <tr><td><strong>Polariser loss</strong> <span class="tag fix">added</span></td><td>The diffuser depolarises the projector's light, so a polariser sheet is needed and passes about {{pol_t}} of it. Daylight headroom falls from {{dlp_headroom_mirr}}× to {{dlp_headroom_pol}}×, which still passes. Mitigation: carried in the budget; measure the diffuser's output before assuming the loss can be avoided (section 6.5).</td></tr>
+      <tr><td><strong>Projector dimming floor</strong> <span class="tag fix">added</span></td><td>Daylight needs about {{dlp_day_frac}} of full output, and some laser projectors cannot dim that far by source control. Mitigation: measure the floor; a fixed neutral-density filter sets the daylight working point if needed (section 6.5).</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>11.2 Legal <span class="tag">confirm locally</span></h3>
+  <p>No federal standard governs head-up displays directly. NHTSA has treated factory head-up display areas as minor exceptions to the defrost and wiper zones. State law governs objects on or near the windshield. California Vehicle Code 26708 bars anything that obstructs the driver's clear view, with small exempt zones in the lower corners and top centre. Texas and Florida have similar obstruction statutes. These statements are from revision 2 and have not been re-checked for this edition.</p>
+  <p>The practical question is which configuration is least exposed. A dash-top housing that projects into the glass without attaching anything to it is the least exposed configuration. A free-standing combiner above the dash is more exposed, because it stands in the driver's view. The Stage 2 housing is of the dash-top kind, which the plan treats as least exposed. The Stage 1 combiner stands above the dash and is the more exposed of the two. Both still need the local check, and the Stage 1 combiner is the riskier stage for public use even though it is the simpler one.</p>
+  <p>For the demo, the plan's conditions are a closed course or private lot, a safety driver who is not the presenter, and sign-off from the university's risk office before any public road use. Those conditions are the plan's, not legal advice, and the university's rules govern.</p>
+
+  <h3>11.3 Open questions</h3>
+  <ol>
+    <li><strong>Which car.</strong> This gates the harness, the windshield and the quality of longitudinal control, and it also fixes the windshield curvature that the mirror design depends on.</li>
+    <li><strong>Whether the classic J401 carrier accepts a GMSL deserialiser board,</strong> or whether <code>perceptd</code> uses a USB camera instead.</li>
+    <li><strong>Whether the demo venue allows</strong> a second vehicle as the lead car and a volunteer pedestrian.</li>
+    <li><strong>Whether the Stage 1 image quality is good enough to be shown,</strong> or is for development only.</li>
+    <li><strong>How the Jetson drives two monitors,</strong> one for the HUD and one for the audience (section 8.3).</li>
+    <li><strong>What the ray trace gives</strong> for f, u and the mirror shape, with the chosen windshield (section 6.6).</li>
+    <li><strong>What tolerance defines "matching"</strong> for Track B's parity test (section 5.3).</li>
+    <li><strong>What the HUD does on stale data and on disengagement</strong> (section 3.3).</li>
+    <li><strong>How the sun test is run,</strong> and whether the shutter or shade is adopted (section 6.7).</li>
+    <li><strong>Which term the optics vendor uses</strong> for the infrared-blocking component in front of the diffuser.</li>
+    <li><strong>How far the chosen projector can dim,</strong> and whether a fixed neutral-density filter is needed for the daylight working point (section 6.5).</li>
+    <li><strong>What polarisation leaves the diffuser,</strong> and whether a wire-grid polariser recovers enough light over an iodine film to be worth its cost (section 6.3).</li>
+  </ol>
+</section>

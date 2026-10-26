@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dev: electronics, sensors, instruments</title>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+  html, body { margin: 0; height: 100%; background: #20242a; color: #dfe7ef; font: 13px "Helvetica Neue", Helvetica, Arial, sans-serif; overflow: hidden; }
+  #log { position: fixed; left: 8px; top: 8px; max-width: 46vw; max-height: 90vh; overflow: auto; background: rgba(10,12,16,0.82); padding: 6px 10px; border-radius: 6px; white-space: pre-wrap; z-index: 2; }
+  #log .err { color: #ff8a8a; } #log .ok { color: #9fe6bd; }
+</style>
+</head>
+<body>
+<div id="log"></div>
+<script type="module">
+const log = document.getElementById('log');
+const say = (msg, cls = '') => { const d = document.createElement('div'); d.className = cls; d.textContent = msg; log.appendChild(d); (cls === 'err' ? console.error : console.log)(msg); };
+window.addEventListener('error', (e) => say('error: ' + e.message + ' @ ' + (e.filename || '').split('/').pop() + ':' + e.lineno, 'err'));
+window.addEventListener('unhandledrejection', (e) => say('rejection: ' + (e.reason && (e.reason.stack || e.reason.message) || e.reason), 'err'));
+
+const hp = new URLSearchParams(location.hash.slice(1));
+const EXPLODE = parseFloat(hp.get('explode') || '0');
+const WORKING = hp.get('working') === '1';
+const ONLY = hp.get('only');
+const T = hp.has('t') ? parseFloat(hp.get('t')) : null;
+const VIEW = hp.get('view');   // optional "x,y,z" direction
+
+let THREE, RoomEnvironment, OrbitControls, validateComponent, E, S, I;
+try {
+  THREE = await import('three');
+  ({ RoomEnvironment } = await import('three/addons/environments/RoomEnvironment.js'));
+  ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+  ({ validateComponent } = await import('../js/components/contract.js'));
+  E = await import('../js/components/electronics.js');
+  S = await import('../js/components/sensors.js');
+  I = await import('../js/components/instruments.js');
+} catch (e) { say('import failed: ' + (e.stack || e.message), 'err'); throw e; }
+
+const builders = [
+  E.buildJetson, E.buildSoftware, E.buildController, E.buildLedDriver, E.buildDcdc, E.buildFuseTap, E.buildEthSwitch, E.buildPdCharger, E.buildMiniPC, E.buildMonitor,
+  S.buildZed2i, S.buildOakdPro, S.buildZedF9r, S.buildGnssAntenna,
+  I.buildLatencyProbe, I.buildLumMeter, I.buildTargetBoard, I.buildRangefinder,
+];
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, devicePixelRatio));
+renderer.setSize(innerWidth, innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x2b3038);
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(2, 4, 3); sun.castShadow = true; scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xdfe8f0, 0x30343a, 0.4));
+const camera = new THREE.PerspectiveCamera(35, innerWidth / innerHeight, 0.001, 100);
+const controls = new OrbitControls(camera, renderer.domElement);
+
+const comps = [];
+let errCount = 0;
+for (const b of builders) {
+  let c;
+  try { c = b(); } catch (e) { say(`${b.name} threw: ${e.stack || e.message}`, 'err'); errCount++; continue; }
+  if (ONLY && c.id !== ONLY) continue;
+  const errs = validateComponent(c);
+  if (errs.length) { errCount += errs.length; say(`${c.id}: ${errs.join('; ')}`, 'err'); }
+  else say(`${c.id}: ok · ${c.parts.length} parts · ${c.assembly.length} steps`, 'ok');
+  for (const p of c.parts) p.base = p.object.position.clone();
+  if (EXPLODE) for (const p of c.parts) p.object.position.copy(p.base).addScaledVector(p.explode, EXPLODE);
+  c.setWorking(WORKING);
+  comps.push(c);
+}
+
+const tmpBox = (obj) => {
+  const b = new THREE.Box3(); obj.updateWorldMatrix(true, true);
+  obj.traverseVisible((o) => {
+    if (o.isSprite) { if (o.material.blending === THREE.AdditiveBlending) return; const p = o.getWorldPosition(new THREE.Vector3()); const s = new THREE.Vector3(); o.getWorldScale(s); const h = new THREE.Vector3(s.x / 2, s.y / 2, s.x / 2); b.expandByPoint(p.clone().add(h)); b.expandByPoint(p.clone().sub(h)); return; }
+    if ((o.isMesh) && o.geometry) { const gb = new THREE.Box3().setFromObject(o); if (!gb.isEmpty()) b.union(gb); }
+  });
+  return b;
+};
+
+function step(t, dt) { for (const c of comps) c.update(t, dt, { working: WORKING, explode: EXPLODE }); }
+if (T !== null) { for (let t = 0; t <= T; t += 1 / 30) step(t, 1 / 30); }
+else step(0, 1 / 30);
+
+if (ONLY && comps.length) {
+  const c = comps[0];
+  scene.add(c.group);
+  const b = tmpBox(c.group);
+  const ctr = b.getCenter(new THREE.Vector3()), sz = b.getSize(new THREE.Vector3());
+  const r = Math.max(sz.x, sz.y, sz.z);
+  const dir = VIEW ? new THREE.Vector3(...VIEW.split(',').map(Number)).normalize() : new THREE.Vector3(1, 0.75, 1.15).normalize();
+  const dist = r / (2 * Math.tan(camera.fov * Math.PI / 360)) * 1.35;
+  camera.position.copy(ctr).addScaledVector(dir, dist); camera.near = dist / 200; camera.far = dist * 50; camera.updateProjectionMatrix();
+  controls.target.copy(ctr); camera.lookAt(ctr);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(r * 20, r * 20), new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.9 }));
+  floor.rotation.x = -Math.PI / 2; floor.position.y = b.min.y - 0.0005; floor.receiveShadow = true; scene.add(floor);
+  sun.position.copy(ctr).add(new THREE.Vector3(r * 3, r * 6, r * 4)); sun.target.position.copy(ctr); scene.add(sun.target);
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -r * 2; sun.shadow.camera.right = sun.shadow.camera.top = r * 2; sun.shadow.camera.near = r * 0.5; sun.shadow.camera.far = r * 20;
+  say(`${c.name}\nsize ${sz.x.toFixed(3)} × ${sz.y.toFixed(3)} × ${sz.z.toFixed(3)} m`);
+} else {
+  // grid: each component scaled to fit a 0.5 m cell
+  const cols = 6, cell = 0.6;
+  comps.forEach((c, i) => {
+    const holder = new THREE.Group(); holder.add(c.group);
+    const b = tmpBox(c.group), sz = b.getSize(new THREE.Vector3()), ctr = b.getCenter(new THREE.Vector3());
+    const k = 0.42 / Math.max(sz.x, sz.y, sz.z);
+    holder.scale.setScalar(k);
+    c.group.position.set(-ctr.x, -b.min.y, -ctr.z);
+    holder.position.set((i % cols - (cols - 1) / 2) * cell, 0, Math.floor(i / cols) * cell);
+    scene.add(holder);
+    const lab = (E.decal)(c.id, 0.25, '+y', { color: '#dfe7ef', font: '600 64px "Helvetica Neue", Helvetica, Arial, sans-serif' });
+    lab.position.set(holder.position.x, 0.002, holder.position.z + 0.27); scene.add(lab);
+  });
+  const rows = Math.ceil(comps.length / cols);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(10, 10), new THREE.MeshStandardMaterial({ color: 0x3a3f47, roughness: 0.9 }));
+  floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; scene.add(floor);
+  camera.position.set(0, 2.6, (rows - 1) * cell / 2 + 2.6); controls.target.set(0, 0, (rows - 1) * cell / 2 - 0.1); camera.lookAt(controls.target);
+  sun.shadow.camera.left = sun.shadow.camera.bottom = -3; sun.shadow.camera.right = sun.shadow.camera.top = 3;
+}
+controls.update();
+say(errCount ? `ERRORS: ${errCount}` : 'all components valid', errCount ? 'err' : 'ok');
+document.title = errCount ? `errors ${errCount}` : 'ok';
+
+const clock = new THREE.Clock(); let t = T ?? 0;
+renderer.setAnimationLoop(() => { const dt = Math.min(0.05, clock.getDelta()); if (T === null) { t += dt; step(t, dt); } controls.update(); renderer.render(scene, camera); });
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); });
+</script>
+</body>
+</html>

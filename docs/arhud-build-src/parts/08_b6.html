@@ -1,0 +1,103 @@
+<section>
+  <h2 id="b6"><span class="num">B6</span>Stage 0 bench rig, the renderer, and latency: gate G2</h2>
+  <div class="stagehead">
+    <div><b>Solves</b>Drawing for the eye (problem 4 of Figure 2.1), age compensation (2.4), the first look through glass</div>
+    <div><b>Weeks</b>1–3</div>
+    <div><b>Closes</b>Gate G2: 60 fps from a log on the rig; whole chain ≤ 90 ms by photodiode; prediction sign confirmed</div>
+    <div><b>Needs</b>B2 (Jetson), B4's message layer and a first recording; for the latency test, B3's ZED</div>
+    <div><b>Produces</b>The Stage 0 rig, <code>hudd</code>, a synthetic log generator, the latency probe and its measurement</div>
+    <div><b>People</b>Software builder</div>
+  </div>
+  <p><b>What this stage solves, intuitively.</b> Optical Stage 0 is a teleprompter turned on its side: a panel lies face-up under a sheet of glass at 45°, and you look at the glass and see the panel's picture floating behind it, overlaid on whatever is behind the glass. It has no magnification and no windshield, so it says nothing about the final optics; it exists so the renderer, its colours, its timing and its drawing rules can be built on a desk in week 1, long before any custom part arrives.</p>
+
+  <h3>B6.1 Materials</h3>
+  <table class="tight">
+    <thead><tr><th style="width:36%">Item</th><th style="width:8%">Qty</th><th>Specification and source</th></tr></thead>
+    <tbody>
+      <tr><td>Panel</td><td>1</td><td>YODOIT 16-inch monitor (unit 1, owned) or the stock 5.5-inch kit once it arrives</td></tr>
+      <tr><td>Teleprompter beamsplitter glass, 70/30</td><td>1</td><td>The cheap one of the plan's pair (Neewer 17-inch class, about $53 <span class="tag">verify</span>). Confirm the vendor's convention: the first number is usually the transmitted share, so 30% reflects toward the viewer.</td></tr>
+      <tr><td>Enclosure</td><td>1</td><td>Black foam board or 6 mm plywood: a base about 450 × 350 mm, two triangular cheeks with a 45° slot for the glass, a backdrop 450 × 350 mm; matte black paint or flock paper; hot glue or wood glue</td></tr>
+      <tr><td>Camera on a tripod</td><td>1</td><td>Manual focus; at the viewing position</td></tr>
+      <tr><td>Latency probe parts</td><td>1 set</td><td>A spare Raspberry Pi Pico (or the controller's); a bright 5 mm white LED and a 100 Ω resistor; a BPW34 photodiode, a 100 kΩ resistor and an LM393 comparator or the Pico's ADC; a short black tube (a film canister) for the LED; black tape; jumper wires</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B6.2 Build the Stage 0 rig</h3>
+  <figure>[[FIG g_stage0d]]<figcaption><b>Figure B6.1.</b> The Stage 0 rig in side view. The image appears behind the glass at the same distance from the glass as the panel.</figcaption></figure>
+  <ol class="steps">
+    <li>Cut the base, the two cheeks and the backdrop. Paint every inside face matte black or cover it with flock paper; reflections from a shiny inside surface show as haze in the image.</li>
+    <li>Glue the cheeks upright on the base, parallel, the panel's width apart plus 10 mm. Their 45° slots face the viewer's side and rise away from the backdrop.</li>
+    <li>Lay the panel face-up in the well between the cheeks; for the 16-inch monitor, block it up so its top surface is level. Check level with the angle gauge.</li>
+    <li>Slide the glass into the slots. Check 45° ± 0.5° with the angle gauge. Handle the glass by its edges; it scratches easily.</li>
+    <li>Stand the backdrop behind the glass on the far side from the viewer.</li>
+    <li>Put the camera on its tripod facing the glass horizontally at the height of the glass's centre, about 0.4 m away. The virtual image is as far behind the glass as the panel is below it, so the image distance is about 0.6 m.</li>
+    <li>Show a test card on the panel: the letter F, an arrow pointing up, and a grid. One reflection flips the picture top to bottom as seen by the camera; set the renderer's output flip (B6.4) until the card reads correctly.<span class="chk">Test card reads correctly through the glass</span></li>
+    <li>Try the luminance meter on the rig's virtual image (plan: week 1–2). The LS-150 focuses from 1,012 mm to infinity, so stand it back until the image is more than about 1.1 m away. If the spot meter cannot focus on the virtual image, order or borrow the lab meter now; every luminance row in B9 and B13 depends on it.<span class="chk">Meter decision recorded</span></li>
+  </ol>
+
+  <h3>B6.3 Synthetic and recorded logs</h3>
+  <p>Before <code>hudd</code> sees a real recording, give it perfect data. Write <code>tools/synth.py</code>, which publishes every topic at its real rate with exact geometry: a straight lane 3.7 m wide, then a curve of 300 m radius, a lead car 30 m ahead that brakes at 5 m/s², a pedestrian crossing at 20 m, constant speed 25 m/s with the matching yaw rate in the curve, and an eye point that sways ±75 mm. Because the truth is known, every error on screen is the renderer's. Then switch to B3's recordings played through <code>tools/replay.py</code>.</p>
+
+  <h3>B6.4 Write <code>hudd</code></h3>
+  <ol class="steps">
+    <li><b>Window.</b> raylib (OpenGL 3.3 core) full screen on the HDMI output at 1920 × 1080, 60 Hz, vsync on. Clear to black every frame: black is "no light" on an LCD with the backlight behind only the crop, so everything outside the crop must stay black.</li>
+    <li><b>Two passes.</b> Draw the content into an off-screen texture in <i>virtual-image coordinates</i> (a rectangle representing the window as the driver sees it, at twice the crop's resolution, 1892 × 946, for anti-aliasing). Then draw that texture onto the panel through a <i>warp mesh</i>: a grid of quads (start with 64 × 32) whose vertices carry each virtual-image point's position on the panel. For Stage 0 the mesh is the identity plus the flip; in B8 and B13 it comes from calibration.</li>
+    <li><b>Crop placement.</b> Put the crop's origin, size and flips in <code>config/calibration.yaml</code>. On Stage 0 the crop can be anywhere; in Stage 2 it must sit exactly over the backlight cavity (found in B9).</li>
+    <li><b>Projection.</b> For each car-frame point, transform it to the eye frame (nominal eye plus the tracker's live offset), then to virtual-image coordinates. On Stage 0 use a simple pinhole whose focal length in pixels is half the crop height divided by the tangent of half the vertical field (the plan's K<sub>eye</sub>). From B13 on, the projection is the lookup table from the ray trace.</li>
+    <li><b>Age compensation, before projection.</b> For each point captured at t<sub>c</sub>, age = t<sub>now</sub> − t<sub>c</sub>, where t<sub>now</sub> is the predicted time the frame will be on the glass (now plus the measured render and scan-out time). Integrate speed v and yaw rate ω from <code>ego</code> over the age to get the distance travelled s and the angle turned ψ; then p<sub>now</sub> = R<sub>z</sub>(−ψ) · (p<sub>capture</sub> − [s, 0, 0]). Tracked objects are also advanced by their own velocity over the age.</li>
+    <li><b>Drawing rules</b> (plan section 7.4, to be confirmed on the course in B14):
+      <table class="tight">
+        <thead><tr><th style="width:24%">Element</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td>Stale data</td><td><code>lanes</code> and <code>objects</code> fade over 300 ms once older than 250 ms and are gone at 600 ms. <code>ego</code> older than 200 ms: prediction off; older than 1 s: speed shows a dash. <code>eyePose</code> older than 500 ms: nominal eye point and a glyph.</td></tr>
+          <tr><td>Lane lines</td><td>Appear above confidence 0.6, full at 0.8; fade below 0.5, gone at 0.3; three consecutive frames before first appearance. At least 6 px wide on the panel (hides the ghost).</td></tr>
+          <tr><td>Ribbon</td><td>Between the two ego lines where both are drawn; one line missing: a standard 3.7 m width from the other, lighter. Far end at the nearer of the two lines' last confident points. Fill at least about 39% of white at noon (the road simulation's figure for a contrast of 1.15); a "blank" mode that skips the fill is useful for checking registration.</td></tr>
+          <tr><td>Lead chevron</td><td>Nearest tracked car, bus, truck or motorcycle whose base lies inside the ribbon, within 80 m; at the bearing of the box's bottom centre and its range, on the ground; gap in metres, and in seconds above 3 m/s. Not drawn when the ribbon is not drawn.</td></tr>
+          <tr><td>Hazards</td><td>Pedestrians, cyclists, signs after three detections above 0.5; held 400 ms after the last, fading in the last 200 ms; inside the window only.</td></tr>
+          <tr><td>Speed block</td><td>Fixed (not conformal): GNSS speed with a fix glyph; last speed-limit value with a sign glyph, timed out after 10 min.</td></tr>
+          <tr><td>Draw region</td><td>Nothing below the window's bottom edge or above the horizon plus 2°.</td></tr>
+          <tr><td>Clutter mode (demo only)</td><td>Everything regardless of confidence, every track outlined, for 10 s on a key press.</td></tr>
+        </tbody>
+      </table></li>
+    <li><b>Statistics.</b> Publish <code>hudStats</code> at 10 Hz: the age of each topic as drawn, render time, dropped frames, and the last registration residual. Publish a downscaled <code>hudFrame</code> for the audience view.</li>
+  </ol>
+
+  <h3>B6.5 Confirm the sign of the prediction</h3>
+  <p>A wrong sign doubles the error instead of removing it, and it looks plausible on a straight road. Check it on a recording before any live drive.</p>
+  <ol class="steps">
+    <li>Pick a recorded segment through a curve at speed, with clear lane paint.</li>
+    <li>Run <code>hudd</code> in "camera overlay" mode: it draws the lines onto the road camera's own image (projected with the camera's intrinsics instead of the eye), delayed by a fixed extra 200 ms to exaggerate the effect.</li>
+    <li>With compensation off, the drawn lines lag the paint (they sit where the paint was 200 ms ago). With compensation on, they should sit on the paint. If they move further away, a sign is wrong: check the direction of ψ and of s.<span class="chk">Compensation moves the lines onto the paint in a left curve and a right curve</span></li>
+  </ol>
+
+  <h3>B6.6 Build the latency probe and measure the chain</h3>
+  <ol class="steps">
+    <li>Wire the probe Pico: GPIO 2 through 100 Ω to the LED's anode, cathode to ground; the BPW34 reverse-biased from 3.3 V through 100 kΩ to ground, the junction to the LM393's input against a threshold set by a trimmer (or to ADC 0 directly). Comparator output to GPIO 3.</li>
+    <li>Put the LED in its black tube, pointed into the ZED's left lens from 20–50 mm, taped so it cannot move. In <code>roadd</code>, add a probe mode that watches the mean brightness of that small image region and publishes a flag with the frame's capture time when it crosses a threshold.</li>
+    <li>In <code>hudd</code>, draw a 60 × 60 px white square at a fixed panel position whenever the newest flag is on. Tape the photodiode over that square, shielded from room light.</li>
+    <li>Firmware: flash the LED at random intervals of 0.5–1.5 s, timestamp the flash and the photodiode's rising edge in microseconds, and print the difference over USB serial. Collect 200 samples.</li>
+    <li>For the renderer and panel alone, let the Pico send a byte over serial that <code>hudd</code> answers with the square: the difference is render plus HDMI board plus panel response. This also gives the HDMI board's input lag (plan, Phase 5).</li>
+    <li>Report the median and the 95th percentile, and fill in the plan's budget:</li>
+  </ol>
+  [[TBL lat]]
+  <p>Estimate the GNSS latency by recording a few hard stops and cross-correlating GNSS speed with the speed integrated from the accelerometer; the lag at the correlation peak is the GNSS delay. Enter it into <code>egod</code>'s configuration.</p>
+
+  <h3>B6.7 Gate G2</h3>
+  <ul class="cl">
+    <li>Ribbon, lines, chevron and speed block render at a steady 60 fps from a recorded log on the Stage 0 rig (no dropped frames in <code>hudStats</code> over 10 minutes).</li>
+    <li>The whole chain, LED at the camera to light from the panel, measures ≤ 90 ms (95th percentile recorded alongside).</li>
+    <li>The prediction's sign is confirmed on a recording (B6.5).</li>
+    <li><code>hudd</code> runs full screen on the Jetson itself, not only on the mini PC.</li>
+  </ul>
+
+  <h3>B6.8 If it goes wrong</h3>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Symptom</th><th>Response</th></tr></thead>
+    <tbody>
+      <tr><td>Chain above 90 ms</td><td>Find the stage with the probe's split measurement. A panel board that buffers a frame adds 16 ms: try another board. Perception slower than the budget: lower its rate or input size. Rendering: check vsync is not stacking frames (triple buffering adds a frame).</td></tr>
+      <tr><td>Frame drops on the Jetson</td><td>Check the power mode (MAXN), that nothing else draws to the display, and that the warp mesh is not rebuilt each frame.</td></tr>
+      <tr><td>Haze or a second image on the rig</td><td>Shiny inside surfaces or the glass's second surface; blacken the enclosure, tilt the backdrop slightly.</td></tr>
+      <tr><td>The probe triggers on room light</td><td>Shield the photodiode, raise the comparator threshold, run the test with the room lights off.</td></tr>
+    </tbody>
+  </table>
+</section>

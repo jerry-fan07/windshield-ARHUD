@@ -1,0 +1,7 @@
+starting
+meta for 32 components
+car cleaned, dropped 220 helpers
+saved installed.glb (16,298,424 bytes)
+saved bench.glb (3,193,028 bytes)
+saved layout.json (111,966 bytes)
+DONE

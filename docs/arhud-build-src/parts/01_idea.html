@@ -1,0 +1,218 @@
+<div class="part" data-toc="Part I · The idea">
+  <div class="pn">Part I</div>
+  <div class="pt">The idea</div>
+  <div class="pd">What the driver sees, why that is hard, and which part of the machine exists to solve each difficulty. No soldering yet: this part is the map that every later instruction refers to.</div>
+  <div class="pl">1&nbsp;&nbsp;What you are building<br>2&nbsp;&nbsp;The problems, and the parts that solve them<br>3&nbsp;&nbsp;One frame, from photons in to photons out<br>4&nbsp;&nbsp;The build at a glance</div>
+</div>
+
+<section>
+  <h2 id="c1"><span class="num">1</span>What you are building</h2>
+  <p class="lede">A head-up display that draws on the road. The driver looks through the windshield as usual and sees, floating over the lane ahead, a translucent ribbon lying exactly on their lane, thin lines over the painted lane markings, a chevron under the car in front with the gap to it, outlines around pedestrians and cyclists, and a small fixed block with the speed and the last speed-limit sign.</p>
+  <figure>[[FIG mockup]]<figcaption><b>Figure 1.1.</b> What the driver sees through the HUD window (illustrative). Everything except the speed block is <i>conformal</i>: drawn so that it lies on the real object it describes, from the driver's own eye.</figcaption></figure>
+
+  <h3>1.1 What makes it different from an ordinary HUD</h3>
+  <p>A factory head-up display shows numbers: a speed and an arrow, floating about two metres ahead, in a small box that does not need to line up with anything. This one has to line up with the world. A lane line drawn half a degree to the side of the paint looks wrong; a chevron that trails a braking car by a metre looks broken. Three consequences follow, and they shape the whole machine.</p>
+  <ul>
+    <li><b>The picture must appear far away.</b> If the image floated two metres ahead, the eye would have to refocus between the image and the road, and the two eyes would see the mark on two different spots of the road. The design puts the image 7.5 m ahead, where focus and the two eyes' views almost agree with the road from about 10 m out.</li>
+    <li><b>The machine must know where things are, where the driver's eye is, and how old its information is,</b> all to a fraction of a degree, 30 to 60 times a second.</li>
+    <li><b>The picture must be very bright.</b> The windshield reflects only about a quarter of the light sent at it, and the background at noon is a sunlit sky.</li>
+  </ul>
+
+  <h3>1.2 The design in one paragraph</h3>
+  <p>One computer, an NVIDIA Jetson Orin NX, does everything. A stereo road camera high on the windshield gives it images and depth; neural networks find the lanes and the vehicles; a satellite receiver with an inertial unit gives speed and turning rate; a second camera watches the driver's face and reports where the eyes are. The Jetson draws the overlay for that eye position, 60 times a second, onto a small 5.5-inch TFT LCD panel. Only a 60 × 30 mm patch of that panel is used, and a custom LED backlight behind it makes it about twenty times brighter than the panel's stock backlight. Light from the patch goes up to a fold mirror, forward to a large concave mirror, up to the windshield, and back to the driver's eye. The concave mirror works like a magnifying glass, so the eye sees the patch as a window about 1.4 m wide, 7.5 m ahead, over the road. All of the optics sit in a printed housing on the dash, which lifts off without tools. The only electrical connection to the car is a fused 12 V accessory feed.</p>
+
+  <h3>1.3 The targets that define "working"</h3>
+  <p>These are the plan's acceptance criteria, abbreviated. B13 turns the full list into a test sheet.</p>
+  <table>
+    <thead><tr><th style="width:38%">Quantity</th><th style="width:28%">Target</th><th>Why that number</th></tr></thead>
+    <tbody>
+      <tr><td>Virtual image distance</td><td>≥ 6 m, design 7.5 m</td><td>Far enough that eye focus and the two eyes' views agree with the road beyond about 10 m.</td></tr>
+      <tr><td>Field of view</td><td>10.8° × 5.4° (10° × 4° to 13° × 5° accepted)</td><td>Covers one lane from about 20 m out and the lead car to 80 m.</td></tr>
+      <tr><td>Eye box</td><td>≥ 120 × 60 mm untracked; design 130 × 70 mm</td><td>The driver's head moves; the whole window must stay visible.</td></tr>
+      <tr><td>Luminance at the eye, noon, sky behind</td><td>≥ 1,500 cd/m²</td><td>A clear sky is about 10,000 cd/m²; the overlay must add at least 15% to be seen.</td></tr>
+      <tr><td>Static registration at 30 m</td><td>≤ 0.5°</td><td>About a quarter of a lane width at 30 m.</td></tr>
+      <tr><td>Registration with ±75 mm head motion</td><td>≤ 0.3°</td><td>Ordinary head sway must not break alignment.</td></tr>
+      <tr><td>Motion to photon, whole chain</td><td>≤ 90 ms, compensated error ≤ 0.3°</td><td>At 30 m/s the car moves 2.7 m in 90 ms.</td></tr>
+      <tr><td>Connection to the car</td><td>12 V accessory feed only, fused</td><td>Nothing in the HUD can talk to the car's computers or move an actuator.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box grey">
+    <p class="h">What it is not</p>
+    <p>It does not drive, steer, brake or warn on its own authority. It reads nothing from the car's buses and writes nothing to them. The driver drives; a separate safety driver is required for demonstrations; demonstrations happen on a closed course or private lot until the university's risk office signs off anything else (plan, section 11).</p>
+  </div>
+</section>
+
+<section>
+  <h2 id="c2"><span class="num">2</span>The problems, and the parts that solve them</h2>
+  <p>It helps to think of the HUD as a chain of answers to six questions asked every frame, with a layer of protection underneath that runs all the time. Figure 2.1 is the map; the sections after it take one problem at a time. Each section says what the problem is in plain terms, why it is hard (with the number that makes it hard), the idea that solves it, the parts that idea needs, and the build stage where you make those parts.</p>
+  <figure>[[FIG g_chain]]<figcaption><b>Figure 2.1.</b> The six problems the HUD solves every frame, and the four it guards against all the time. The colours are used the same way in every diagram in this guide.</figcaption></figure>
+
+  <h3>2.1 Putting a picture out on the road</h3>
+  <div class="problem"><div class="k">The problem</div><div>A screen on the dash is half a metre from the eye. Light reflected off the windshield from that screen would appear about half a metre beyond the glass: the driver would see a blurred overlay while looking at the road, and each eye would see it over a different part of the road.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>A magnifying glass. When an object sits just inside the focal point of a converging lens or concave mirror, the light leaving it spreads as if it came from a much larger object much farther away: a <i>virtual image</i>. Put the panel {{u2}} from a concave mirror of focal length {{f2}} and the image appears 7.5 m away and {{m2}} times larger. The windshield then acts as a partly reflecting mirror, the <i>combiner</i>, that folds that light back to the driver while letting the road show through.</div></div>
+  <div class="problem"><div class="k">Why it is hard</div><div>The nearer the panel is to the focal point, the farther the image and the more sensitive it is: the panel sits only {{focus_gap}} inside focus, so a millimetre of panel position moves the image by metres. A mirror used at an angle has different focal lengths in its two directions (astigmatism), and the windshield's own curvature adds more. That is why the mirror's exact shape comes from a ray trace with the real car's windshield, and why the mirror is the longest lead-time item in the project.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>TFT panel (the object), cold-mirror fold (turns the beam so it fits in the dash), custom concave mirror about 300 × 200 mm (the magnifier), the stock windshield (the combiner), a printed housing holding them in place.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B1 (measure, trace), B10 (mirror and fold), B11 (housing), B12 (assembly), B13 (calibration). Optical Stages 0 and 1 (B6, B8) are simpler versions that need no custom mirror.</div></div>
+  <figure>[[FIG g_magnifier]]<figcaption><b>Figure 2.2.</b> The virtual image, three ways. A lens and a concave mirror do the same job; the windshield only folds the result toward the eye.</figcaption></figure>
+  <figure>[[FIG g_section]]<figcaption><b>Figure 2.3.</b> The real thing, to scale: the layout the printed housing was designed around. Light leaves the 60 × 30 mm crop going up, reflects forward off the fold, back and up off the concave mirror, and off the windshield into the eye box.</figcaption></figure>
+
+  <h3>2.2 Knowing where the road is</h3>
+  <div class="problem"><div class="k">The problem</div><div>To draw a ribbon on the lane, the computer needs the lane's position in three dimensions in front of the car, not just where it appears in a picture. To put a chevron under the car ahead, it needs that car's direction and distance.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>A <i>stereo</i> camera: two cameras 12 cm apart see nearby things shifted more than distant things, which gives a depth for every pixel, the way two eyes do. A neural network finds the lane lines in the left image; another finds and labels vehicles, people and signs; a tracker gives each one a stable identity across frames. Each frame, the software fits a flat plane to the depth points on the road just ahead (RANSAC, a fit that ignores outliers such as cars), and places each lane pixel where its line of sight meets that plane. Direction comes from the image and is very accurate; distance comes from stereo depth.</div></div>
+  <div class="problem"><div class="k">Why it is hard</div><div>Lane networks are trained on other people's roads and may not generalise to the demo course; that is why the build records the course early and scores the networks on 300 hand-labelled frames before anything else depends on them (gate G1). The networks, the depth and the renderer must share one embedded GPU in about 33 ms per frame; the plan's estimate is {{gpu_min}}–{{gpu_max}} ms, so the first job on the Jetson is to measure it.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>Stereolabs ZED 2i stereo camera with 4 mm lenses (clamped high on the windshield's centreline at the mirror stalk); the Jetson's GPU running a lane network (UFLDv2 or CLRNet), YOLO11s object detection and ByteTrack tracking as TensorRT FP16 engines.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B2 (Jetson), B3 (camera mount and recordings), B4 (perception and gate G1).</div></div>
+
+  <h3>2.3 Knowing where the driver's eye is</h3>
+  <div class="problem"><div class="k">The problem</div><div>A mark lines up with a road point only along the line from the eye to that point. If the driver's head moves, the right place for the mark moves too (Figure 2.4). And the road camera is not where the eye is: it sits about {{b_ce}} away, so every position it measures must be re-expressed as seen from the eye.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>Measure the eye. A second camera faces the driver, finds the face and the eye landmarks on its own processor, measures their distance with its own stereo pair, and reports the midpoint between the eyes in the car's coordinate frame 30 times a second. The renderer projects every mark for that eye position.</div></div>
+  <div class="problem"><div class="k">Why it is hard</div><div>With the image at 7.5 m, an untracked 150 mm head shift misplaces a mark by 0.15 × |1/7.5 − 1/d| radians for a point at distance d: nothing at 7.5 m, but 0.29° at 10 m, 0.57° at 15 m, 0.86° at 30 m and 1.15° far away, against a 0.3° target. (The plan's table lists the same numbers in reverse order; the simulator found the correction.) At night the face is dark, so the camera brings its own infrared illuminator. Both camera positions must be known in one shared frame, which is what calibration (B7, B13) establishes.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>Luxonis OAK-D Pro on the steering-column shroud (global-shutter stereo pair, infrared flood and dot projector, on-camera neural processor); a 30 m target board and a camera at the eye point for calibration.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B3 (mount), B4 (head-tracking process), B7 and B13 (calibration).</div></div>
+  <figure>[[FIG g_registration]]<figcaption><b>Figure 2.4.</b> Registration: the mark belongs where the line from the eye to the road point crosses the image plane. A dip of the head moves every mark, by more for near points than for far ones.</figcaption></figure>
+
+  <h3>2.4 Everything is late</h3>
+  <div class="problem"><div class="k">The problem</div><div>From the moment the road camera exposes a frame to the moment the panel lights up, {{lat_min}} to {{lat_max}} ms pass. At 30 m/s the car has moved {{lat_travel_min}} to {{lat_travel_max}} m, and if it is turning, it has rotated. Drawn as captured, every mark would lag behind the paint and swing wide in curves.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>Stamp every measurement with the time its camera frame was captured, on one shared clock. Measure the car's own motion independently, at a high rate, from satellite speed and a gyroscope. Just before drawing, move each point back by the distance travelled and the angle turned since its capture: <i>age compensation</i>. For the plan's worked example (a point 10 m ahead, 30 m/s, 100 ms old) the uncompensated error is {{uncomp}}°; after compensation it is {{resid_deg}}° for an unmodelled 1 m/s² acceleration.</div></div>
+  <div class="problem"><div class="k">Why it is hard</div><div>Latency cannot be measured from recordings; only a physical test (a light flashed at the camera, a photodiode on the panel) measures the real chain. And the sign of the correction is easy to get backwards, which doubles the error instead of removing it, so it is checked on a recording before any drive.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>u-blox ZED-F9R GNSS receiver with its built-in inertial unit and dead reckoning (speed to 0.05 m/s); an active multi-band antenna; the ZED 2i's own 400 Hz inertial unit for yaw rate; a latency probe (LED, photodiode, microcontroller).</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B3 (receiver and antenna), B4 (ego-motion process), B6 (latency probe and gate G2).</div></div>
+  <figure>[[FIG g_delay]]<figcaption><b>Figure 2.5.</b> Where the time goes in one frame, at the high end of each stage's estimate, and how far the car moves meanwhile.</figcaption></figure>
+
+  <h3>2.5 Making enough light</h3>
+  <div class="problem"><div class="k">The problem</div><div>The overlay must be visible against a noon sky of about 10,000 cd/m². Light from the panel loses 10% at each of the two mirrors and then only {{rs65}} of it reflects off the windshield toward the eye (for light polarised the right way; almost none for the other). Overall {{path_ws}} of the panel's luminance reaches the eye. To deliver 1,500 cd/m² at the eye, the panel needs {{need_panel_day}} cd/m². The stock panel gives {{stock_panel}}. No buyable small panel gives more than about 1,600.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>A liquid-crystal panel makes no light; it is an array of shutters in front of a backlight, passing only about {{t_lcd}} of it. So build a much brighter backlight, but only behind the 60 × 30 mm crop that is actually used: eight high-power white LEDs in a white mixing box, a diffuser to even them, two crossed prism films to aim the light into the narrow cone the eye box needs, and a clear cover glass. About {{p_led}} of LED power (half that with the films) gives a {{l_panel_design}} cd/m² panel; lighting the whole panel would take {{p_led_full}}. The plan's budget leaves out the dust cover, its polariser and the IR-cut plate, which B10 adds back; this guide therefore aims the backlight at about 13,000 cd/m².</div></div>
+  <div class="problem"><div class="k">Why it is hard</div><div>Uniformity (eight point sources must look like one even surface), heat (the cell absorbs about {{p_abs_cell}} in 18 cm², and liquid crystal stops working near 75 °C), and flicker (cameras filming the HUD see beats from pulse-width dimming, which is why this guide dims the LEDs by their current instead).</div></div>
+  <div class="problem"><div class="k">Parts</div><div>Wisecoco 5.5-inch 1920 × 1080 IPS HDMI kit (two: one to take apart, one stock), white LEDs on an aluminium board, finned heat sink and 40 mm fan, mixing cavity, diffuser plate, two prism films, cover glass, two constant-current LED drivers with analogue dimming, a thermistor on the cell.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B5 (driver and controller), B9 (backlight, measurements, gate G5).</div></div>
+  <figure>[[FIG g_budget]]<figcaption><b>Figure 2.6.</b> The light budget from panel to eye, on a log scale. Each step is a multiplication, so the bars shrink by the same ratio on this axis; the windshield is the big loss.</figcaption></figure>
+
+  <h3>2.6 Keeping the panel cool</h3>
+  <div class="problem"><div class="k">The problem</div><div>The LEDs turn most of their power into heat at the board, and the cell absorbs the light it blocks, about {{p_abs_cell}}, or {{irr_cell}} W/m² over its own area, more than direct sunlight. Consumer liquid crystal goes dark (clears) near 75 °C and the kit panel's temperature rating is not published.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>Remove the heat, measure the temperature, and back off before damage. The heat sink and fan pull cabin air through the housing floor; a thermistor taped to the back of the cell lets a small independent controller halve the backlight above one temperature and switch it off (and close the shutter) above another, even if the Jetson has crashed.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>Heat sink, 40 mm fan, 10 kΩ NTC thermistor, the HUD controller board (Raspberry Pi Pico), a type-K thermocouple and MAX31855 amplifier for the tests.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B5 (controller), B9 (30-minute thermal test at 40 °C).</div></div>
+
+  <h3>2.7 The mirror is also a burning glass</h3>
+  <div class="problem"><div class="k">The problem</div><div>Light runs both ways. Sunlight that enters through the windshield from the right part of the sky retraces the HUD's path backwards: it reaches the concave mirror, which focuses it, like a magnifying glass on paper, onto the panel. The plan's trace puts about {{sun_w}} into a spot about {{sun_spot_mm}} mm across. The direction is specific: about {{sun_elev}}° above the horizon <i>behind</i> the car for a 28° windshield, which is a summer midday drive away from the sun, or a car parked facing away from it.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>Five layers. A shutter over the aperture that is closed whenever the HUD is off, and that closes itself when power fails. A sun-watch rule: from GNSS time, position and heading the Jetson computes where the sun is relative to the car and closes the shutter when the sun enters the dangerous patch of sky. A cold-mirror fold (reflects visible light, passes infrared to an absorber), an infrared-cut glass in front of the cell and a polariser on the dust cover, which together pass about an eighth of the solar power. The thermistor cut-off. And a thermocouple test of the empty housing in the sun before the panel is ever exposed.</div></div>
+  <div class="problem"><div class="k">Why it is hard</div><div>Even after the filters the plan estimates about {{sun_after_pol_kwm2}} kW/m² at the spot, {{sun_vs_ti}} times the peak TI computes for a production HUD; one HUD maker's patent puts time to damage at minutes. The defences must be built before the optics see daylight, not after.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>Two-leaf aluminium shutter, SG90 servo and a return spring, cold-mirror glass with an absorber plate, IR-cut glass, an s-pass polariser laminated to the dust cover, the controller and its thermistor.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B5 (controller rules), B10 (filters), B11 and B12 (shutter, thermocouple test), B4 (sun-watch computation).</div></div>
+  <figure>[[FIG sunentry]]<figcaption><b>Figure 2.7.</b> From the plan: the HUD's own ray, reversed, continues through the glass to the sky behind the car. Sunlight from there is focused onto the panel. Forward is to the left in this figure.</figcaption></figure>
+
+  <h3>2.8 Polarisation: the windshield prefers one direction of light</h3>
+  <div class="problem"><div class="k">The problem</div><div>At the windshield's steep angle, glass reflects light polarised parallel to its surface (<i>s</i>, here across the car) about nineteen times better than the other direction (<i>p</i>): {{rs65}} against {{rp65}}. An LCD's output is already polarised, often at 45° to its edges. Sent the wrong way, most of the light passes straight through the windshield.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>Turn the panel's polarisation to s before it leaves the housing. Measure the panel's axis with a reference polariser; if it is not across the car, lay a half-wave retarder film over the crop with its fast axis halfway between the two directions. Keep the fold and the mirror's planes of incidence in the same vertical plane as the windshield's, so s stays s. Laminate an s-pass polariser to the dust cover: it passes the HUD image unchanged and halves unpolarised sunlight.</div></div>
+  <div class="problem"><div class="k">Consequence for the driver</div><div>Polarised sunglasses block s light, so they black out the HUD. Demo rule: no polarised eyewear.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B9 (measure the axis, fit the retarder), B10 (dust-cover polariser).</div></div>
+  <figure>[[FIG g_polar]]<figcaption><b>Figure 2.8.</b> Polarisation along the path, for a panel that emits at 45° to the car's axes.</figcaption></figure>
+
+  <h3>2.9 Two reflections from one windshield</h3>
+  <div class="problem"><div class="k">The problem</div><div>A laminated windshield has two glass surfaces, and each reflects. The driver sees two copies of the picture offset slightly: a <i>ghost</i>. Production HUD cars use a wedge-shaped interlayer to merge them.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>Distance helps. The two reflections leave parallel, {{ghost_perp}} apart, so the angle between the copies falls with image distance: {{ghost_2}}′ at 2 m but {{ghost_7_5}}′ at 7.5 m, about {{ghost_px}} pixels. The design accepts it on the stock windshield and draws lines at least 6 px wide, ribbons as filled areas and heavy text, so the ghost hides inside the strokes. A wedge windshield ($600–1,500) is bought only if the B13 photograph says so.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B13 (ghost photographs at three eye heights).</div></div>
+
+  <h3>2.10 Bending the picture so it looks straight</h3>
+  <div class="problem"><div class="k">The problem</div><div>A tilted curved mirror and a curved windshield stretch the picture: the top and bottom have different widths (keystone), lines bow, and the image is not at one distance everywhere. A rectangle drawn on the panel arrives as a distorted shape.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>Distort the drawing in advance by exactly the opposite amount. Photograph a known grid through the HUD from the eye point, compare it with a real grid on the ground, and store the correction; the renderer applies it as a last full-screen pass. In this guide the correction is a lookup table computed from the ray trace (eye position to panel point) and refined by the photographs, because the image is not a flat plane.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B8 (Stage 1 version), B13 (final calibration).</div></div>
+
+  <h3>2.11 Too bright at night, too dim at noon</h3>
+  <div class="problem"><div class="k">The problem</div><div>The same overlay that must beat a noon sky would dazzle at night, and the liquid-crystal cell leaks about 1/1000 of its backlight even when black, which shows as a faint grey rectangle on a dark road.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>An ambient-light sensor at the dust cover and a dimming curve: the controller sets the backlight from the measured light level, from full power at 10,000 lux or more down to a night level several hundred times lower. The LED drivers' analogue current control covers about 20:1 without flicker; switching off one of the two LED strings and drawing white as grey on the panel cover the rest.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>TSL2591 (or VEML7700) light sensor in a pod behind the dust cover; the controller; the LED driver's dim input.</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B5, tuned in B13.</div></div>
+
+  <h3>2.12 Living in someone's car</h3>
+  <div class="problem"><div class="k">The problem</div><div>The HUD must not damage the car, drain its battery, corrupt its own disk at key-off, distract the driver more than it helps, or break the law on windshield obstructions.</div></div>
+  <div class="problem"><div class="k">The idea</div><div>One fused 12 V accessory feed and nothing else. An ignition-sensed converter that keeps the Jetson running for a clean shutdown after the key turns off and cuts off before the battery runs flat. Every mount clamps or sits; nothing is bonded to the glass; the housing lifts off. A written installation checklist is signed before every drive.</div></div>
+  <div class="problem"><div class="k">Parts</div><div>Mini-Box DCDC-USB-200 converter, inline fuse and accessory plug, clamps, levelling feet, the checklist (Appendix F).</div></div>
+  <div class="problem"><div class="k">Built in</div><div>B7.</div></div>
+
+  <h3>2.13 Showing other people</h3>
+  <p>Only the driver can see a HUD. Passengers and an audience watch a second monitor showing the rendered frame, the driver camera with the tracked eye point, and live numbers (registration error, data age, contrast) next to their targets. The Jetson's carrier has a single HDMI output, which drives the panel, so the audience view is a video stream over Ethernet to a mini PC that drives the second monitor (B7).</p>
+
+  <h3>2.14 Summary: every part and why it is there</h3>
+  <table class="tight">
+    <thead><tr><th style="width:30%">Part</th><th>Problem it solves</th><th style="width:14%">Built in</th></tr></thead>
+    <tbody>
+      <tr><td>Jetson Orin NX (reComputer J4012)</td><td>Runs perception, ego-motion, head tracking, rendering</td><td>B2</td></tr>
+      <tr><td>ZED 2i stereo camera, 4 mm</td><td>Where the road and objects are (2.2); its IMU gives yaw rate (2.4)</td><td>B3, B4</td></tr>
+      <tr><td>OAK-D Pro</td><td>Where the eye is (2.3)</td><td>B3, B4</td></tr>
+      <tr><td>u-blox ZED-F9R and antenna</td><td>Speed for age compensation (2.4); time, position, heading for sun-watch (2.7)</td><td>B3, B4</td></tr>
+      <tr><td>5.5-inch 1080p TFT kit</td><td>The picture (2.1)</td><td>B9</td></tr>
+      <tr><td>Custom LED backlight and driver</td><td>Daylight brightness (2.5)</td><td>B5, B9</td></tr>
+      <tr><td>Heat sink, fan, thermistor</td><td>Heat (2.6)</td><td>B9</td></tr>
+      <tr><td>Half-wave retarder</td><td>Polarisation to s (2.8)</td><td>B9</td></tr>
+      <tr><td>Cold-mirror fold and absorber</td><td>Fits the path in the dash (2.1); dumps solar infrared (2.7)</td><td>B10, B12</td></tr>
+      <tr><td>Hot-mirror IR-cut glass, in front of the cell</td><td>Keeps solar infrared off the cell (2.7)</td><td>B10, B12</td></tr>
+      <tr><td>Concave mirror (custom)</td><td>The magnifier: image 7.5 m out (2.1)</td><td>B10, B12</td></tr>
+      <tr><td>Dust cover with s-pass polariser</td><td>Keeps dust out; halves sunlight (2.7, 2.8)</td><td>B10, B11</td></tr>
+      <tr><td>Shutter, servo, spring</td><td>Sun protection when off or in the sun patch (2.7)</td><td>B11, B12</td></tr>
+      <tr><td>HUD controller (Pico) and sensors</td><td>Dimming (2.11), thermal and shutter fail-safes (2.6, 2.7)</td><td>B5</td></tr>
+      <tr><td>Printed ASA housing</td><td>Holds the optics in alignment; blocks stray light; removable (2.1, 2.12)</td><td>B11</td></tr>
+      <tr><td>DC-DC converter, fuse, plug</td><td>Safe power, clean shutdown (2.12)</td><td>B7</td></tr>
+      <tr><td>Mini PC 2, monitor 2, switch</td><td>Audience view (2.13)</td><td>B7</td></tr>
+      <tr><td>Beamsplitter glass, Fresnel lens</td><td>Optical Stages 0 and 1: software and in-car tests before the mirror arrives</td><td>B6, B8</td></tr>
+      <tr><td>Luminance meter, latency probe, target board, rangefinder</td><td>Proving the targets in 1.3</td><td>B6, B9, B13</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="c3"><span class="num">3</span>One frame, from photons in to photons out</h2>
+  <p>Follow one frame through the finished system. The software is a set of small programs (processes), one per job, that pass messages to each other; Figure 3.1 is the plan's view of them, and the table after it lists each one.</p>
+  <figure>[[FIG arch]]<figcaption><b>Figure 3.1.</b> From the plan: the single-computer architecture. Sensors feed the Jetson over USB; the Jetson drives the panel over HDMI and the audience PC over Ethernet.</figcaption></figure>
+  <ol class="steps">
+    <li><b>t = 0 ms.</b> The ZED 2i exposes a stereo pair. <code>roadd</code> receives it 10–30 ms later, stamps it with the capture time on the Jetson's monotonic clock, computes depth, and fits the road plane.</li>
+    <li><b>Perception.</b> <code>laned</code> runs the lane network on the left image and publishes up to four lines as image points with confidences; <code>detectd</code> runs YOLO11s and the tracker and publishes boxes with track identities. <code>roadd</code> lifts both into the car frame: lane points onto the fitted plane, objects at their stereo range. Each message carries the original capture time.</li>
+    <li><b>Meanwhile, at 100 Hz,</b> <code>egod</code> fuses GNSS speed with the gyroscope into speed, yaw rate and pitch, and once a second computes the sun's direction in the car frame. <code>headtrackd</code> publishes the eye midpoint at 30 Hz from the OAK-D Pro. <code>controllerd</code> reports the ambient light, cell temperature and shutter state from the Pico.</li>
+    <li><b>Draw.</b> <code>hudd</code>, the renderer, wakes on the panel's 60 Hz refresh. For each lane point and object it computes the age (now minus capture time), moves it by the distance travelled and angle turned over that age, finds where the line from the current eye position to it lands on the panel (lookup table, then pre-distortion), and draws the ribbon, lines, chevron, hazards and speed block into the 946 × 473 pixel crop. Anything too old fades out by rule rather than being drawn stale.</li>
+    <li><b>Light.</b> The HDMI board scans the frame onto the panel (8–25 ms). The custom backlight shines through the crop. The light goes up to the fold, forward to the concave mirror, up through the dust cover and shutter opening, off the windshield, into the eye. The eye sees the window about 7.5 m ahead with the marks lying on the road.</li>
+    <li><b>Record and show.</b> <code>logd</code> records every message with its timestamps; <code>audienced</code> streams the frame and the driver camera to the audience PC.</li>
+  </ol>
+  <table class="tight">
+    <thead><tr><th style="width:17%">Process</th><th>Job</th><th style="width:26%">Publishes</th></tr></thead>
+    <tbody>
+      <tr><td><code>roadd</code></td><td>Owns the ZED 2i: capture at 30 Hz, stereo depth, RANSAC road plane, IMU stream; lifts lanes and boxes to the car frame; records SVO files on request</td><td><code>lanes</code>, <code>objects</code>, <code>imu</code></td></tr>
+      <tr><td><code>laned</code></td><td>Lane network (TensorRT FP16) on the left image</td><td><code>lanes2d</code></td></tr>
+      <tr><td><code>detectd</code></td><td>Object detector (TensorRT FP16), tracker, sign classifier</td><td><code>objects2d</code></td></tr>
+      <tr><td><code>egod</code></td><td>Fuses GNSS and IMU at 100 Hz; sun direction at 1 Hz</td><td><code>ego</code>, <code>gnss</code>, <code>sunWatch</code></td></tr>
+      <tr><td><code>headtrackd</code></td><td>Owns the OAK-D Pro: face, landmarks, depth at the eyes; eye midpoint in the car frame</td><td><code>eyePose</code></td></tr>
+      <tr><td><code>hudd</code></td><td>Renderer: age compensation, projection for the eye, 60 Hz draw with vsync, pre-distortion, full-screen HDMI</td><td><code>hudFrame</code>, <code>hudStats</code></td></tr>
+      <tr><td><code>controllerd</code></td><td>Serial link to the Pico: light, temperature, backlight duty, shutter</td><td><code>health</code></td></tr>
+      <tr><td><code>logd</code></td><td>Records all topics; triggers camera recordings</td><td>files</td></tr>
+      <tr><td><code>audienced</code></td><td>Composites the HUD frame, driver camera and live numbers; MJPEG stream to the audience PC</td><td>HTTP stream</td></tr>
+    </tbody>
+  </table>
+  <p>Messages travel over ZeroMQ publish/subscribe sockets on the local machine, encoded with msgpack. Every message carries its capture time, its publish time and a sequence number. Empty messages are still published, so that silence (a crashed process) is distinguishable from absence (no car ahead). A supervisor restarts a crashed process after one second and marks its topics stale. Appendix D lists every field.</p>
+</section>
+
+<section>
+  <h2 id="c4"><span class="num">4</span>The build at a glance</h2>
+  <p>The build splits into fourteen stages. Two chains run in parallel from the first week. The <b>software chain</b> (Jetson, sensors, perception, renderer, live drive) needs only a camera and a passenger seat, so it starts as soon as the camera arrives. The <b>optics chain</b> (car, measurement, ray trace, mirror order, mirror lead time, housing, assembly, daylight tests) is the critical path, because the mirror's shape depends on the car's windshield and the mirror's lead time has not been quoted. The picture generator is a third, shorter chain that must be finished before the mirror arrives.</p>
+  <figure>[[FIG g_stages]]<figcaption><b>Figure 4.1.</b> Build stages and dependencies. Gates are shown with the stage that closes them.</figcaption></figure>
+  <table>
+    <thead><tr><th style="width:7%">Stage</th><th style="width:27%">Title</th><th style="width:11%">Weeks</th><th>At the end you have</th><th style="width:8%">Gate</th></tr></thead>
+    <tbody>
+      <tr><td>B1</td><td>Choose and measure the car; ray trace; order</td><td>0–1</td><td>A named car with measured windshield, a ray trace, the first orders placed, mirror quotes requested, venue and sign-off agreed</td><td>G0</td></tr>
+      <tr><td>B2</td><td>Prepare the Jetson</td><td>1</td><td>JetPack 6.2, SDKs, engines, a measured GPU budget</td><td></td></tr>
+      <tr><td>B3</td><td>Sensors and recordings</td><td>1–2</td><td>Cameras and GNSS mounted for recording; the course recorded by day, dusk and night; 300 frames labelled</td><td></td></tr>
+      <tr><td>B4</td><td>Perception software</td><td>1–4</td><td>Lanes, objects, ego-motion, head pose, sun-watch publishing on the Jetson; perception scored</td><td>G1</td></tr>
+      <tr><td>B5</td><td>HUD controller and LED driver</td><td>1–3</td><td>A tested Pico board with sensors, analogue LED dimming, servo, fail-safe firmware</td><td></td></tr>
+      <tr><td>B6</td><td>Stage 0 bench rig, renderer, latency</td><td>1–3</td><td>The overlay rendered at 60 fps through a beamsplitter; latency measured by photodiode</td><td>G2</td></tr>
+      <tr><td>B7</td><td>Install in the car; overlay on a monitor</td><td>3–5</td><td>Everything but the optics in the car; overlay on the camera image within 0.5° for 20 min</td><td>G3</td></tr>
+      <tr><td>B8</td><td>Stage 1 combiner in the car</td><td>4–8</td><td>An in-car HUD at 4.2 m for night and overcast drives; the demo fallback</td><td>G4</td></tr>
+      <tr><td>B9</td><td>Picture generator and backlight</td><td>4–8</td><td>A measured 10,000 cd/m² PGU, thermally tested, polarisation oriented</td><td>G5</td></tr>
+      <tr><td>B10</td><td>Mirror, fold and filters</td><td>1–10</td><td>The custom mirror (ordered after B1's trace, then lead time), fold, IR-cut glass, dust cover, shutter leaves, all inspected</td><td></td></tr>
+      <tr><td>B11</td><td>Print and assemble the housing</td><td>5–9</td><td>The 39 printed pieces, inserts, body, bay, mounts, lid, shutter</td><td></td></tr>
+      <tr><td>B12</td><td>Optics into the housing; first light; sun test</td><td>8–10</td><td>An aligned HUD unit on the bench, empty-housing thermocouple test passed</td><td></td></tr>
+      <tr><td>B13</td><td>Stage 2 in the car: calibrate and prove it</td><td>8–12</td><td>Every acceptance row passing at noon</td><td>G6</td></tr>
+      <tr><td>B14</td><td>Hazards, polish, rehearsal</td><td>8–12</td><td>The demo script run twice without touching the Jetson</td><td>G7</td></tr>
+    </tbody>
+  </table>
+  <p>Weeks count from the day the car and venue are agreed, as in the plan. They are planned windows, not measured durations: the mirror's lead time, the camera and GNSS delivery times, the time to complete the ray trace, and the number of backlight build-and-measure turns are unknown until B1. Re-draw this table when they are known.</p>
+  <figure>[[FIG gantt]]<figcaption><b>Figure 4.2.</b> From the plan: phase windows over weeks 0–13. Blue bars are software and in-car work, orange the optics chain that carries the mirror's lead time.</figcaption></figure>
+</section>

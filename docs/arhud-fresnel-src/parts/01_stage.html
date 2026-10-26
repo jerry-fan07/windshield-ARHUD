@@ -1,0 +1,25 @@
+<h2 id="stage"><span class="num">1</span>Stage 1 at a glance</h2>
+<p>The plan builds the HUD's optics in three stages. Stage 0 is a desk rig for the software. Stage 2 is the real design: a concave mirror that bounces the panel's light off the windshield. Stage 1 sits between them. It puts a working HUD in the car within weeks, before the custom mirror exists, so registration can be tested on real roads at night and in overcast weather. It is also the demo fallback if the mirror is late.</p>
+<p>Stage 1 has four parts, from the bottom of the light path to the top:</p>
+<ul>
+  <li><b>The panel</b>, an LCD showing the HUD graphics. Only an 80 × 40 mm patch of it, the <em>crop</em>, is used: the plan's 16-inch 4K monitor first, the 5.5-inch 1080p panel later.</li>
+  <li><b>The Fresnel lens</b>, a 300 × 300 mm sheet of clear acrylic (PMMA), {{t}} mm thick, with fine circular grooves on one face. It acts as a strong magnifying glass with a {{f}} mm focal length. It sits {{u}} mm from the panel.</li>
+  <li><b>The combiner</b>, a sheet of glass that is partly reflective (70% of light passes, 30% reflects). It stands above the dash, tilted so that it reflects the lens's light toward the driver while the road shows through it.</li>
+  <li><b>The eye.</b> Looking through the combiner, the driver sees the graphics floating over the road about {{d_eye_img}} m ahead.</li>
+</ul>
+<p>Figure [[N car]] shows the arrangement in a car, to scale, with three rays traced through a model of the real lens. Two things stand out. The image is far beyond the windshield, near the road, which is what lets graphics line up with real objects. And the 280 mm between the panel and the lens is long: drawn straight down from a lens sitting on the dash, the panel would end up {{lens_below_dash}} mm inside the dashboard. Section 11 folds the path with a mirror.</p>
+<figure>[[FIG car]]<figcaption><b>Figure [[N car]].</b> Stage 1 in the car. A: the whole scene to scale, with the virtual image {{d_eye_img}} m from the eye. B: the rig enlarged, with rays to the top, centre and bottom of the field traced through the lens model. The car outline, dash height and the split of the eye-to-lens distance are ASSUMED for illustration.</figcaption></figure>
+
+<h3>Straightening the light path</h3>
+<p>The combiner is flat, and a flat mirror changes the direction of light without changing any distance. So for working out the optics, the bend at the combiner can be removed: picture the eye looking straight down a single line through the lens at the panel (Figure [[N axis]]). Everything in sections 2 to 8 uses this unfolded view. The eye is {{eye_z}} mm from the lens along the light path ({{eye_comb}} mm to the combiner, {{comb_lens}} mm down to the lens). The plan does not fix this distance; it is an assumption, and Table 1 shows what changes if it is 600 or 800 mm instead.</p>
+<figure>[[FIG axis]]<figcaption><b>Figure [[N axis]].</b> The light path unfolded. Along the axis the drawing is to scale except for the break before the virtual image; heights are tripled. The inset shows where the lens's principal plane H sits inside the 2 mm sheet; the 280 mm is measured from it.</figcaption></figure>
+<p>Two details in Figure [[N axis]] matter later. The focal point F lies only {{sun_focus_beyond}} mm beyond the panel, which makes the image distance sensitive to the panel's position (section 4) and makes the lens a dangerous sun concentrator (section 10). And the distance "280 mm" has to be measured from somewhere: for a thick lens the reference is its principal plane H, which for this sheet sits {{zh}} mm inside the flat face. Measured from the flat face, the panel is {{u_flat}} mm away.</p>
+<table>
+  <thead><tr><th>Eye to lens (light path)</th><th>Field from the eye</th><th>Image from the eye</th><th>px/deg, 4K monitor</th><th>Eye box, simple estimate</th></tr></thead>
+  <tbody>
+    <tr><td>600 mm</td><td>{{er_fov_600}}</td><td class="num">{{er_d_600}} m</td><td class="num">{{er_ppd_600}}</td><td>{{er_eb_600}} mm</td></tr>
+    <tr><td><b>700 mm (used here, ASSUMED)</b></td><td><b>{{er_fov_700}}</b></td><td class="num"><b>{{er_d_700}} m</b></td><td class="num"><b>{{er_ppd_700}}</b></td><td><b>{{er_eb_700}} mm</b></td></tr>
+    <tr><td>800 mm</td><td>{{er_fov_800}}</td><td class="num">{{er_d_800}} m</td><td class="num">{{er_ppd_800}}</td><td>{{er_eb_800}} mm</td></tr>
+  </tbody>
+</table>
+<p class="small"><b>Table 1.</b> What the assumed eye distance changes, traced through the lens model. The simple eye box is the lens half-width minus the edge ray's offset; the traced value at 700 mm, which lets the edge angle change as the head moves, is {{eyebox_w}} × {{eyebox_h}} mm (section 5).</p>

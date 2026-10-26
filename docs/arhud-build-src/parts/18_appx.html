@@ -1,0 +1,159 @@
+<section>
+  <h2 id="ac"><span class="num">C</span>Calibration file</h2>
+  <p><code>config/calibration.yaml</code> on the Jetson, committed to the repository after every calibration. Every transform is in the plan's car frame (x forward, y right, z down, metres, origin at the road camera's left lens). Angles in degrees. Example structure with placeholder values:</p>
+  <div class="term">car: "make model year, VIN last 6"      # which car this file belongs to
+date: 2026-11-20
+driver_seat: {track_notch: 7, backrest_deg: 22, wheel_reach: 3, wheel_height: 2}
+windshield: {rake_deg: 28.0, thickness_mm: 4.96, Rh_m: 4.0, Rv_m: 8.0}
+road_camera:                        # B13.3 A
+  height_above_ground_m: 1.30
+  rotation_deg: {pitch: -1.2, yaw: 0.3, roll: 0.1}
+  intrinsics_from: zed_factory      # ZED factory calibration, left camera
+driver_camera:                      # B13.3 B, OAK-D Pro pose in the car frame
+  position_m: [0.95, -0.37, 0.62]
+  rotation_deg: {pitch: 12.0, yaw: 178.0, roll: 0.0}
+eye_nominal_m: [-0.36, -0.37, 0.08]  # B1.3, refined in B13.3 C step 5
+projection:
+  mode: lut                         # lut (Stage 2) | plane (Stages 0 and 1)
+  lut_file: config/hudd_lut_car.json  # from the B1 trace
+  correction: {type: tps, file: config/hud_correction.json, eye_points: 5, residual_arcmin: 1.6}
+panel:
+  crop_px: {x: 487, y: 303, w: 946, h: 473}   # B9.5 step 3
+  flip: {x: false, y: true}                    # per optical stage, set with the test card
+stage1:                             # B8 only
+  plane_focal_px: 1700
+  warp_file: config/stage1_warp.json</div>
+  <p>Redo: the whole file for a new car or windshield; <code>road_camera</code> after any camera remount; <code>driver_camera</code> after it is moved; <code>projection</code> after any change to the housing's position or the mirror's adjusters; <code>panel.crop_px</code> after the cell is reseated.</p>
+</section>
+
+<section>
+  <h2 id="ad"><span class="num">D</span>Topics and messages</h2>
+  <p>ZeroMQ PUB/SUB over <code>ipc://</code>, msgpack maps. Every message carries <code>t_capture</code>, <code>t_publish</code> (monotonic nanoseconds) and <code>seq</code>. Empty messages are still published. The graph is a tree with <code>hudd</code> at the root.</p>
+  <table class="tight">
+    <thead><tr><th style="width:14%">Topic</th><th style="width:16%">Rate</th><th>Fields</th></tr></thead>
+    <tbody>
+      <tr><td><code>lanes</code></td><td>30 Hz (20 if GPU-bound)</td><td>Per line: car-frame points on the fitted plane (smoothed), confidence, type (ego left, ego right, other, edge), raw points (debug); plane parameters and fit status; capture time</td></tr>
+      <tr><td><code>lanes2d</code></td><td>30 Hz</td><td>Per line: image points, confidence</td></tr>
+      <tr><td><code>objects</code></td><td>30 Hz</td><td>Per track: id, class, bearing, range, car-frame position, velocity, image box, track age, sign value</td></tr>
+      <tr><td><code>objects2d</code></td><td>30 Hz</td><td>Per detection: box, class, confidence, track id</td></tr>
+      <tr><td><code>imu</code></td><td>400 Hz (batched)</td><td>Gyroscope and accelerometer samples in the car frame with monotonic times</td></tr>
+      <tr><td><code>ego</code></td><td>100 Hz</td><td>Speed, yaw rate, pitch, pitch rate, longitudinal acceleration, fix quality, source flags</td></tr>
+      <tr><td><code>gnss</code></td><td>10 Hz</td><td>Position, course, speed, accuracies, time, fusion status</td></tr>
+      <tr><td><code>eyePose</code></td><td>30 Hz</td><td>Eye midpoint in the car frame, confidence, capture time</td></tr>
+      <tr><td><code>sunWatch</code></td><td>1 Hz</td><td>Sun azimuth and elevation in the car frame, inside-patch flag</td></tr>
+      <tr><td><code>health</code></td><td>2 Hz</td><td>Ambient lux, backlight duty, cell temperature, shutter state, controller flags, process liveness, SoC temperatures</td></tr>
+      <tr><td><code>hudStats</code></td><td>10 Hz</td><td>Age of each topic as drawn, render time, dropped frames, last registration residual</td></tr>
+      <tr><td><code>hudFrame</code></td><td>15 Hz</td><td>Downscaled rendered frame for the audience view</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="ae"><span class="num">E</span>Test record sheets</h2>
+  <p>Print one per run. Fill every cell; "not measured" is a valid entry, a blank is not.</p>
+  <h4>Gate G2 · Latency (B6.6)</h4>
+  <table class="sheet"><thead><tr><th>Date</th><th>Set-up (bench / car)</th><th class="num">Samples</th><th class="num">Median, ms</th><th class="num">95th pct, ms</th><th class="num">Render + panel only, ms</th><th>Pass ≤ 90</th></tr></thead>
+    <tbody><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table>
+  <h4>Gate G5 · Picture generator (B9.6, B9.7)</h4>
+  <table class="sheet"><thead><tr><th>Point (5 × 3)</th><th class="num">cd/m²</th><th>Point</th><th class="num">cd/m²</th><th>Point</th><th class="num">cd/m²</th></tr></thead>
+    <tbody><tr><td>top left</td><td></td><td>top centre</td><td></td><td>top right</td><td></td></tr><tr><td>upper left</td><td></td><td>upper centre</td><td></td><td>upper right</td><td></td></tr><tr><td>middle left</td><td></td><td>centre</td><td></td><td>middle right</td><td></td></tr><tr><td>lower left</td><td></td><td>lower centre</td><td></td><td>lower right</td><td></td></tr><tr><td>bottom left</td><td></td><td>bottom centre</td><td></td><td>bottom right</td><td></td></tr></tbody></table>
+  <table class="sheet"><thead><tr><th>Minute</th><th class="num">Box °C</th><th class="num">NTC °C</th><th class="num">Cell front °C</th><th>Minute</th><th class="num">Box °C</th><th class="num">NTC °C</th><th class="num">Cell front °C</th></tr></thead>
+    <tbody><tr><td>0</td><td></td><td></td><td></td><td>20</td><td></td><td></td><td></td></tr><tr><td>5</td><td></td><td></td><td></td><td>25</td><td></td><td></td><td></td></tr><tr><td>10</td><td></td><td></td><td></td><td>30</td><td></td><td></td><td></td></tr><tr><td>15</td><td></td><td></td><td></td><td>cool-down 5</td><td></td><td></td><td></td></tr></tbody></table>
+  <h4>Gate G6 · Registration (B13.4)</h4>
+  <table class="sheet"><thead><tr><th>Eye position</th><th>Tracker</th><th class="num">Ring 1, °</th><th class="num">Ring 2</th><th class="num">Ring 3</th><th class="num">Ring 4</th><th class="num">Ring 5</th><th class="num">Max</th></tr></thead>
+    <tbody><tr><td>nominal</td><td>on</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>−75 mm lateral</td><td>on</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>+75 mm lateral</td><td>on</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>−75 mm lateral</td><td>off</td><td></td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>+75 mm lateral</td><td>off</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></tbody></table>
+  <h4>Gate G6 · Luminance (B13.4)</h4>
+  <table class="sheet"><thead><tr><th>Date, time</th><th>Sky</th><th class="num">Sun elev.</th><th class="num">Overlay + bg</th><th class="num">Background</th><th class="num">Ratio</th><th>Target</th><th>Pass</th></tr></thead>
+    <tbody><tr><td></td><td></td><td></td><td></td><td></td><td></td><td>sky 1.15</td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td>road 1.15</td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td>night ≤ 50</td><td></td></tr><tr><td></td><td></td><td></td><td></td><td></td><td></td><td>unlit ≤ 0.1</td><td></td></tr></tbody></table>
+</section>
+
+<section>
+  <h2 id="af"><span class="num">F</span>Installation checklist</h2>
+  <p>Signed before every drive by the driver and the person responsible for the installation. A drive does not start with an unticked box.</p>
+  <table class="tight">
+    <thead><tr><th style="width:6%"></th><th>Check</th></tr></thead>
+    <tbody>
+      <tr><td><span class="chk"></span></td><td>No connector to the OBD-II port, the CAN bus, or any vehicle wiring other than the accessory socket(s).</td></tr>
+      <tr><td><span class="chk"></span></td><td>Inline fuse fitted within 150 mm of the plug, correct rating, holder closed.</td></tr>
+      <tr><td><span class="chk"></span></td><td>Nothing bonded, screwed or drilled into the car; nothing attached to the glass except the clamped road camera on the mirror stalk.</td></tr>
+      <tr><td><span class="chk"></span></td><td>HUD housing restrained (pull test passed at installation) and at least 8 mm below the glass; not over an airbag door; not in the steering wheel's path.</td></tr>
+      <tr><td><span class="chk"></span></td><td>All mounts removable without tools; all cables tied clear of the pedals, the steering column's movement and the seat rails.</td></tr>
+      <tr><td><span class="chk"></span></td><td>Driver's view of the road and mirrors unobstructed outside the HUD window; defroster outlet in front of the driver open.</td></tr>
+      <tr><td><span class="chk"></span></td><td>Shutter closes on power loss (tested today); controller reports healthy.</td></tr>
+      <tr><td><span class="chk"></span></td><td>Sun-watch running with the current patch; today's headings checked against it.</td></tr>
+      <tr><td><span class="chk"></span></td><td>No polarised sunglasses in the car.</td></tr>
+      <tr><td><span class="chk"></span></td><td>Venue confirmed; safety driver present and briefed; the presenter is not driving.</td></tr>
+      <tr><td><span class="chk"></span></td><td>Stage 1 only: combiner hinge locked, edges protected, enclosure strapped.</td></tr>
+    </tbody>
+  </table>
+  <table class="sheet" style="margin-top:14px"><thead><tr><th>Date</th><th>Driver (signature)</th><th>Installation responsible (signature)</th><th>Safety driver</th></tr></thead>
+    <tbody><tr><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td></tr><tr><td></td><td></td><td></td><td></td></tr></tbody></table>
+</section>
+
+<section>
+  <h2 id="ag"><span class="num">G</span>Formulas used in this guide</h2>
+  <div class="formula">Virtual image of a lens or mirror (object at u inside f):   1/v = 1/f − 1/u,  v negative (virtual);  magnification M = |v| / u
+Plan's Stage 2:  f = {{f2}}, u = {{u2}}, image at 7.5 m, M = {{m2}}, 60 × 30 mm crop becomes {{img2_w}} × {{img2_h}}
+Plan's Stage 1:  f = 300 mm, u = 280 mm, v = −4.2 m, M = 15
+Off-axis mirror at incidence i (Coddington):  tangential radius Rt = 2f / cos i,  sagittal Rs = 2f · cos i  (both foci at f)
+Field of view for a window w at distance D:  2 · atan(w / 2D)
+Pinhole focal length in pixels for the virtual plane:  (crop height in px / 2) / tan(vertical field / 2)
+
+Luminance at the eye:  L_eye = L_panel × R_fold × R_mirror × R_windshield(s) × (cover, polariser, IR-cut, retarder transmissions)
+Plan path: 0.90 × 0.90 × {{rs65}} = {{path_ws}};  contrast ratio C = (L_overlay + L_background) / L_background ≥ 1.15
+Backlight:  L_backlight = L_panel / T_cell;  flux Φ = π · L · A (Lambertian);  LED power = Φ / (efficiency × lm/W)
+
+Fresnel reflectance (n = 1.52, 65°):  s {{rs65}}, p {{rp65}}
+Ghost separation (plain laminate t, incidence θi, refraction θt):  d = 2t · tan θt · cos θi;  seen at distance D as d / D
+Laminate thickness from the laser double spot:  t = d / (2 · tan θt · cos θi),  sin θt = sin θi / 1.52
+Curvature from a sagitta s under a straightedge L:  R = L² / (8s)
+
+Age compensation:  age = t_now − t_capture;  s = ∫v dt,  ψ = ∫ω dt over the age;  p_now = Rz(−ψ) · (p_capture − [s, 0, 0])
+Registration error from a range error Δz at range z, camera-to-eye baseline b:  ≈ b · Δz / z²
+Parallax of an untracked head shift h for a point at distance d (image at 7.5 m):  ≈ h · |1/7.5 − 1/d|  (radians, h and d in metres)
+Half-wave retarder:  output angle = 2 · (fast axis) − input angle</div>
+  <p class="small">The parallax line uses the simulator's correction of the plan's table: the error is zero for a point at the image distance and grows for points nearer or farther, rather than following atan(h / d).</p>
+</section>
+
+<section>
+  <h2 id="ah"><span class="num">H</span>Glossary</h2>
+  <div class="glossary">
+    <div><dt>Age compensation</dt><dd> Moving each measured point by the car's own motion since the point's camera frame was captured, so it is drawn where it is now.</dd></div>
+    <div><dt>Backlight</dt><dd> The light source behind an LCD. Here, a custom LED box behind the 60 × 30 mm crop.</dd></div>
+    <div><dt>Cold mirror</dt><dd> A dielectric mirror that reflects visible light and transmits infrared. Used as the fold, it dumps solar infrared into an absorber.</dd></div>
+    <div><dt>Combiner</dt><dd> The partly reflecting glass that superimposes the image on the view: the windshield in Stage 2, a separate glass in Stages 0 and 1.</dd></div>
+    <div><dt>Conformal</dt><dd> Drawn so that it lies on the real object it describes, from the driver's eye.</dd></div>
+    <div><dt>Crop</dt><dd> The 60 × 30 mm (946 × 473 px) region of the panel that is lit and drawn; everything else stays black.</dd></div>
+    <div><dt>Eye box</dt><dd> The region the driver's eye can move in while still seeing the whole window: 130 × 70 mm by design.</dd></div>
+    <div><dt>Fold</dt><dd> The flat mirror that turns the beam so the optical path fits under the dash.</dd></div>
+    <div><dt>Gate</dt><dd> A pass/fail test (G0 to G7) that decides whether the next phase starts.</dd></div>
+    <div><dt>Ghost</dt><dd> The second, fainter copy of the image reflected from the windshield's other surface.</dd></div>
+    <div><dt>Hot mirror</dt><dd> A dielectric filter that reflects infrared and transmits visible light; in front of the cell it keeps focused solar infrared off it.</dd></div>
+    <div><dt>Lookup table (LUT)</dt><dd> The precomputed map, from the ray trace, from an eye position and a viewing direction to the panel pixel that appears there.</dd></div>
+    <div><dt>PGU</dt><dd> Picture generation unit: the panel with its backlight.</dd></div>
+    <div><dt>RANSAC</dt><dd> A fitting method that tries many minimal fits and keeps the one most points agree with, ignoring outliers.</dd></div>
+    <div><dt>Registration</dt><dd> How well a drawn mark lines up with its real object, as an angle at the eye.</dd></div>
+    <div><dt>Retarder (half-wave)</dt><dd> A film that rotates linear polarisation: output angle = 2 × fast axis − input angle.</dd></div>
+    <div><dt>s and p polarisation</dt><dd> Light polarised perpendicular (s) or parallel (p) to the plane of incidence. At the windshield, s is across the car and reflects far better.</dd></div>
+    <div><dt>Sagitta</dt><dd> The depth of a curve below a straight chord; gives the radius.</dd></div>
+    <div><dt>Sun-watch</dt><dd> The rule that closes the shutter when the computed sun direction enters the patch of sky the optics can focus onto the panel.</dd></div>
+    <div><dt>Toroid, freeform</dt><dd> A mirror surface with different curvatures in two directions (toroid), or a general polynomial surface (freeform), used to correct astigmatism and flatten the image.</dd></div>
+    <div><dt>Virtual image</dt><dd> An image that light only appears to come from; the eye can focus on it but it cannot be caught on a screen.</dd></div>
+  </div>
+</section>
+
+<section>
+  <h2 id="ai"><span class="num">I</span>Where the numbers come from</h2>
+  <table class="tight">
+    <thead><tr><th style="width:34%">Source in the repository</th><th>What this guide takes from it</th></tr></thead>
+    <tbody>
+      <tr><td><code>docs/arhud-plan-tft-src/calc.py</code> and <code>docs/ARHUD-PLAN-TFT.pdf</code></td><td>Every number in double braces in this guide's source: optics, luminance, sun, latency, GPU, costs, requirements; the plan's figures reused here (mockup, sun entry, architecture, schedule)</td></tr>
+      <tr><td><code>docs/arhud-sim</code> (Three.js simulator)</td><td>The installed layout (<code>geom.js</code>): 1.06 m path, toroid radii, fold angle and height; the sphere's astigmatism; traced window and distance; lane-noise finding; lookup-table projection</td></tr>
+      <tr><td><code>docs/arhud-blender</code> (Cycles cross-check)</td><td>Image-surface curvature; freeform fits for flat and curved glass; eye-box extent; ghost; the faint second window; sun spot and the cell patch; luminance survey</td></tr>
+      <tr><td><code>docs/arhud-cad</code> (build123d housing)</td><td>Every printed part, its print orientation and mass; the 18 assembly steps; fasteners; beam, envelope and printer checks; the fold-height finding; CAD renders</td></tr>
+      <tr><td><code>docs/arhud-road</code> (MetaDrive road simulation)</td><td>Ribbon contrast at noon (39% of white), the value of compensation and of the plane fit, tracker on versus off</td></tr>
+      <tr><td>Vendor pages and datasheets read on 2026-10-25</td><td>Connector types, pin functions, dimming inputs and configuration steps for the bought electronics (marked where unverified)</td></tr>
+    </tbody>
+  </table>
+  <p>Nothing in this guide has yet been measured on the hardware. Every <span class="tag">assumed</span> value names the measurement that replaces it; when a measurement disagrees with this guide, the measurement wins and this guide's source should be updated.</p>
+</section>

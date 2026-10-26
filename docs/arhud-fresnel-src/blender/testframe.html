@@ -1,0 +1,28 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:#000}</style></head><body>
+<!-- 80 x 40 mm crop of the 5.5-inch panel at 63.4 um pitch = 1262 x 631 px. HUD-style content on black. -->
+<svg id="f" xmlns="http://www.w3.org/2000/svg" width="1262" height="631" viewBox="0 0 1262 631" font-family="Helvetica Neue, Helvetica, Arial, sans-serif">
+  <rect width="1262" height="631" fill="#000"/>
+  <!-- faint grid: 1 px white lines every 126 px to show distortion and colour at the edges -->
+  <g stroke="#ffffff" stroke-opacity="0.35" stroke-width="1.2">
+    <path d="M1 0V631M126 0V631M252 0V631M378 0V631M505 0V631M631 0V631M757 0V631M884 0V631M1010 0V631M1136 0V631M1261 0V631"/>
+    <path d="M0 1H1262M0 126H1262M0 252H1262M0 379H1262M0 505H1262M0 630H1262"/>
+  </g>
+  <!-- lane ribbon (hero) and lane lines, in perspective -->
+  <path d="M520 631 L600 300 L662 300 L742 631 Z" fill="#20e070" fill-opacity="0.55"/>
+  <path d="M330 631 L585 300" stroke="#ffffff" stroke-width="6"/>
+  <path d="M932 631 L677 300" stroke="#ffffff" stroke-width="6"/>
+  <!-- lead vehicle chevron and gap -->
+  <path d="M600 262 L631 238 L662 262" fill="none" stroke="#ffb020" stroke-width="7" stroke-linejoin="round"/>
+  <text x="631" y="222" fill="#ffb020" font-size="26" font-weight="700" text-anchor="middle">1.8 s</text>
+  <!-- speed block -->
+  <text x="70" y="130" fill="#ffffff" font-size="92" font-weight="700">88</text>
+  <text x="74" y="168" fill="#ffffff" font-size="30" font-weight="500">km/h</text>
+  <circle cx="1150" cy="105" r="52" fill="#ffffff" stroke="#e02020" stroke-width="12"/>
+  <text x="1150" y="124" fill="#000" font-size="50" font-weight="700" text-anchor="middle">60</text>
+  <!-- small white dots and fine text at the left and right edges (colour fringing check) -->
+  <g fill="#ffffff"><circle cx="40" cy="400" r="3"/><circle cx="40" cy="460" r="3"/><circle cx="1222" cy="400" r="3"/><circle cx="1222" cy="460" r="3"/></g>
+  <text x="30" y="560" fill="#ffffff" font-size="22">EDGE</text>
+  <text x="1232" y="560" fill="#ffffff" font-size="22" text-anchor="end">EDGE</text>
+  <!-- crop border -->
+  <rect x="2" y="2" width="1258" height="627" fill="none" stroke="#ffffff" stroke-width="3"/>
+</svg></body></html>
