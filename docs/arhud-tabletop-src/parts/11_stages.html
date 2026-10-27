@@ -1,0 +1,36 @@
+<section>
+  <h2 id="stages"><span class="num">11</span>Bring-up stages and gates</h2>
+  <p class="lede">Nine stages, each with what it needs, what it produces and the measurement that closes it. They are ordered so that every measurement has only one new thing in it. Together they close the build guide's gate G2 and bring forward parts of G1, G3 and the head-motion criterion of G4.</p>
+
+  <table class="tight">
+    <thead><tr><th style="width:9%">Stage</th><th style="width:22%">Builds</th><th>Needs · produces</th><th style="width:30%">Gate</th></tr></thead>
+    <tbody>
+      <tr><td><b>T-A</b></td><td>The rig</td><td>Both monitors, the glass, the enclosure, the slide, the eye mount (chapter 2). Produces the measured pitches, the flip, the glass orientation, the coplanar planes.</td><td>Test card reads correctly; parallax check ≤ {{cop_tol_px}} px over {{e_shift}} mm.</td></tr>
+      <tr><td><b>T-B</b></td><td>The package skeleton and synthetic hudd</td><td>Bus, schemas, clock, config loader, <code>hudd</code> drawing from <code>synth.py</code> on the PGU (B6.3, B6.4). Produces a renderer that draws the plan's content at 60 Hz with the warp.</td><td>60 fps, no drops, 10 min, from synthetic topics; the window at {{win_px_w}} × {{win_px_h}} px where the glass reflects it.</td></tr>
+      <tr><td><b>T-C</b></td><td>Sources and the player</td><td>One comma2k19 chunk, the openpilot demo route, the MetaDrive export, a phone clip; <code>roadsrc</code> showing each at life size with the ego stream republished. <span class="tag solid">decision</span>: the eye distance (Table 3.1).</td><td>Each source plays at its rate with no dropped vsyncs; the frame-ID strip decodes from a photograph; ego speed matches the clip (a known-speed stretch).</td></tr>
+      <tr><td><b>T-D</b></td><td>Perception</td><td><code>laned</code>, <code>detectd</code>, <code>planed</code>, <code>scored</code>; the pitch calibration per recording (8.4); the lane-network choice by score. Produces measured per-job times (Table 5.2 filled in).</td><td>§5.7 on 300 MetaDrive frames; times measured; agreement with <code>modelV2</code> reported.</td></tr>
+      <tr><td><b>T-E</b></td><td>Registration, sync modes</td><td>The mirror homography (8.3); <code>hudd</code> in truth-fed sync mode, then perception-fed sync mode. Produces the display chain's own residual and the latency-free residual of the whole chain.</td><td>Homography ≤ {{t_cal_px}} px RMS; truth-fed: drawn line within {{t_reg_deg}}° of the painted line's truth at 10, 20, 30 m, median over the 24 s MetaDrive drive, chevron likewise against the lead; perception-fed: residual reported against the §5.7 angles.</td></tr>
+      <tr><td><b>T-F</b></td><td>Latency, live mode</td><td>The Pico probe with two photodiodes; monitor lags; the chain; the +200 ms sign test on a comma2k19 curve; compensation on and off against MetaDrive truth at t<sub>photon</sub>.</td><td>Chain ≤ {{t_lat}} ms median (p95 recorded); sign confirmed both ways; compensated lead residual (p95) below uncompensated. Closes B6's G2 except "runs on the Jetson".</td></tr>
+      <tr><td><b>T-G</b></td><td>Photometry</td><td>Metered whites and blacks, the glass's measured split, the ghost in both orientations, the gains recomputed (8.5); the ribbon fill share, line widths and night level judged at the plan's ratios.</td><td>Measured ratio within ±10% of each set condition; ghost ≤ 2% or documented; glass orientation recorded.</td></tr>
+      <tr><td><b>T-H</b></td><td>Parallax variant</td><td>The slide to Δ = {{delta_20}} mm; the webcam tracker (8.7); the rail test at ±{{sway}} mm. Produces the plan's head-motion number without a car.</td><td>≤ {{par_crit}}° with the tracker on; the same run with it off shows ≈ {{par_20}}°.</td></tr>
+      <tr><td><b>T-I</b></td><td>Camera in the loop</td><td>A webcam or the OAK-D Pro, later the ZED on the Jetson; the loop homography (8.8); <code>roadd</code>'s capture with the plane fit off. Produces the camera's own latency and its cost in lane residual.</td><td>Homography ≤ 2 px; residual within 0.05° of the direct path; latency through the camera measured. When the Jetson runs it: G2 complete.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>11.1 Acceptance</h3>
+  [[TBL accept]]
+  <p class="small">Table 11.1. What passes each stage and how it is measured. Every number traces to a plan criterion or to this document's derivation; none is waived, a failed gate is recorded with its number.</p>
+
+  <h3>11.2 What the bench does not verify, so that no one thinks it did</h3>
+  <ul>
+    <li>Any optical property of Stage 1 or Stage 2: image distance, field, eye box, mirror figure, astigmatism, the windshield's ghost, polarisation at 65°, the solar focus.</li>
+    <li>Luminance at the eye in daylight, as an absolute: the bench reproduces ratios up to {{cr_sky_max}} against a background of {{l_road_white}} cd/m², not 10,000.</li>
+    <li>Stereo range and the per-frame plane fit; the eye-side range error of the plan's §5.4 (the camera-to-eye baseline is zero on the bench).</li>
+    <li>GNSS latency, the F9R, the IMU fusion, dead reckoning.</li>
+    <li>The controller, dimming, the shutter, the backlight, heat, vibration, the installation checklist.</li>
+    <li>The lane network's generalisation to the demo course: comma2k19 is one highway in California; the phone clips of T-C should be of the roads the demo will use.</li>
+  </ul>
+
+  <h3>11.3 Order and time</h3>
+  <p>T-A and T-B are a few days each and independent; T-C needs the comma2k19 chunk downloaded (10 GB) and the MetaDrive exporter written; T-D is the long one, a week or two of network exports, scoring and the pitch tool; T-E and T-F are a day each once T-D holds; T-G needs the meter; T-H the webcam; T-I the camera and, for its full value, the Jetson. The plan's week-1 measurements (GPU time per job) come out of T-D on the Mac and are repeated on the Jetson under B2.</p>
+</section>

@@ -327,6 +327,13 @@ export const LAYOUT_SUMMARY = () => {
 // equation at the hit (as cycles.js fieldDistances does, and as Cycles confirmed across the window). Null when the
 // ray misses the optics. The Driver view draws the traced window on this surface and scores registration against it.
 export function imageDistanceAlong(e, d, mode = MIRROR.mode) {
+  // A curved windshield adds its own power, which the mirror-only Coddington step below leaves out: use the parallax
+  // through the whole trace instead (negative: past infinity, as below).
+  if (GLASS.Rh > 0 || GLASS.Rv > 0) {
+    const dl = d.dot(LOOK); if (dl <= 1e-9) return null;
+    const r = fieldVergences(e, Math.atan(d.dot(VIMG_RIGHT) / dl), Math.atan(d.dot(VIMG_UP) / dl), mode);
+    return r ? 1 / r.Vs : null;
+  }
   const tr = traceFromEye(e, d, mode);
   if (!tr || !tr.pts || tr.pts.length < 5 || !tr.mirror) return null;
   const [eye, glass, hit, fold, panel] = tr.pts;
@@ -342,8 +349,8 @@ export function imageDistanceAlong(e, d, mode = MIRROR.mode) {
 
 // Field angles (ax right, ay up, radians, tan-linear about LOOK) whose ray from eye point e lands on the panel at
 // (pz, px) metres from the crop centre: Newton on the trace. Null where no ray reaches that panel point.
-export function panelPointField(e, pz, px, mode = MIRROR.mode) {
-  let ax = pz / 0.06 * FOV_W * 0.8, ay = -px / 0.03 * FOV_H * 0.8;
+export function panelPointField(e, pz, px, mode = MIRROR.mode, init = null) {
+  let ax = init ? init[0] : pz / 0.06 * FOV_W * 0.8, ay = init ? init[1] : -px / 0.03 * FOV_H * 0.8;
   const f = (a, b) => { const r = traceFromEye(e, fieldDir(a, b), mode); return r ? [r.panelZ, r.panelX, r] : [NaN, NaN, null]; };
   let r = null;
   for (let it = 0; it < 25; it++) {
@@ -362,4 +369,31 @@ export function panelPointField(e, pz, px, mode = MIRROR.mode) {
   }
   const [, , rf] = f(ax, ay);
   return rf ? { ax, ay, trace: rf } : null;
+}
+
+// Where to draw an image-surface point, from a traced distance: a trace that misses keeps the fallback; light that
+// converges toward the eye (past infinity, d < 0) or comes from very far is drawn at FAR_IMAGE, so the surface stays
+// continuous instead of jumping back to the plane; real images closer than 0.3 m are held there.
+export const FAR_IMAGE = 300;
+export function surfaceDistance(d, fallback) {
+  if (d == null || !isFinite(d)) return fallback;
+  if (d < 0 || d > FAR_IMAGE) return FAR_IMAGE;
+  return Math.max(0.3, d);
+}
+
+// The two image vergences (dioptres, 1/m; > 0 diverging from a point in front, < 0 converging, i.e. past infinity)
+// for the viewing direction at field angles (ax, ay) from eye e, through the whole trace (windshield curvature, mirror
+// figure, fold, panel tilt): find the panel point the ray lands on, then the directions from eyes displaced +-delta
+// laterally (sagittal, horizontal fan) and vertically (tangential, the plane of incidence) whose rays land on the same
+// point. The parallax gives each vergence: tan of the field angle changes by -delta x vergence along LOOK.
+export function fieldVergences(e, ax, ay, mode = MIRROR.mode, delta = 0.01) {
+  const nom = traceFromEye(e, fieldDir(ax, ay), mode);
+  if (!nom) return null;
+  const at = (de) => panelPointField(e.clone().add(de), nom.panelZ, nom.panelX, mode, [ax, ay]);
+  const zp = at(V(0, 0, delta)), zm = at(V(0, 0, -delta)), yp = at(V(0, delta, 0)), ym = at(V(0, -delta, 0));
+  if (!zp || !zm || !yp || !ym) return null;
+  const cosL = fieldDir(ax, ay).dot(LOOK);
+  const Vs = -(Math.tan(zp.ax) - Math.tan(zm.ax)) / (2 * delta) * cosL;
+  const Vt = -(Math.tan(yp.ay) - Math.tan(ym.ay)) / (2 * delta) * cosL;
+  return { Vs, Vt, panelZ: nom.panelZ, panelX: nom.panelX, mirrorInside: nom.mirror.inside };
 }

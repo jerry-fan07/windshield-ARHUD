@@ -1,0 +1,47 @@
+<section>
+  <h2 id="rig"><span class="num">2</span>Geometry and parts</h2>
+  <p class="lede">Every dimension of the rig follows from one rule: the glass's centre is the same distance from the PGU's face as from the road monitor's face. Then the reflection of the PGU lies on the road monitor, the two pictures are one plane, and the viewer may sit anywhere in front of the glass without the overlay sliding.</p>
+
+  <h3>2.1 The monitors</h3>
+  <p>Both are the owned YODOIT 16-inch panels: {{mon_px_w}} × {{mon_px_h}} px, which the plan takes as {{ppi}} ppi ({{pitch_um}} µm per pixel, {{mon_w}} × {{mon_h}} mm active, a {{mon_diag_in}}-inch diagonal). A true 16.0-inch diagonal would be 282.8 ppi and {{mon_w_283}} × {{mon_h_283}} mm. <span class="tag">assumed</span> Measure the active width with a rule in T-A; every millimetre in this chapter scales with it, and the pixel pitch enters the calibration file. The vendor's peak white is {{l_mon}} cd/m² and the contrast 1,200:1 or 2,000:1 depending on the listing <span class="tag">verify</span>; both are metered in T-G. One of the two is attached to the MacBook Pro today and reports {{mon_px_w}} × {{mon_px_h}} at 60 Hz; the Jetson drove the other over HDMI on 2026-10-07, so HDMI input exists on at least that unit.</p>
+
+  <h3>2.2 The glass</h3>
+  <p>The Neewer NA17 teleprompter beamsplitter: {{glass_w}} × {{glass_w}} × {{glass_t}} mm tempered glass, 70% transmitted and 30% reflected, with an anti-reflection coating on one face, about $53. It is the cheap one of the plan's pair and the one B6 names. At 45° its footprint along the viewing axis and its height are both {{glass_foot}} mm, which just covers the PGU's short side ({{mon_h}} mm); its width is {{glass_short}} mm less than the monitors' {{mon_w}} mm, so {{unreflected_side}} mm of the PGU at each side is never reflected and {{glass_px_w}} px of its {{mon_px_w}} are usable. The HUD window needs {{win_w}} mm; the margin is large. If the larger glass the plan lists for Stage 1 is bought instead (a 30R/70T sheet of about 16 × 21 inches), the whole PGU is reflected; nothing else changes.</p>
+  <p>Which face carries the beamsplitter coating and which the anti-reflection coating is not stated on the vendor page. <span class="tag solid">decision</span> in T-A, by test: photograph a thin bright line on the PGU through the glass in both orientations and keep the one with the fainter second image (section 3.6).</p>
+
+  <h3>2.3 Dimensions</h3>
+  <figure>[[FIG t_side]]<figcaption><b>Figure 2.1.</b> Side view to scale. Rig frame: x along the viewing axis, z up, origin at the glass's centre. The road monitor's lower edge is {{r_bottom}} mm above the PGU's face level, so it stands on a {{r_bottom}} mm block or its own stand.</figcaption></figure>
+  <table class="tight">
+    <thead><tr><th style="width:38%">Dimension</th><th style="width:14%" class="num">mm</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Glass centre above the PGU's face</td><td class="num">{{d_glass}}</td><td>Any value above the glass's own half-height plus clearance; 200 keeps B6's 0.6 m image and leaves {{clear_low}} mm between the glass's low edge and the PGU.</td></tr>
+      <tr><td>Glass centre to the road monitor's face</td><td class="num">{{d_glass}}</td><td>Equal to the first: the coplanar condition. Tolerance {{cop_tol_mm}} mm (section 3.1).</td></tr>
+      <tr><td>Glass tilt from horizontal</td><td class="num">45°</td><td>Reflects the vertical from the PGU into the horizontal toward the eye; ± 0.5° with the angle gauge. The top edge leans toward the viewer.</td></tr>
+      <tr><td>Eye to the glass centre</td><td class="num">{{d_eye}}</td><td>Sets the image distance to {{d_img}} mm and the life-size field to {{hfov_shown}}° × {{vfov_shown}}°; other distances in Table 3.1.</td></tr>
+      <tr><td>Eye height</td><td class="num">0</td><td>Level with the glass's centre and the road monitor's centre.</td></tr>
+      <tr><td>Glass low edge above the PGU face</td><td class="num">{{clear_low}}</td><td>Clearance for the monitor's bezel and cable.</td></tr>
+      <tr><td>Glass top edge above the PGU face</td><td class="num">{{glass_top}}</td><td>The loop camera (chapter 9) mounts just above and behind it.</td></tr>
+      <tr><td>Road monitor's lower edge above the PGU face level</td><td class="num">{{r_bottom}}</td><td>Centres the road picture on the glass's centre.</td></tr>
+      <tr><td>Line of sight through the glass to the road monitor's top and bottom edges crosses the glass at</td><td class="num">{{los_top_z}} / {{los_bot_z}}</td><td>Within the glass's ± {{glass_half}} mm, so the whole road monitor is seen through the glass from the eye point ({{los_ok}}).</td></tr>
+    </tbody>
+  </table>
+  <figure>[[FIG t_top]]<figcaption><b>Figure 2.2.</b> Plan view to scale. The glass's footprint, the PGU under it with the window at its centre, the strips at each side that the glass does not reach, the road monitor on its slide, and the positions of the two cameras that later stages add.</figcaption></figure>
+
+  <h3>2.4 Enclosure, stands and the slide</h3>
+  <p>B6's enclosure serves with two changes. The backdrop becomes the road monitor's stand. And the glass cannot ride in slots cut into B6's cheeks: those stand {{mon_w}} + 10 mm apart so the PGU fits between them, and the NA17 is only {{glass_w}} mm wide. So a base of 6 mm plywood or black foam board about 750 × 450 mm; two cheeks {{mon_w}} + 10 mm apart with a well between them where the PGU lies face up on felt, its cable out the back; and on each cheek's inside face a 23 mm spacer block carrying a grooved batten at 45°, the two grooves {{glass_w}} + 2 mm apart, so the glass seats with its centre {{d_glass}} mm above the PGU's face. The battens start {{clear_low}} mm above the PGU's face, so the spacer blocks clear the monitor. (The larger glass the plan lists for Stage 1 would reach B6's cheek slots directly.) Every inside face matte black or flocked. Behind the glass, a 300 mm drawer slide or a camera macro rail carries the road monitor on a block {{r_bottom}} mm high, with a millimetre scale along the slide and a stop at the coplanar position, so the parallax variant (section 3.8) is a slide to a number and back. A hood of black card over the top keeps room light off both monitors and off the glass.</p>
+  <p>At the eye point, a chin rest or a tripod with a quick-release plate at the glass centre's height, {{d_eye}} mm from it. The measuring camera (a phone with manual exposure, or a mirrorless camera) mounts there for every calibration and test; the viewer sits there for the demo.</p>
+
+  <h3>2.5 Hosts and cables</h3>
+  <p>The MacBook Pro M4 drives both monitors from the start: it is attached to one now and the model supports two external displays <span class="tag">verify</span>. Both run at native {{mon_px_w}} × {{mon_px_h}} and 60 Hz, as separate displays, with macOS scaling off for the windows that matter (chapter 10); auto-brightness, True Tone and Night Shift off for the externals. The monitors' own power: a USB-C PD charger each, because a laptop port may not sustain full brightness <span class="tag">verify</span>. Every process of the bench runs on the Mac on one clock. When the Jetson returns it takes the PGU over HDMI and runs perception; the Mac keeps the road monitor and <code>roadsrc</code>, and the two hosts share a clock over Ethernet (chapter 7).</p>
+
+  <h3>2.6 Assembly</h3>
+  <ol class="steps">
+    <li>Measure both monitors' active width and height with a rule; compute the pixel pitch; write it into <code>config/calibration.yaml</code>.<span class="chk">Pitch recorded for both units</span></li>
+    <li>Build the base, cheeks and hood as in B6.2, the cheeks {{mon_w}} + 10 mm apart. Glue a 23 mm spacer block and a grooved 45° batten to each cheek's inside face, grooves {{glass_w}} + 2 mm apart, placed so that the seated glass's centre is {{d_glass}} mm above the PGU's face and its lowest edge {{clear_low}} mm above it. Flock or paint every inside face.</li>
+    <li>Fit the slide behind the glass, centred, its scale zeroed where the road monitor's face will be {{d_glass}} mm from the glass centre. Fit the {{r_bottom}} mm block to the slide's carriage.</li>
+    <li>Lay the PGU face up in the well, its top edge away from the viewer, level; slide the glass into the battens, AR face toward the viewer for now; stand the road monitor on its block at the zero mark.<span class="chk">Glass 45° ± 0.5°; PGU level; road monitor vertical</span></li>
+    <li>Measure the glass centre to the PGU's face and to the road monitor's face with a rule; adjust the block or the stop until both read {{d_glass}} mm within 1 mm.</li>
+    <li>Connect both monitors, set native resolution and 60 Hz, disable auto-brightness; show the test card on the PGU and a grid on the road monitor.<span class="chk">Test card reads correctly in the glass (hudd's flip set)</span></li>
+    <li>Run the parallax check of section 3.1 from the eye point; shim until it passes.<span class="chk">Separation ≤ {{cop_tol_px}} px over a {{e_shift}} mm shift</span></li>
+  </ol>
+</section>

@@ -1,0 +1,82 @@
+<section>
+  <h2 id="appx-a"><span class="num">A</span>Formulas</h2>
+  <table class="tight">
+    <thead><tr><th style="width:30%">Quantity</th><th>Formula and the values used</th></tr></thead>
+    <tbody>
+      <tr><td>Image of a PGU point</td><td>Mirror about the plane z = −x through the glass centre: (x, y, z) maps to (−z, y, −x). The PGU face z = −{{d_glass}} maps to x = {{d_glass}}, the road monitor's face.</td></tr>
+      <tr><td>Life-size field</td><td>2 · atan(W / 2D) with W the monitor's active width and D the eye-to-image distance: {{hfov_shown}}° at {{d_img}} mm.</td></tr>
+      <tr><td>Window on the monitors</td><td>2 · D · tan(fov / 2): {{win_w}} × {{win_h}} mm; divided by the pitch, {{win_px_w}} × {{win_px_h}} px; {{ppd}} px per degree.</td></tr>
+      <tr><td>Life-size crop of a source</td><td>2 · f · tan(field / 2) source pixels across the shown field; the scale to the monitor is {{mon_px_w}} divided by that.</td></tr>
+      <tr><td>Coplanarity by parallax</td><td>Separation on the far plane ≈ e · δ / D for an eye shift e and a plane offset δ: {{cop_px_per_mm}} px per mm at e = {{e_shift}} mm.</td></tr>
+      <tr><td>Parallax variant</td><td>Angle per sway e: e · (1/D − 1/(D + Δ)). For the car's parallax between 7.5 m and z: k = 1/7.5 − 1/z; Δ = 1/(1/D − k) − D.</td></tr>
+      <tr><td>Contrast ratio and gain</td><td>ratio = (L<sub>HUD</sub> + L<sub>bg</sub>) / L<sub>bg</sub>; gain = (ratio − 1) · L<sub>bench bg</sub> / L<sub>PGU white at the eye</sub>.</td></tr>
+      <tr><td>Fresnel at 45°, n = 1.52</td><td>θ<sub>t</sub> = {{theta_t45}}°; R<sub>s</sub> = {{rs45}}%, R<sub>p</sub> = {{rp45}}%.</td></tr>
+      <tr><td>Ghost separation</td><td>2 · t · tan θ<sub>t</sub> · cos θ<sub>i</sub> = {{ghost_mm}} mm for t = {{glass_t}} mm; {{ghost_arcmin}}′ at {{d_img}} mm; relative brightness T² · R<sub>2</sub> / R<sub>1</sub>.</td></tr>
+      <tr><td>Lifting</td><td>α = atan((v − c<sub>y</sub>) / f); z = h / tan(θ + α); y = z · (u − c<sub>x</sub>) / f.</td></tr>
+      <tr><td>Age compensation</td><td>p<sub>now</sub> = R<sub>z</sub>(−ψ) · (p<sub>capture</sub> − [s, 0, 0]), s the integral of v and ψ the integral of ω over the age; tracks also by their own velocity.</td></tr>
+      <tr><td>Bench projection chain</td><td>PGU pixel = H<sub>PR</sub> · F · S · K<sub>source</sub> · camera_from_car · p<sub>now</sub>.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2 id="appx-b"><span class="num">B</span>The calibration file</h2>
+  <div class="term">rig:
+  frame: "x along the viewing axis (eye negative), y right, z up, origin at the glass centre, mm"
+  d_glass_mm: {{d_glass}}          # glass centre to the PGU face and to the road monitor face (measured)
+  d_eye_mm: {{d_eye}}              # eye to the glass centre (measured)
+  delta_mm: 0                      # road monitor slid back (parallax variant)
+  glass: {w_mm: {{glass_w}}, t_mm: {{glass_t}}, tilt_deg: 45, coated_face: "pgu"}      # orientation by the ghost test
+monitors:
+  pgu:  {name: "YODOIT unit 1", edid: "", px: [{{mon_px_w}}, {{mon_px_h}}], pitch_mm: 0.0917, white_cdm2: 1200, lag_ms: null}
+  road: {name: "YODOIT unit 2", edid: "", px: [{{mon_px_w}}, {{mon_px_h}}], pitch_mm: 0.0917, white_cdm2: 1200, lag_ms: null}
+warp:
+  flip: "vertical"
+  homography_pr: [[-1, 0, 0], [0, 1, 0], [0, 0, 1]]     # road-monitor px -> PGU px, refined by tools/calib_rig.py
+  residual_px: {rms: null, max: null, date: null}
+window:
+  fov_deg: [{{fov_w}}, {{fov_h}}]
+  px: [{{win_px_w}}, {{win_px_h}}]
+  lookdown_deg: 5
+sources:
+  comma2k19:
+    camera: {f_px: {{c2k_f}}, cx: 582, cy: 437, size: [1164, 874], distortion: null}
+    mount:  {height_m: {{h_c2k}}, pitch_deg: null, yaw_deg: null, lateral_m: 0}     # pitch per segment from the vanishing point
+    crop:   {src_px: [{{c2k_crop}}, null], scale: {{c2k_up}}}
+  oproute:
+    camera: {f_px: {{c3_f}}, cx: 964, cy: 604, size: [1928, 1208]}
+    mount:  {from: "liveCalibration"}
+  metadrive:
+    camera: {f_px: {{md_f}}, size: [{{mon_px_w}}, {{mon_px_h}}]}
+    mount:  {from: "export"}
+photometry:
+  glass: {t_road: null, r_pgu: null, ghost_rel: null, ghost_px: null}
+  gains: {plan_min_sky: {{g_plan_min}}, bl_sky: {{g_bl_sky}}, bl_road: {{g_bl_road}}, s1_sky: {{g_s1_sky}}}  # recomputed after metering
+timing:
+  lag_road_ms: null
+  lag_pgu_ms: null
+  render_ms: null
+  chain_ms: {median: null, p95: null, date: null}
+tracker:
+  webcam: {f_px: null, cx: null, cy: null, pose_rig: null}
+  residual_mm: null
+loop:
+  camera: {f_px: null, cx: null, cy: null}
+  homography_cam_road: null
+  residual_px: null</div>
+</section>
+
+<section>
+  <h2 id="appx-c"><span class="num">C</span>Sources and provenance</h2>
+  <ul>
+    <li>The plan: <code>docs/ARHUD-PLAN-TFT.pdf</code> and <code>docs/ARHUD-PLAN-TFT-SPEC.md</code>; numbers from <code>docs/arhud-plan-tft-src/calc.py</code> (window {{fov_w}}° × {{fov_h}}°, monitor 277 ppi and 1,200 cd/m², the 70/30 combiner, the latency budget, H_CAM = {{h_cam}} m, the ZED's focal length).</li>
+    <li>The build guide, stage B6: <code>docs/ARHUD-BUILD-GUIDE.pdf</code> (the Stage 0 rig, hudd's two passes, the probe, the sign test, the drawing rules).</li>
+    <li>The road simulator: <code>docs/arhud-road</code> (truth, the registration bench, the linear-light compositing, the 39% ribbon finding, the head-sway results).</li>
+    <li>Camera models: <code>openpilot/common/transformations/camera.py</code> in this checkout (<code>_neo_config</code> 1164 × 874 f = 910; <code>_ar_ox_config</code> 1928 × 1208 f = 2648); frame and log readers in <code>openpilot/tools/lib</code>; the demo route in <code>openpilot/tools/clip/run.py</code>.</li>
+    <li>comma2k19: github.com/commaai/comma2k19 (MIT; segment layout; processed_log fields; ~100 GB in ~10 GB chunks on Academic Torrents), read 2026-10-27.</li>
+    <li>Neewer NA17 beamsplitter: neewer.com product page (31.5 × 31.5 × 0.2 cm, 70T/30R, tempered, anti-reflection coating, $52.99), read 2026-10-27.</li>
+    <li>YODOIT 16-inch 3840 × 2400 monitor: vendor listings (1,200 nits; contrast 1,200:1 or 2,000:1 depending on the listing; USB-C), read 2026-10-27; HDMI input inferred from the Jetson having driven one on 2026-10-07.</li>
+    <li>Fresnel reflectances from the plan's formula at n = 1.52; ghost geometry from the plan's §7.3 applied to 2 mm glass at 45°.</li>
+    <li>Hardware state on 2026-10-27: MacBook Pro (Mac16,1, Apple M4, 24 GB), one YODOIT attached at 3840 × 2400 60 Hz; the Jetson unreachable by its Tailscale name and by mDNS; no CUDA on the mini PCs; venvs <code>arhud-cad</code> (3.12) and <code>arhud-metadrive</code> (3.11) present, neither with OpenCV, PyTorch or ONNX Runtime.</li>
+  </ul>
+</section>

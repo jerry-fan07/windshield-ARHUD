@@ -1,0 +1,38 @@
+<div class="part" data-toc="Part I · The rig">
+  <div class="pn">Part I</div>
+  <div class="pt">The rig</div>
+  <div class="pd">Two monitors, one sheet of glass, one viewing position. What the viewer sees, how large, how bright, and why the two pictures lie on one plane.</div>
+  <div class="pl">1 What the tabletop proves · 2 Geometry and parts · 3 Light through the glass</div>
+</div>
+
+<section>
+  <h2 id="purpose"><span class="num">1</span>What the tabletop proves, and what it cannot</h2>
+  <p class="lede">A head-up display has two halves that can be wrong independently: the perception that decides where the lane and the cars are, and the display chain that puts a mark on the glass where the driver's eye will see it over that lane or car. The car tests both at once and blames neither. The tabletop separates them. The road is a picture whose every pixel is known, so perception can be scored against truth; the overlay is a reflection onto that same picture, so the display chain can be measured in pixels. Everything between the camera frame and the lit pixel is the plan's own software, unchanged.</p>
+
+  <h3>1.1 The two monitors' roles</h3>
+  <p><b>Unit 2, the road monitor,</b> stands upright behind the glass and shows the road: a recorded drive (a comma2k19 segment, an openpilot route), a MetaDrive render with full truth, a phone's dashcam clip, or later a live camera. The picture is shown at life size, meaning the monitor subtends at the eye the same angle that the shown part of the frame subtended at the camera, so that the window drawn over it is the plan's {{fov_w}}° × {{fov_h}}° window at its real angular size. The viewer looks through the glass at this monitor.</p>
+  <p><b>Unit 1, the PGU,</b> lies face up under the glass, as in B6. The glass reflects it toward the viewer, and because the glass is as far above unit 1 as it is in front of unit 2, the reflection appears exactly on unit 2's face. The renderer draws the HUD window, mirrored, into a {{win_px_w}} × {{win_px_h}} px region of unit 1 and leaves the rest black; the viewer sees the overlay floating on the road picture.</p>
+  <p>Perception runs on the frames unit 2 is showing. In the direct path they go from the player straight to the lane and object networks, with each frame's "capture time" defined as the moment it is on the road monitor; in the camera-in-the-loop path (chapter 9) a camera above the glass looks at unit 2 and the networks see what it sees. Either way the detected lanes and objects are lifted to the car frame on the recording's camera model, published as the plan's <code>lanes</code> and <code>objects</code> topics, age-compensated with the recording's speed and yaw rate, and projected by <code>hudd</code> onto the PGU through a calibrated mapping, so that the drawn line falls on the painted line as the viewer sees it.</p>
+
+  <h3>1.2 What it proves</h3>
+  <ul>
+    <li><b>The perception chain on real road pictures</b>, scored against truth (MetaDrive) or a reference (openpilot's own lane model on its routes), with the plan's §5.7 criteria, before the ZED exists. Monocular only: the plane is static, as in the plan's fallback mode.</li>
+    <li><b>The renderer's projection, drawing rules and warp</b> to a tenth of a degree: a drawn lane line against the painted line it came from, measured from the eye point. With latency removed and <code>hudd</code> fed the picture's truth instead of perception (truth-fed sync mode, chapter 6) every error is calibration or drawing; with perception in the loop the same measurement is the whole chain's.</li>
+    <li><b>Latency and age compensation</b>, live: perception runs on a frame only once that frame is on the road monitor, so the chain from road photon to HUD photon is the car's chain with the camera replaced by a monitor. The prediction's sign is confirmed on a curve (B6.5) with real speed and yaw rate from the recording, and the chevron's residual with and without compensation is measured against the picture's truth.</li>
+    <li><b>Contrast as the driver will see it.</b> The road monitor's brightness and the renderer's gain reproduce the plan's contrast ratios ({{cr_plan_min}} minimum, {{cr_bl_sky}} and {{cr_bl_road}} for the design backlight) at the eye, so the drawing rules (ribbon fill share, line widths, night level) can be judged under the right ratios, if not the right absolute levels.</li>
+    <li><b>Head tracking and parallax</b>, in the variant where the road monitor slides back: the car's parallax between its 7.5 m image and a 20 m road point is reproduced by a {{delta_20}} mm offset, and the tracker's correction is measured on a rail.</li>
+    <li><b>The software itself.</b> Every process, topic, config file and tool written for the bench is the car's; only <code>roadsrc</code> (the player) is bench-only, and it is replaced by <code>roadd</code> (the ZED) in the car.</li>
+  </ul>
+
+  <h3>1.3 What it cannot prove</h3>
+  <ul>
+    <li>Nothing about the relay optics: no magnification, no windshield, no mirror figure, no eye box, no image distance beyond {{d_img_m}} m. Stage 1 and Stage 2 remain the only tests of those.</li>
+    <li>Daylight brightness. The brightest background the rig can show is the road monitor's white through the glass, about {{l_road_white}} cd/m², against a sky of 10,000. Ratios are reproduced; adaptation and absolute levels are not.</li>
+    <li>Stereo depth and the per-frame plane fit. A camera looking at the monitor sees a flat plane at half a metre. Range on the bench comes from the ground plane at the box base, as in the plan's fallback; the stereo path is tested only in the car.</li>
+    <li>The eye-side range error. The plan's registration model (§5.4) puts the camera {{b_ce_cm}} cm from the eye, so a range error moves the mark; on the bench the eye is at the camera by construction (both are the recording's camera), so that term is zero and must be measured in the car.</li>
+    <li>Sun, heat, vibration, the controller, the backlight, the shutter: none of them is on the bench.</li>
+  </ul>
+
+  <h3>1.4 The fallback configuration</h3>
+  <p>If unit 2 is wanted elsewhere, the rig reverts to B6 as written: black backdrop behind the glass, unit 2 as the audience display, perception from recordings without a picture to register to. Every other chapter still applies; only the registration measurements against the picture (T-E, T-H, T-I) are lost.</p>
+</section>

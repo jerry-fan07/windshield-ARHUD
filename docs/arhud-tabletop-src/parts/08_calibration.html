@@ -1,0 +1,35 @@
+<section>
+  <h2 id="calibration"><span class="num">8</span>Calibration</h2>
+  <p class="lede">Seven calibrations, each with a procedure, a tolerance and the config field it fills. All are stored in <code>config/calibration.yaml</code> (appendix B) with the date and the measurement that produced them; all are repeated after the rig is moved.</p>
+
+  <h3>8.1 Monitor geometry</h3>
+  <p>Active width and height by rule, both units, to 0.5 mm; pixel pitch = width / {{mon_px_w}}. Fills <code>monitors.*.pitch_mm</code>. Check that the two units agree within 0.3%; if not, the homography absorbs the difference but the life-size distance is computed from the road monitor's pitch.</p>
+
+  <h3>8.2 Coplanarity</h3>
+  <p>Section 3.1's parallax check: two photographs {{e_shift}} mm apart from the eye point, crosses at the window's centre and at its four corners on both monitors, separation ≤ {{cop_tol_px}} px for every cross. Corner crosses separate from tilt as well as from offset, so a residual that grows toward one side is a tilt of the road monitor or the glass, fixed by shimming. Fills nothing; it is a precondition of 8.3.</p>
+
+  <h3>8.3 The mirror homography H<sub>PR</sub></h3>
+  <figure>[[FIG t_calib]]<figcaption><b>Figure 8.1.</b> The measuring camera at the eye sees the road monitor's chessboard through the glass and the PGU's markers in it; one photograph fits the homography between them.</figcaption></figure>
+  <ol class="steps">
+    <li><code>tools/calib_rig.py</code> shows a 12 × 7 chessboard filling the window region on the road monitor and, on the PGU, ArUco markers at the pixels that a perfect rig (flip at unit scale) would reflect onto the chessboard's corners.</li>
+    <li>One photograph from the eye point with the measuring camera; the tool detects the chessboard corners and the markers in it.</li>
+    <li>It fits the homography from road-monitor pixels to PGU pixels that makes the markers' reflected positions coincide with the corners, and reports the RMS and maximum residual in road-monitor pixels.<span class="chk">RMS ≤ {{t_cal_px}} px ({{t_cal_deg}}°), maximum ≤ 4 px</span></li>
+    <li>It writes <code>warp.homography_pr</code> and <code>warp.flip</code>; <code>hudd</code> reloads and shows the chessboard itself, mirrored through the new warp; a second photograph should show the two chessboards as one.<span class="chk">Second photograph: no visible doubling</span></li>
+  </ol>
+  <p>Because the planes coincide, the result does not depend on where the camera stood, which 8.2 guaranteed. The homography is close to the flip; a scale far from 1 means the pitches of 8.1 disagree, a shear means the glass is not square to the monitors.</p>
+
+  <h3>8.4 The source camera and its pitch</h3>
+  <p>Focal length and principal point: from the camera config for the comma sources, from the render for MetaDrive, from a chessboard sequence for a phone (OpenCV's calibrator). Height: {{h_c2k}} m <span class="tag">assumed</span> for comma2k19, <code>liveCalibration</code>'s value for routes that have it, the render's for MetaDrive, a tape measure for the phone. Pitch, per recording: <code>tools/calib_source.py</code> finds the vanishing point of the two ego lane lines on straight frames (the lane detector's own output, median over 100 frames), and pitch = atan((v<sub>vanish</sub> − c<sub>y</sub>)/f); yaw likewise from the horizontal coordinate. Cross-check against <code>liveCalibration</code> or the Laika orientations where they exist. Tolerance 0.1°, because 0.1° moves a 20 m point by {{pitch_dz_01}} m (Table 5.1). Fills <code>sources.<i>name</i>.camera</code> and <code>mount</code>.</p>
+
+  <h3>8.5 Photometry</h3>
+  <p>With the plan's spot meter (or a camera in manual mode as a relative meter, calibrated against one metered patch): each monitor's white direct, at the brightness settings to be used; the PGU's white in the glass from the eye point; the road monitor's white through the glass; the PGU's black in the glass. From these: the glass's actual reflection and transmission for each monitor's polarisation, the gains of Table 3.2 recomputed from measured rather than vendor values, and the unlit window's level. Then the ghost: a 2 px bright line on the PGU photographed in the glass at high magnification, the second image's offset in pixels and its brightness ratio, for both orientations of the glass; the orientation with the fainter ghost is kept and recorded. Fills <code>photometry.*</code>.</p>
+
+  <h3>8.6 Latency</h3>
+  <p>Section 7.4: the road monitor's lag, the PGU's lag, and the chain, each as median and 95th percentile over 200 samples. Fills <code>timing.lag_road_ms</code>, <code>timing.lag_pgu_ms</code>, <code>timing.render_ms</code>; the chain itself is a result, not a config value.</p>
+
+  <h3>8.7 The head tracker</h3>
+  <p>Webcam intrinsics from a chessboard; its pose in the rig frame from a photograph of a chessboard laid on the PGU's well at a known position; then the eye midpoint reported by the landmarks for the measuring camera placed at five known rail positions (0, ±{{sway}}, ±150 mm). The residual of the reported position against the rail's reading, median and worst, is the tracker's accuracy; a scale error from a wrong focal length shows as a slope. Tolerance: 5 mm at the eye point, which is {{par_tol_deg}}° of parallax in the Δ = {{delta_20}} mm variant. Fills <code>tracker.*</code>.</p>
+
+  <h3>8.8 The loop camera</h3>
+  <p>Chapter 9: intrinsics from a chessboard; the homography from its image of the road monitor (showing a chessboard) to road-monitor pixels, residual ≤ 2 px; then the composite mapping to source pixels through the life-size crop. Fills <code>loop.*</code>.</p>
+</section>

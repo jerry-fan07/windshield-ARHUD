@@ -10,6 +10,16 @@ import { loadCyclesResults, cyclesDockView } from '../cycles.js';
 import { DEG, clamp, lerp } from '../util.js';
 
 const MPH = 2.236936;
+// Mirror figures and windshields the Driver view can combine (Mirror, windshield and focus blur). The curved glasses
+// are illustrative radii (ASSUMED, lateral x vertical); 4 m x 8 m is the one the curved freeform was fitted for.
+const MIRRORS = [
+  ['sphere', 'Generic sphere, R 660 mm (the plan as written)'],
+  ['toroid', 'Toroid fitted to flat glass'],
+  ['freeform', 'Freeform fitted to flat glass (tilted panel)'],
+  ['freeformCurved', 'Freeform fitted to the 4 m × 8 m glass'],
+];
+const GLASSES = { flat: [0, 0], gentle: [8, 20], design: [4, 8], strong: [3, 6] };
+const GLASS_LABELS = [['flat', 'Flat (the plan)'], ['gentle', 'Gentle: 8 m × 20 m'], ['design', 'Typical: 4 m × 8 m'], ['strong', 'Strong: 3 m × 6 m']];
 
 export class DriveMode {
   constructor(app) {
@@ -99,6 +109,42 @@ export class DriveMode {
     if (env && env.exposure) this.app.renderer.toneMappingExposure = env.exposure;
     this.g.car.setHeadlights && this.g.car.setHeadlights(name === 'night' || name === 'dusk');
     this.app.bloom.strength = name === 'night' ? 0.3 : name === 'dusk' ? 0.3 : 0.2;
+    if (this.g.focus && this.g.focus.on) this.g.updateFocusBlur();     // the automatic pupil follows the scene
+  }
+
+  // Mirror figure, windshield and the eye's focus blur. The figure switch does what the Vehicle mode's does (the panel
+  // tilt, the image surface, the unit's mirror); the glass goes into the trace only (the car's glass is drawn flat).
+  setMirror(v) {
+    const g = this.g, hs = g.hud;
+    GM.MIRROR.mode = v;
+    const u = g.installed.hudUnit; u && u.comp.handles && u.comp.handles.setMirrorMode && u.comp.handles.setMirrorMode(v);
+    g.applyPanelPose && g.applyPanelPose(v);
+    hs.setWindow(hs.settings.window); g.layoutVirtualImage(this.ghostScale || 1);
+    const veh = this.app.modes.vehicle; if (veh && veh.opts) veh.opts.mirror = v;
+    this.mirrorChips && this.mirrorChips.set(v);
+  }
+
+  setGlass(key) {
+    const r = GLASSES[key]; if (!r) return;
+    GM.GLASS.Rh = r[0]; GM.GLASS.Rv = r[1];
+    const hs = this.g.hud; hs.setWindow(hs.settings.window); this.g.layoutVirtualImage(this.ghostScale || 1);
+    this.glassChips && this.glassChips.set(key);
+  }
+
+  glassKey() { return Object.keys(GLASSES).find((k) => GLASSES[k][0] === GM.GLASS.Rh && GLASSES[k][1] === GM.GLASS.Rv) || ''; }
+
+  setFocusBlur(on) {
+    this.g.focus.on = !!on; this.g.updateFocusBlur();
+    this.blurToggle && this.blurToggle.set(on);
+  }
+
+  setFocus({ target, pupilMm } = {}) {
+    const f = this.g.focus;
+    if (target) f.target = target;
+    if (pupilMm !== undefined) f.pupilMm = pupilMm;
+    this.g.updateFocusBlur();
+    this.focusChips && this.focusChips.set(f.target);
+    this.pupilChips && this.pupilChips.set(String(f.pupilMm));
   }
 
   onKey(e) {
@@ -157,6 +203,18 @@ export class DriveMode {
         toggle({ id: 'ghost', label: 'Ghost from the outer glass surface', checked: S.ghost, onChange: (v) => { S.ghost = v; } }),
         h('div', { class: 'row' }, h('span', { class: 'muted', style: { fontSize: '12px' } }, 'hudd places a symbol for the tracked eye by'), chips({ id: 'proj', options: [['plane', 'a plane at one distance (the plan)'], ['surface', 'the image-surface map'], ['trace', 'the optical model, eye to panel (exact)'], ['lut', 'the optical model as a lookup table (the Jetson\'s way)']], value: S.projection || 'plane', onChange: (v) => { S.projection = v; S.surfaceAware = v === 'surface'; } })),
         chips({ id: 'ghostx', options: [['1', 'True size (1.4′)'], ['10', '×10'], ['40', '×40']], value: '1', onChange: (v) => { this.ghostScale = parseFloat(v); g.layoutVirtualImage(this.ghostScale); } })),
+      section('drive-astig', 'Mirror, windshield and focus blur', false,
+        h('p', { class: 'hint' }, 'The windshield is a curved mirror used at 65°, so it focuses more strongly top to bottom than side to side; the concave mirror must cancel that. Combine a mirror with a windshield and switch on the blur to see what the driver\'s eye sees.'),
+        h('div', { class: 'row' }, h('span', { class: 'muted', style: { fontSize: '12px' } }, 'Concave mirror')),
+        (this.mirrorChips = chips({ id: 'astigMirror', options: MIRRORS, value: GM.MIRROR.mode, onChange: (v) => { this.setMirror(v); this.setFocusBlur(true); } })),
+        h('div', { class: 'row' }, h('span', { class: 'muted', style: { fontSize: '12px' } }, 'Windshield radii, lateral × vertical (ASSUMED)')),
+        (this.glassChips = chips({ id: 'astigGlass', options: GLASS_LABELS, value: this.glassKey(), onChange: (v) => { this.setGlass(v); this.setFocusBlur(true); } })),
+        (this.blurToggle = toggle({ id: 'focusBlur', label: 'Show the eye\'s focus blur (astigmatism and defocus)', checked: g.focus.on, onChange: (v) => this.setFocusBlur(v) })),
+        h('div', { class: 'row' }, h('span', { class: 'muted', style: { fontSize: '12px' } }, 'The eye focuses on')),
+        (this.focusChips = chips({ id: 'focusAt', options: [['image', 'the HUD (best focus at the centre)'], ['road', 'the road, 20 m'], ['infinity', 'infinity']], value: g.focus.target, onChange: (v) => this.setFocus({ target: v }) })),
+        h('div', { class: 'row' }, h('span', { class: 'muted', style: { fontSize: '12px' } }, 'Pupil')),
+        (this.pupilChips = chips({ id: 'pupil', options: [['0', 'From the scene'], ['2', '2 mm'], ['4', '4 mm'], ['6', '6 mm'], ['8', '8 mm']], value: String(g.focus.pupilMm), onChange: (v) => this.setFocus({ pupilMm: parseFloat(v) }) })),
+        h('p', { class: 'hint' }, 'Each point of the window is traced through the glass, the mirror and the fold from eyes 10 mm apart: the parallax gives the image distance of the horizontal (sagittal) and the vertical (tangential) fan. A pupil focused at one distance sees each point as an ellipse, pupil × the dioptre error wide in each direction, and the HUD frame is blurred by it. Past infinity means the light converges toward the eye, which no eye can focus. Only the traced Stage 2 window has astigmatism; the spec and Stage 1 windows are planes.')),
       section('drive-motion', 'Motion and latency', false,
         chips({ id: 'comp', options: [['photon', 'Predict to photon time'], ['now', 'Predict to draw time (plan formula)'], ['off', 'No compensation']], value: S.compensation, onChange: (v) => { S.compensation = v; } }),
         h('div', { class: 'ctl' }, h('label', {}, h('span', {}, 'Motion-to-photon, whole chain'), latOut)), latDetails),
@@ -170,6 +228,18 @@ export class DriveMode {
         toggle({ id: 'sunwatch', label: 'Sun-watch rule armed', checked: S.sunWatch, onChange: (v) => { S.sunWatch = v; } })),
     );
     const ok = (b) => (b ? 'good' : 'bad');
+    const dist = (v) => (v > 1 / GM.FAR_IMAGE ? `${(1 / v).toFixed(1)} m` : v > 0 ? 'beyond 300 m' : `past infinity (${v.toFixed(2)} D)`);
+    const focusRows = () => {
+      const f = g.focusStats();
+      const fig = (MIRRORS.find((m) => m[0] === GM.MIRROR.mode) || [0, GM.MIRROR.mode])[1];
+      const glass = (GLASS_LABELS.find((x) => x[0] === this.glassKey()) || [0, `${GM.GLASS.Rh} m × ${GM.GLASS.Rv} m`])[1];
+      return [
+        ['Mirror and windshield', `${fig}; ${glass}`],
+        ['Image distance, window centre', f.centre ? `sagittal ${dist(f.centre.Vs)}, tangential ${dist(f.centre.Vt)}` : '– (no ray)'],
+        ['Astigmatism, worst in the window', `${f.astig.toFixed(2)} D${f.pastFrac > 0.005 ? ` · ${Math.round(f.pastFrac * 100)}% of the window past infinity` : ''}`, f.astig <= 0.25 ? 'good' : f.astig <= 0.5 ? 'warn' : 'bad'],
+        [`Focus blur (${f.pupilMm.toFixed(0)} mm pupil, focused at ${f.A > 0 ? (1 / f.A).toFixed(1) + ' m' : 'infinity'})`, `${f.blurCentre == null ? '–' : f.blurCentre.toFixed(1)}′ centre, ${f.blurWorst.toFixed(1)}′ worst${g.focus.on ? '' : ' (not drawn)'}`, f.blurWorst <= 2 ? 'good' : f.blurWorst <= 5 ? 'warn' : 'bad'],
+      ];
+    };
     const rows = () => {
       const st = hs.stats, lum = hs.lum, env = g.world.env || {};
       const lead = hs.lead;
@@ -194,7 +264,8 @@ export class DriveMode {
         ['Shutter', hs.shutter.open > 0.5 ? 'open' : `closed: ${hs.shutter.reason}`, hs.shutter.open > 0.5 ? 'good' : 'warn'],
         ['Eye offset (true)', `${(hs.eye.trueOffset.z * 1000).toFixed(0)}, ${(hs.eye.trueOffset.y * 1000).toFixed(0)} mm`],
         ['Window visible', `${Math.round((this.vigFrac ?? 1) * 100)}%`, (this.vigFrac ?? 1) > 0.97 ? 'good' : 'warn'],
-        ['Window', `${hs.plane.fovW.toFixed(1)}° × ${hs.plane.fovH.toFixed(1)}° at ${hs.plane.dist.toFixed(2)} m${g.vimgSurface ? ` (drawn on the image surface, ${g.vimgSurface.dmin.toFixed(1)}–${g.vimgSurface.dmax.toFixed(1)} m)` : ''}`],
+        ['Window', `${hs.plane.fovW.toFixed(1)}° × ${hs.plane.fovH.toFixed(1)}° at ${hs.plane.dist.toFixed(2)} m${g.vimgSurface ? ` (drawn on the image surface, ${g.vimgSurface.dmin.toFixed(1)} m to ${g.vimgSurface.dmax >= GM.FAR_IMAGE ? 'past infinity' : g.vimgSurface.dmax.toFixed(1) + ' m'})` : ''}`],
+        ...focusRows(),
         ['Road covered (flat)', `${GM.ROAD_NEAR.toFixed(1)}–${GM.ROAD_FAR.toFixed(1)} m ahead`],
       ];
     };

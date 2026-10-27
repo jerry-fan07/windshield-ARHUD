@@ -1,0 +1,73 @@
+<div class="part" data-toc="Part IV · Build">
+  <div class="pn">Part IV</div>
+  <div class="pt">Build</div>
+  <div class="pd">The software layout the bench starts and the car inherits, the bring-up stages with their gates, the risks, and the bill of materials.</div>
+  <div class="pl">10 Software layout · 11 Bring-up stages and gates · 12 Risks and bill of materials · Appendices</div>
+</div>
+
+<section>
+  <h2 id="software"><span class="num">10</span>Software layout</h2>
+  <p class="lede">The plan calls for a standalone <code>hud/</code> package in the repository with no openpilot build dependency. The bench is where it is started. Everything below is the car's layout; the bench-only parts are marked.</p>
+
+  <h3>10.1 The package</h3>
+  <div class="term">hud/
+  pyproject.toml            numpy, opencv-python, pyzmq, msgpack, pyyaml, raylib (pyray), onnxruntime (CoreML on the Mac),
+                            ultralytics (export only), av or the openpilot framereader for HEVC; TensorRT bindings on the Jetson
+  hud/common/
+    clock.py                monotonic time, display-link timestamps (macOS CVDisplayLink / Linux DRM vblank)
+    bus.py                  ZeroMQ PUB/SUB, msgpack maps, the plan's envelope (capture time, publish time, sequence)
+    schema.py               one dataclass per topic; empty messages are still published
+    frames.py               shared-memory frame ring on one host; JPEG over TCP across hosts
+    calib.py                calibration.yaml loader with the date and provenance of every field
+    geometry.py             camera models, plane intersection, homographies, the rig frame
+  hud/roadsrc/              BENCH ONLY: sources/{comma2k19,oproute,metadrive,video,camera}.py, display.py (full-screen player,
+                            vsync scheduling, life-size crop, frame-ID strip, timing patch), the ego and truth republishers
+  hud/laned/                lane network: ONNX Runtime or Core ML on the Mac, TensorRT on the Jetson, same ONNX file
+  hud/detectd/              YOLO11s + ByteTrack; sign crops (later)
+  hud/planed/               BENCH: lifting on the static plane; becomes part of roadd in the car
+  hud/roadd/                CAR (and the loop): ZED capture, depth, plane fit, the same lifting; SVO record and replay
+  hud/egod/                 bench: log republisher; car: F9R + IMU fusion
+  hud/headtrackd/           webcam + landmarks on the Mac; OAK-D Pro on-device in the car
+  hud/hudd/                 draw.py (rules), project.py (the chain), warp.py (mesh from a homography or a lookup table),
+                            compensate.py, stats.py; one raylib window on the PGU
+  hud/logd/                 topic recorder; replay at original timing
+  hud/scored/               perception score (§5.7), registration residuals, the bench's result tables
+  hud/tools/
+    testcard.py             the F, the arrow, the grid; sets the flip
+    calib_rig.py            chessboard + markers -> H_PR (8.3)
+    calib_source.py         vanishing point -> pitch and yaw (8.4)
+    calib_cam.py            chessboard intrinsics; loop homography (8.8); tracker pose (8.7)
+    photometry.py           the metering sheet and the gain recomputation (8.5)
+    latency.py              Pico probe driver: patches, flags, the statistics (7.4)
+    synth.py                B6.3's synthetic topics
+    export_metadrive.py     lives in docs/arhud-road; writes a bench recording with truth
+  config/
+    bench.yaml              which monitor is which, source, mode, gain, window placement
+    calibration.yaml        appendix B
+  models/                   ONNX and Core ML exports (not committed)</div>
+
+  <h3>10.2 Topics</h3>
+  <table class="tight">
+    <thead><tr><th style="width:14%">Topic</th><th style="width:10%">Rate</th><th>Fields</th><th style="width:12%">Where</th></tr></thead>
+    <tbody>
+      <tr><td><code>roadFrame</code></td><td>source rate</td><td>frame index, capture time, shared-memory slot or JPEG, camera model id, source name, flag for the timing patch</td><td>bench, loop</td></tr>
+      <tr><td><code>display</code></td><td>source rate</td><td>frame index, scheduled vsync, measured lag, the crop in source pixels</td><td>bench</td></tr>
+      <tr><td><code>truth</code></td><td>source rate</td><td>car-frame polylines per painted line, boxes per object with class and velocity, the true plane; capture time</td><td>bench (MetaDrive)</td></tr>
+      <tr><td><code>lanes2d</code>, <code>objects2d</code></td><td>source rate</td><td>as the plan's §3.1</td><td>both</td></tr>
+      <tr><td><code>lanes</code>, <code>objects</code>, <code>ego</code>, <code>eyePose</code>, <code>hudStats</code>, <code>hudFrame</code></td><td>as the plan</td><td>as the plan's §3.2, unchanged</td><td>both</td></tr>
+      <tr><td><code>gnss</code>, <code>health</code>, <code>sunWatch</code></td><td>—</td><td>not published on the bench; <code>hudd</code> treats their absence as the plan's stale rules do</td><td>car</td></tr>
+    </tbody>
+  </table>
+
+  <h3>10.3 Running it</h3>
+  <div class="term">python -m hud.tools.testcard --monitor pgu                       # T-A: set the flip
+python -m hud.roadsrc --source comma2k19:/data/c2k19/Chunk_1/.../3 --monitor road
+python -m hud.laned & python -m hud.detectd & python -m hud.planed & python -m hud.egod &
+python -m hud.hudd --monitor pgu --mode live --gain 0.45
+python -m hud.tools.latency --port /dev/tty.usbmodem*                # 200 samples, prints median / p95
+python -m hud.scored --log runs/2026-10-xx.log --truth               # the tables of chapter 11</div>
+  <p>A supervisor script starts the set, restarts a crashed process after 1 s and marks its topics stale, as the plan requires. On macOS each full-screen window is created on its own display by name, at physical resolution; the two monitors are identified in <code>bench.yaml</code> by their EDID names, since macOS may renumber them.</p>
+
+  <h3>10.4 Environments</h3>
+  <p>A new venv, <code>~/.venvs/arhud-hud</code> (Python 3.12), separate from the CAD and MetaDrive venvs: the MetaDrive one is pinned to 3.11 and a GitHub commit for the simulator and must not be disturbed; the export tool runs there and writes files the bench venv reads. On the Jetson, after the reflash to JetPack 6.2 (build guide B2), the same package with TensorRT and the ZED SDK; the Mac's Core ML path is not installed there. Model exports (ONNX, Core ML) are produced by a script and not committed.</p>
+</section>

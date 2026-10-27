@@ -9,6 +9,53 @@ import { HudSim, CROP_W, CROP_H } from './hud.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
+// The virtual image's grid: 24 x 12 cells over the window.
+const VIMG_NX = 24, VIMG_NY = 12;
+// 32 taps filling the unit disk evenly (a Vogel spiral): the uniform ellipse that a defocused, astigmatic eye makes of
+// a point is the unit disk scaled by the two blur semi-axes.
+const BLUR_TAPS = Array.from({ length: 32 }, (_, i) => { const r = Math.sqrt((i + 0.5) / 32), t = i * 2.3999632; return `vec2(${(r * Math.cos(t)).toFixed(5)}, ${(r * Math.sin(t)).toFixed(5)})`; }).join(', ');
+
+// The HUD frame's material on the virtual-image grid: texture coordinates from the nominal eye's ray through each
+// fragment onto the window plane (uC, uRight, uUp, uW, uH; the ghost first undoes its offset), and, when uBlurOn,
+// the eye's focus blur as a 32-tap ellipse whose semi-axes (texture units) arrive per vertex in aBlur.
+function hudImageMaterial(mat, shared, off) {
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, shared, { uOff: off });
+    sh.vertexShader = sh.vertexShader
+      .replace('void main() {', 'attribute vec2 aBlur;\nvarying vec3 vCarPos;\nvarying vec2 vBlur;\nvoid main() {')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\n  vCarPos = position;\n  vBlur = aBlur;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('void main() {', `uniform vec3 uEye, uC, uRight, uUp, uN, uOff;
+uniform float uW, uH, uBlurOn;
+varying vec3 vCarPos;
+varying vec2 vBlur;
+const vec2 HUD_TAPS[32] = vec2[32](${BLUR_TAPS});
+vec2 hudUv() {
+  vec3 dir = vCarPos - uOff - uEye;
+  vec3 P = uEye + dir * (dot(uC - uEye, uN) / dot(dir, uN));
+  return vec2(dot(P - uC, uRight) / uW + 0.5, dot(P - uC, uUp) / uH + 0.5);
+}
+void main() {
+  vec2 huv = hudUv();
+  vec2 hdx = dFdx(huv), hdy = dFdy(huv);`)
+      .replace('#include <map_fragment>', `#ifdef USE_MAP
+  vec4 sampledDiffuseColor;
+  if (uBlurOn > 0.5 && vBlur.x + vBlur.y > 1e-5) {
+    vec4 acc = vec4(0.0);
+    vec2 gx = hdx + vec2(0.35 * vBlur.x, 0.0), gy = hdy + vec2(0.0, 0.35 * vBlur.y);   // prefilter to the tap spacing
+    for (int i = 0; i < 32; i++) acc += textureGrad(map, huv + HUD_TAPS[i] * vBlur, gx, gy);
+    sampledDiffuseColor = acc / 32.0;
+  } else {
+    sampledDiffuseColor = textureGrad(map, huv, hdx, hdy);
+  }
+  diffuseColor *= sampledDiffuseColor;
+#endif`)
+      .replace('#include <alphamap_fragment>', '#ifdef USE_ALPHAMAP\n  diffuseColor.a *= texture2D(alphaMap, huv).g;\n#endif');
+  };
+  mat.customProgramCacheKey = () => 'hudImage';
+  return mat;
+}
+
 // Orientation that turns local +X toward dir, keeping +Y as close to up as possible.
 function aim(dir, up = V(0, 1, 0)) {
   const x = dir.clone().normalize();
@@ -185,19 +232,35 @@ export class Garage {
     if (mon && mon.comp.handles && mon.comp.handles.setScreenTexture) mon.comp.handles.setScreenTexture(this.audienceTex);
   }
 
-  // The virtual image: the HUD frame on a plane in front of the eye (additive light), its ghost, and the cell's
-  // black-level glow over the whole window.
+  // The virtual image: the HUD frame on the image surface in front of the eye (additive light), its ghost, and the
+  // cell's black-level glow over the whole window. All three are grids in the car frame: the traced window's vertices
+  // sit on the image surface the optics make, the spec and Stage 1 windows' on their planes.
   makeVirtualImage() {
     const g = this.vimg = new THREE.Group(); g.name = 'virtualImage';
-    const mk = (opacity) => new THREE.MeshBasicMaterial({ map: this.hud.texture, transparent: true, opacity, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, toneMapped: true, color: 0xffffff });
-    this.vimgMain = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mk(1));
-    this.vimgGhost = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mk((1 - 0.2357) ** 2));
-    this.vimgBlack = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false }));
+    // The HUD frame's texture coordinates come from the nominal eye's ray through each fragment, not from the grid: the
+    // surface's vertices lie at very different depths (5 m at the top of the toroid's window to past infinity in its
+    // lower corners), and perspective-correct interpolation of grid UVs across such a cell stretches the frame toward
+    // its near corner, which smeared the speed block. Projected from the eye, the frame lands where hudd drew it.
+    this.vimgUniforms = {
+      uEye: { value: GM.EYE.clone() }, uC: { value: new THREE.Vector3() }, uRight: { value: GM.VIMG_RIGHT.clone() },
+      uUp: { value: GM.VIMG_UP.clone() }, uN: { value: GM.VIMG_N.clone() }, uW: { value: 1 }, uH: { value: 1 },
+      uBlurOn: { value: 0 },
+    };
+    this.vimgGhostOff = { value: new THREE.Vector3() };
+    const mk = (opacity, ghost) => hudImageMaterial(new THREE.MeshBasicMaterial({ map: this.hud.texture, transparent: true, opacity, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, toneMapped: true, color: 0xffffff }), this.vimgUniforms, ghost ? this.vimgGhostOff : { value: new THREE.Vector3() });
+    const NX = VIMG_NX, NY = VIMG_NY;
+    const grid = () => { const geo = new THREE.PlaneGeometry(1, 1, NX, NY); geo.setAttribute('aBlur', this.vimgBlurAttr); return geo; };
+    this.vimgBlurAttr = new THREE.BufferAttribute(new Float32Array((NX + 1) * (NY + 1) * 2), 2);
+    this.vimgMain = new THREE.Mesh(grid(), mk(1, false));
+    this.vimgGhost = new THREE.Mesh(grid(), mk((1 - 0.2357) ** 2, true));
+    this.vimgBlack = new THREE.Mesh(grid(), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false }));
     // eye-box vignette as an alpha map
     this.vigCanvas = document.createElement('canvas'); this.vigCanvas.width = 13; this.vigCanvas.height = 7;
     this.vigTex = new THREE.CanvasTexture(this.vigCanvas); this.vigTex.magFilter = THREE.LinearFilter; this.vigTex.minFilter = THREE.LinearFilter;
     for (const m of [this.vimgMain, this.vimgGhost, this.vimgBlack]) { m.material.alphaMap = this.vigTex; m.renderOrder = 50; m.frustumCulled = false; g.add(m); }
     this.vimgBlack.renderOrder = 49;
+    // The eye's focus blur (Driver view, Mirror and windshield): off until asked for.
+    this.focus = { on: false, target: 'image', pupilMm: 0 };
     this.carGroup.add(g);
     g.visible = false;
     this.layoutVirtualImage();
@@ -206,44 +269,39 @@ export class Garage {
   layoutVirtualImage(ghostScale = 1) {
     const pl = this.hud.plane;
     this._ghostScale = ghostScale;
-    const basis = new THREE.Matrix4().makeBasis(GM.VIMG_RIGHT, GM.VIMG_UP, GM.VIMG_N);
-    const q = new THREE.Quaternion().setFromRotationMatrix(basis);
     // The traced window is drawn on the image surface the optics make, not on a plane: for each grid point of the
     // window, the sagittal image distance along the nominal eye's ray (local Coddington at the mirror hit, as the
-    // Cycles section computes it and Cycles confirmed: 6 to 19 m across the toroid's window). From the nominal eye
-    // the picture is identical; when the head moves, each part of the image swims against the road by its own
-    // distance, as it does in the car. The spec and stage-1 windows stay the planes they are defined as.
-    const NX = 24, NY = 12;
-    const surf = this.hud.settings.window === 'traced' ? this.imageSurface(pl, NX, NY) : null;
-    this.vimgSurface = surf;
+    // Cycles section computes it and Cycles confirmed across the toroid's window). From the nominal eye the picture is
+    // identical; when the head moves, each part of the image swims against the road by its own distance, as it does
+    // in the car. The spec and stage-1 windows stay the planes they are defined as.
+    const NX = VIMG_NX, NY = VIMG_NY;
+    const traced = this.hud.settings.window === 'traced';
+    const surf = this.imageSurface(pl, NX, NY, traced);
+    this.vimgSurface = traced ? surf : null;
     const ghostOff = GM.VIMG_UP.clone().multiplyScalar((3.1137 / 1000) * ghostScale);
+    this.vimgGhostOff.value.copy(ghostOff);
+    const U = this.vimgUniforms;
+    U.uC.value.copy(pl.c); U.uW.value = pl.w; U.uH.value = pl.h;
     // the black-level glow is the whole lit crop, which the optics keystone (wider at the bottom); the content stays
     // on the inscribed rectangle hudd draws into. Map the crop's edges through the trace for the glow's outline.
-    const cropSurf = surf ? this.cropSurface(NX, NY) : null;
+    const cropSurf = traced ? this.cropSurface(NX, NY) : null;
     for (const m of [this.vimgMain, this.vimgGhost, this.vimgBlack]) {
-      if (surf) {
-        if (!m.userData.grid) { m.geometry.dispose(); m.geometry = new THREE.PlaneGeometry(1, 1, NX, NY); m.userData.grid = true; }
-        const pos = m.geometry.attributes.position;
-        const off = m === this.vimgGhost ? ghostOff : null;
-        const pts = (m === this.vimgBlack && cropSurf) ? cropSurf.points : surf.points;
-        for (let k = 0; k < pos.count; k++) { const pt = pts[k]; pos.setXYZ(k, pt.x + (off ? off.x : 0), pt.y + (off ? off.y : 0), pt.z + (off ? off.z : 0)); }
-        pos.needsUpdate = true;
-        m.geometry.computeBoundingSphere();
-        m.quaternion.identity(); m.scale.set(1, 1, 1); m.position.set(0, 0, 0);
-      } else {
-        if (m.userData.grid) { m.geometry.dispose(); m.geometry = new THREE.PlaneGeometry(1, 1); m.userData.grid = false; }
-        m.quaternion.copy(q);
-        m.scale.set(pl.w, pl.h, 1);
-        m.position.copy(pl.c);
-      }
+      const pos = m.geometry.attributes.position;
+      const off = m === this.vimgGhost ? ghostOff : null;
+      const pts = (m === this.vimgBlack && cropSurf) ? cropSurf.points : surf.points;
+      for (let k = 0; k < pos.count; k++) { const pt = pts[k]; pos.setXYZ(k, pt.x + (off ? off.x : 0), pt.y + (off ? off.y : 0), pt.z + (off ? off.z : 0)); }
+      pos.needsUpdate = true;
+      m.geometry.computeBoundingSphere();
+      m.quaternion.identity(); m.scale.set(1, 1, 1); m.position.set(0, 0, 0);
     }
-    // ghost: the outer-surface copy, offset 3.1 mm in the plane of incidence (upward), parallel
-    if (!surf) this.vimgGhost.position.add(ghostOff);
+    this.vimgVerg = null;                                   // the vergences belong to the figure, the glass and the window
+    if (this.focus && this.focus.on) this.updateFocusBlur();
   }
 
-  // The image surface over the window: PlaneGeometry(1, 1, NX, NY) vertex order (rows from the top, x left to right),
-  // each vertex on the nominal eye's ray through its window point, at the traced sagittal image distance.
-  imageSurface(pl, NX, NY) {
+  // The window's grid points: PlaneGeometry(1, 1, NX, NY) vertex order (rows from the top, x left to right), each on
+  // the nominal eye's ray through its window point; on the traced window at the traced sagittal image distance (held
+  // continuous past infinity, see GM.surfaceDistance), otherwise on the plane.
+  imageSurface(pl, NX, NY, traced = true) {
     const points = [];
     let dmin = Infinity, dmax = -Infinity, misses = 0;
     for (let j = 0; j <= NY; j++) {
@@ -253,8 +311,11 @@ export class Garage {
         const P = pl.c.clone().addScaledVector(GM.VIMG_RIGHT, x).addScaledVector(GM.VIMG_UP, y);
         const dir = P.clone().sub(GM.EYE).normalize();
         let D = GM.EYE.distanceTo(P);
-        const d = this.imageDistanceAlong(GM.EYE, dir);
-        if (d != null && d > 1 && d < 500) D = d; else misses++;
+        if (traced) {
+          const d = this.imageDistanceAlong(GM.EYE, dir);
+          if (d == null) misses++;
+          D = GM.surfaceDistance(d, D);
+        }
         dmin = Math.min(dmin, D); dmax = Math.max(dmax, D);
         points.push(GM.EYE.clone().addScaledVector(dir, D));
       }
@@ -277,7 +338,7 @@ export class Garage {
         if (!sol) { points.push(fallback ? fallback[k].clone() : GM.EYE.clone()); continue; }
         const dir = GM.fieldDir(sol.ax, sol.ay);
         const d = GM.imageDistanceAlong(GM.EYE, dir);
-        points.push(GM.EYE.clone().addScaledVector(dir, d != null && d > 1 && d < 500 ? d : this.hud.plane.dist));
+        points.push(GM.EYE.clone().addScaledVector(dir, GM.surfaceDistance(d, this.hud.plane.dist)));
       }
     }
     return { points };
@@ -287,6 +348,95 @@ export class Garage {
   // Coddington equation at the hit (the same as cycles.js fieldDistances). Null when the ray misses the optics.
   imageDistanceAlong(eye, dir, mode = GM.MIRROR.mode) {
     return GM.imageDistanceAlong(eye, dir, mode);
+  }
+
+  // Both image vergences at every grid vertex of the window, from the nominal eye, through the whole trace (curved
+  // glass included): GM.fieldVergences. The spec and Stage 1 windows are planes, one vergence everywhere. Cached until
+  // the figure, the glass or the window changes (about 0.1 to 0.3 s to compute).
+  vergences() {
+    if (this.vimgVerg) return this.vimgVerg;
+    const pl = this.hud.plane, NX = VIMG_NX, NY = VIMG_NY;
+    const traced = this.hud.settings.window === 'traced';
+    const Vs = new Float32Array((NX + 1) * (NY + 1)), Vt = new Float32Array(Vs.length), ok = new Uint8Array(Vs.length);
+    for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+      const k = j * (NX + 1) + i;
+      const x = (i / NX - 0.5) * pl.w, y = (0.5 - j / NY) * pl.h;
+      if (!traced) { const D = Math.hypot(pl.dist, x, y); Vs[k] = Vt[k] = 1 / D; ok[k] = 1; continue; }
+      const r = GM.fieldVergences(GM.EYE, Math.atan(x / pl.dist), Math.atan(y / pl.dist));
+      if (r) { Vs[k] = r.Vs; Vt[k] = r.Vt; ok[k] = 1; }
+    }
+    // Where no ray from a displaced eye reaches the panel point (strong glass on a mismatched mirror), take the mean of
+    // the neighbours, so the blur stays continuous; those vertices are left out of the readouts (ok = 0).
+    const have = Uint8Array.from(ok);
+    for (let pass = 0; pass < 60; pass++) {
+      let left = 0;
+      for (let j = 0; j <= NY; j++) for (let i = 0; i <= NX; i++) {
+        const k = j * (NX + 1) + i; if (have[k]) continue;
+        let n = 0, ss = 0, st = 0;
+        for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const ii = i + di, jj = j + dj; if (ii < 0 || jj < 0 || ii > NX || jj > NY) continue;
+          const q = jj * (NX + 1) + ii; if (have[q] === 1) { n++; ss += Vs[q]; st += Vt[q]; }
+        }
+        if (n) { Vs[k] = ss / n; Vt[k] = st / n; have[k] = 2; } else left++;
+      }
+      for (let k = 0; k < have.length; k++) if (have[k] === 2) have[k] = 1;
+      if (!left) break;
+    }
+    this.vimgVerg = { Vs, Vt, ok, filled: have, key: GM.MIRROR.mode + ':' + GM.GLASS.Rh + ':' + GM.GLASS.Rv + ':' + this.hud.settings.window };
+    return this.vimgVerg;
+  }
+
+  // Pupil diameter (m): the Driver view's choice, or a typical value for the scene's adaptation luminance (ASSUMED:
+  // about 3 mm in sun, 4 overcast, 5 at dusk, 6 at night).
+  pupil() {
+    if (this.focus.pupilMm > 0) return this.focus.pupilMm / 1000;
+    const n = (this.world.env && this.world.env.name) || 'day';
+    return ({ day: 3, overcast: 4, dusk: 5, night: 6 })[n] / 1000 || 0.003;
+  }
+
+  // Where the eye focuses (dioptres). 'image': best focus on the HUD at the window centre (the mean of the two
+  // vergences, the circle of least confusion), 'road': 20 m, 'infinity'. An eye cannot focus past infinity, so the
+  // accommodation never goes below 0.
+  accommodation() {
+    const f = this.focus.target;
+    if (f === 'road') return 1 / 20;
+    if (f === 'infinity') return 0;
+    const v = this.vergences(), k = (VIMG_NY / 2) * (VIMG_NX + 1) + VIMG_NX / 2;
+    return v.ok[k] ? Math.max(0, (v.Vs[k] + v.Vt[k]) / 2) : 0;
+  }
+
+  // The eye's blur over the window: a pupil p focused at A sees a point whose two vergences are Vs, Vt as a uniform
+  // ellipse p|Vs - A| wide (horizontal, the sagittal fan) by p|Vt - A| tall (vertical, the tangential fan), in radians.
+  // The shader convolves the HUD frame with that ellipse, per vertex, as semi-axes in texture units.
+  updateFocusBlur() {
+    const U = this.vimgUniforms, a = this.vimgBlurAttr.array;
+    U.uBlurOn.value = this.focus.on ? 1 : 0;
+    if (!this.focus.on) return;
+    const v = this.vergences(), A = this.accommodation(), p = this.pupil(), pl = this.hud.plane;
+    for (let k = 0; k < v.Vs.length; k++) {
+      if (!v.filled[k]) { a[2 * k] = a[2 * k + 1] = 0; continue; }
+      a[2 * k] = 0.5 * p * Math.abs(v.Vs[k] - A) * pl.dist / pl.w;
+      a[2 * k + 1] = 0.5 * p * Math.abs(v.Vt[k] - A) * pl.dist / pl.h;
+    }
+    this.vimgBlurAttr.needsUpdate = true;
+  }
+
+  // Readouts for the Driver view: the two image distances at the window centre, the worst astigmatism over the window,
+  // and the blur (arcmin, the larger axis) at the centre and at its worst, for the current pupil and focus.
+  focusStats() {
+    const v = this.vergences(), A = this.accommodation(), p = this.pupil();
+    const k0 = (VIMG_NY / 2) * (VIMG_NX + 1) + VIMG_NX / 2;
+    const am = (dv) => p * Math.abs(dv) / DEG * 60;
+    let astig = 0, blur = 0, n = 0, past = 0;
+    for (let k = 0; k < v.Vs.length; k++) {
+      if (!v.ok[k]) continue;
+      n++;
+      astig = Math.max(astig, Math.abs(v.Vs[k] - v.Vt[k]));
+      blur = Math.max(blur, am(v.Vs[k] - A), am(v.Vt[k] - A));
+      if (v.Vs[k] < 0 || v.Vt[k] < 0) past++;
+    }
+    const c = v.ok[k0] ? { Vs: v.Vs[k0], Vt: v.Vt[k0] } : null;
+    return { centre: c, astig, blurWorst: blur, blurCentre: c ? Math.max(am(c.Vs - A), am(c.Vt - A)) : null, A, pupilMm: p * 1000, pastFrac: n ? past / n : 0, traced: n };
   }
 
   updateVignette(eyeOffset) {

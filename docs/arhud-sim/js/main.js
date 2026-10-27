@@ -96,6 +96,15 @@ async function boot() {
   if (flag('mirror') && app.garage) { const GMm = await import('./geom.js'); const v = flag('mirror'); GMm.MIRROR.mode = v; GMm.setGlassForMode(v); app.garage.applyPanelPose && app.garage.applyPanelPose(v); app.garage.hud.setWindow(app.garage.hud.settings.window); app.garage.layoutVirtualImage(1); }
   // #drive&glass=RH,RV puts a curved windshield (radii in metres) into the trace for any figure (the car's glass is still drawn flat).
   if (flag('glass') && app.garage) { const GMm = await import('./geom.js'); const [rh, rv] = flag('glass').split(',').map(parseFloat); GMm.GLASS.Rh = rh || 0; GMm.GLASS.Rv = rv || 0; app.garage.hud.setWindow(app.garage.hud.settings.window); app.garage.layoutVirtualImage(1); }
+  // #drive&blur=1 draws the eye's focus blur; &focus=image|road|infinity and &pupil=MM set where the eye focuses and
+  // the pupil (0 = from the scene). &glass= and &mirror= above choose what it looks through.
+  if (app.modes.drive && app.garage && app.garage.focus) {
+    const dm = app.modes.drive;
+    if (flag('focus') || flag('pupil')) dm.setFocus({ target: flag('focus') || undefined, pupilMm: flag('pupil') ? parseFloat(flag('pupil')) : undefined });
+    if (flag('blur')) dm.setFocusBlur(flag('blur') !== '0');
+    if (flag('mirror')) { dm.mirrorChips && dm.mirrorChips.set(flag('mirror')); }
+    if (flag('glass') || flag('mirror')) { dm.glassChips && dm.glassChips.set(dm.glassKey()); }
+  }
   if (flag('surf') && app.garage && app.garage.hud) { const hs = app.garage.hud.settings; hs.projection = ({ 0: 'plane', 1: 'surface', 2: 'trace', 3: 'lut' })[flag('surf')] || 'plane'; hs.surfaceAware = hs.projection === 'surface'; }
   const warm = parseFloat(flag('warm'));
   if (warm > 0 && app.mode && app.mode.update) { app.warming = true; for (let t = 0; t < warm; t += 1 / 30) app.step(1 / 30); app.warming = false; }

@@ -1,0 +1,44 @@
+<div class="part" data-toc="Part III · Display">
+  <div class="pn">Part III</div>
+  <div class="pt">Display</div>
+  <div class="pd">How a point on the road becomes a lit pixel on the PGU whose reflection covers it; when that pixel lights; how the chain is calibrated; and the variant with a camera in the loop.</div>
+  <div class="pl">6 The renderer on the bench · 7 Clocks and latency · 8 Calibration · 9 Camera in the loop</div>
+</div>
+
+<section>
+  <h2 id="display"><span class="num">6</span>The renderer on the bench</h2>
+  <p class="lede"><code>hudd</code> is written once, for the car. On the bench it runs with a different set of matrices in its projection chain and a different warp mesh, both read from the calibration file, and with the drawing rules of the plan unchanged. This chapter gives those matrices and the two modes in which the bench runs it.</p>
+
+  <h3>6.1 The projection chain</h3>
+  <p>The plan's chain is D · K<sub>eye</sub> · view_from_eye · eye_from_car: a car-frame point goes to the eye's frame, is projected as a pinhole onto the virtual plane, and is warped by a two-dimensional mesh onto the panel. On the bench the "virtual plane" is the road monitor's face, which shows the recording's camera picture; a car-frame point appears on it where the recording's camera projected it. So the bench's eye is placed at the recording's camera, and the chain becomes:</p>
+  <div class="formula">eye_from_car   = camera_from_car of the source (height h, pitch θ, yaw, lateral offset)
+view_from_eye  = identity (look along the camera's axis)
+K_eye          = S · K_source, with S the scale and offset of the life-size crop onto the road monitor
+D              = H_PR · F : the mirror flip F, then the calibrated homography from road-monitor pixels to PGU pixels</div>
+  <p>Every matrix is a config value. In the car, eye_from_car is the nominal eye plus the tracker's offset, K<sub>eye</sub> the virtual plane's pinhole and D the mesh from the photographed grid; the code path is identical, which is the point. The bench's D is a 3 × 3 homography rather than a mesh because a flat reflection needs no more; <code>hudd</code> carries the general mesh and fills it from the homography.</p>
+  <p>The window: the plan's {{fov_w}}° × {{fov_h}}° is drawn as {{win_px_w}} × {{win_px_h}} px on the road monitor's plane, its centre the plan's 5° look-down below the picture's horizon row (c<sub>y</sub> − f · tan θ for a camera pitched down by θ, the row where the lane lines vanish). <code>roadsrc</code> chooses the life-size crop's vertical offset so that this row lands on the road monitor's centre row, which is also the glass's centre; the window is then centred in the glass's reflected area and tied to the horizon at once. Only that region is drawn on the PGU; the rest stays black. The two-pass structure of B6.4 stands: content into an off-screen texture at twice the window's resolution, then the warp pass through D.</p>
+
+  <h3>6.2 Age compensation on the bench</h3>
+  <p>As in the plan: for each point captured at t<sub>c</sub>, age = t<sub>photon</sub> − t<sub>c</sub>, where t<sub>photon</sub> is the predicted time the drawn frame lights the PGU (now, plus the measured render and scan-out time of chapter 7); speed and yaw rate from <code>ego</code> are integrated over the age to give s and ψ, and the point is moved by p<sub>now</sub> = R<sub>z</sub>(−ψ)·(p<sub>capture</sub> − [s, 0, 0]), tracks additionally by their own velocity. The bench differs in one respect that makes the test honest: the road monitor shows the frame of time t<sub>c</sub>, not the road at t<sub>photon</sub>. So a correctly compensated mark is drawn where the road <i>will be</i>, ahead of the picture, and looks wrong against the picture; a mark compensated with the wrong sign looks doubly wrong. Registration against the picture is therefore measured either in sync mode (section 6.4) or, in live mode, with <code>hudd</code>'s compensation target set to the picture's own time, a config switch that the plan's B6.5 sign test also needs (it draws onto the camera image). Live mode's own measurement is the chain latency and the residual of the compensated mark against the truth at t<sub>photon</sub>, which MetaDrive sources provide.</p>
+
+  <h3>6.3 Drawing rules</h3>
+  <p>Unchanged from the plan's §6 and the build guide's B6.4: ribbon between the ego lines, lane lines faded by confidence with three frames before appearance, lead chevron within 80 m in the ribbon, hazards after three detections, the fixed speed block, nothing below the window's bottom edge or above the horizon plus 2°, the stale cut-offs, clutter mode on a key. Two bench additions: a <b>gain</b> (section 3.4) that scales every drawn value to reproduce a chosen contrast condition, and a <b>blank-ribbon</b> switch (the simulator's) for registration checks. Line widths are in window pixels and scale with the window's pixel count, so a 6 px line on the 5.5-inch crop is {{ppd}}/{{ppd_plan}} × 6 ≈ 8 px here.</p>
+
+  <h3>6.4 The two sync modes</h3>
+  <figure>[[FIG t_timing]]<figcaption><b>Figure 6.1.</b> One frame through the bench in live mode (solid) and sync mode (dashed).</figcaption></figure>
+  <table class="tight">
+    <thead><tr><th style="width:16%">Mode</th><th>What happens</th><th style="width:30%">What it measures</th></tr></thead>
+    <tbody>
+      <tr><td>Sync, truth-fed</td><td><code>hudd</code> subscribes to <code>truth</code> in place of <code>lanes</code> and <code>objects</code> (MetaDrive sources only). <code>roadsrc</code> and <code>hudd</code> share a schedule: the HUD drawing for frame N is presented at the same vsync as frame N on the road monitor, offset by the difference of the two monitors' input lags. Age is zero by construction; compensation is off.</td><td>Calibration, projection and drawing alone: the residual between a drawn line and the painted line's truth is the display chain's error, with nothing else in it.</td></tr>
+      <tr><td>Sync, perception-fed</td><td>As above, but perception runs ahead of time (or offline) on the source frames and its results are keyed by frame index; <code>hudd</code> draws from them.</td><td>The whole chain without latency: perception, lifting and display together, reported against the §5.7 angles ({{lat_10_deg}}° at 10 m, {{lat_20_deg}}° at 20 m, {{lat_30_deg}}° at 30 m).</td></tr>
+      <tr><td>Live</td><td>Frame N is released to perception at its capture time (when its scan-out begins on the road monitor); <code>hudd</code> draws from the newest message at 60 Hz with compensation to t<sub>photon</sub> using the recording's ego stream.</td><td>The latency chain, the prediction's sign and magnitude, frame drops, and the compensated residual against truth at t<sub>photon</sub>. B6's gate G2.</td></tr>
+      <tr><td>Live, fixed delay</td><td>Live with an added delay of 200 ms before publication (B6.5).</td><td>The sign test on a curve: the compensated mark lands on the paint's future position; the uncompensated lags; a wrong sign doubles the error.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6.5 The parallax variant's projection</h3>
+  <p>When the road monitor is slid back by Δ, the road picture is a plane at {{d_img_m}} m + Δ and the PGU's image a plane at {{d_img_m}} m. A road point P<sub>road</sub> (where the recording's camera put it, scaled onto the road monitor) must appear to the tracked eye E to coincide with the mark: the mark goes where the line from E through P<sub>road</sub> crosses the image plane, and then through F and H<sub>PR</sub> to the PGU. <code>hudd</code> does this with the plan's own machinery: eye_from_car is the tracked eye in the rig frame, K<sub>eye</sub> the pinhole of the image plane as seen from that eye, and the road point is first mapped to its rig-frame position on the slid-back monitor. With the tracker off, E is the nominal eye and the mark errs by exactly the parallax of Table 3.3, which is the test.</p>
+
+  <h3>6.6 Output and the audience</h3>
+  <p>raylib (OpenGL 3.3 core) full screen on the PGU at native {{mon_px_w}} × {{mon_px_h}}, vsync on, one process per monitor so that each full-screen window owns its display. On macOS the window must be created at physical resolution (the high-DPI flag) or the system will render at {{mon_px_w}}/2 and scale. <code>hudFrame</code> (the window, downscaled) and <code>hudStats</code> (age per topic as drawn, render time, dropped frames, the last residual) are published as in the plan; an audience view, when wanted, is the Mac's own screen: road picture with perception overlaid, the PGU frame, the live numbers, as the road simulator's right panel lays them out.</p>
+</section>

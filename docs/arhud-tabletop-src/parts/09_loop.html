@@ -1,0 +1,28 @@
+<section>
+  <h2 id="loop"><span class="num">9</span>Camera in the loop</h2>
+  <p class="lede">The direct path hands perception the source's own pixels. The loop path puts a real camera between the road monitor and perception, so that exposure, readout, focus, the camera's transfer and its driver are in the chain, as they will be in the car. It is the last bench stage and the first in which the Jetson's camera code runs unchanged.</p>
+
+  <h3>9.1 Placement</h3>
+  <figure>[[FIG t_loop]]<figcaption><b>Figure 9.1.</b> The loop camera above and behind the glass's top edge, outside the reflection's path, looking down at the road monitor.</figcaption></figure>
+  <p>The camera must see the road monitor and not the PGU's reflection, which means it sits outside the cone of rays the glass sends toward the viewer: above the glass's top edge, tilted down about 15° at the road monitor's centre. The car's camera has the same relation to the windshield: it looks through the glass that reflects the HUD, and the reflection goes elsewhere. The downward tilt keystones the picture; the homography of 8.8 removes it, and the camera's field is chosen (lens or crop) so the road monitor fills most of the frame, since source pixels per camera pixel set the detector's effective resolution.</p>
+
+  <h3>9.2 A camera looking at a monitor</h3>
+  <ul>
+    <li><b>Refresh beat.</b> The monitor refreshes at 60 Hz; an exposure that is not a whole number of 1/60 s records a brightness band that rolls through the frames. Exposure 1/60 s or 1/30 s, fixed, gain to suit; the hood keeps room light out so the exposure can be long.</li>
+    <li><b>Rolling shutter against scan-out.</b> A rolling-shutter camera (the ZED 2i) reading out over a monitor's own top-to-bottom scan can capture the seam between two frames. At 1/60 s exposure the seam is a soft blend; if it shows as a tear, the capture is phase-locked to the vsync by starting it from <code>roadsrc</code>'s display timestamp. The OAK-D Pro's mono pair is global shutter and sees none of this.</li>
+    <li><b>Moiré.</b> The monitor's pixel grid at {{pitch_um}} µm, seen from about 0.5 m by a camera whose pixel covers several monitor pixels, is below the Nyquist limit and shows no moiré; if a sharp lens and a close mount bring it up, a slight defocus removes it.</li>
+    <li><b>Focus and depth.</b> The ZED's fixed focus is set for distance; at 0.5 m it is a little soft, acceptable for the networks and marked as a bench limitation. Its stereo depth sees a plane at 0.5 m, so <code>roadd</code>'s plane fit returns the monitor's plane, not the road's: on the bench <code>roadd</code> runs with the fit disabled and the static plane of the source, exactly as <code>planed</code> does, which is the plan's fallback mode.</li>
+    <li><b>Colour and gamma.</b> The camera sees the monitor's sRGB rendering of the clip, not the scene; brightness and white balance are set once and left.</li>
+  </ul>
+
+  <h3>9.3 Mapping back to the source</h3>
+  <p>The camera's detections are in camera pixels. <code>planed</code> needs source pixels, because the camera model and the plane are the source's. The composite mapping is: camera pixel to road-monitor pixel (the homography of 8.8) to source pixel (the inverse of the life-size crop's scale and offset). It is one 3 × 3 matrix, applied to every lane point and box corner before lifting; everything downstream is untouched. The frame-ID strip, decoded in the camera's image, tells <code>roadd</code> which source frame it is seeing, so that its capture time can be compared with <code>roadsrc</code>'s display time: the difference is the camera's own latency, a number the plan's budget wants and the direct path cannot give.</p>
+
+  <h3>9.4 What the loop adds to the measurements</h3>
+  <ul>
+    <li>Camera exposure, readout and transfer in the latency chain, by the same photodiode pair: the patch on the road monitor is now seen by the camera, and the flag is raised by <code>roadd</code>'s brightness watch on that image region, exactly B6.6's probe mode without the LED.</li>
+    <li>The networks' behaviour on a camera's rendering of the picture rather than on the picture: noise, slight blur, the camera's colour. The lane residual through the camera is compared with the direct path's on the same frames; the difference is what the camera costs.</li>
+    <li>The ZED SDK's capture code, its timestamps and its SVO recording on the Jetson, before a car exists.</li>
+  </ul>
+  <p>With a live camera the bench can also show, as a demonstration, the whole car chain: the road monitor plays a drive, the camera watches it, the Jetson detects, the glass overlays. Nothing in that chain is simulated except the road.</p>
+</section>

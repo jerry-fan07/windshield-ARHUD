@@ -1,0 +1,84 @@
+@page { size: Letter; }
+*{box-sizing:border-box}
+html{color-scheme:light}
+body{margin:0;background:#fff;color:#111;font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:10.3pt;line-height:1.5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+main{width:680px;margin:0 auto}
+h1,h2,h3,h4{font-family:inherit;margin:0;text-wrap:balance;color:#111}
+h2{font-size:20pt;font-weight:700;letter-spacing:-.01em;break-before:page;break-after:avoid;padding:0 0 8px;margin:0 0 14px;border-bottom:1.6px solid #111}
+h2 .num{color:#6b6a66;margin-right:8px;font-variant-numeric:tabular-nums;font-weight:500}
+h3{font-size:13pt;font-weight:650;margin:20px 0 6px;break-after:avoid}
+h4{font-size:10.8pt;font-weight:650;margin:14px 0 4px;break-after:avoid}
+p{margin:6px 0;orphans:3;widows:3}
+ul,ol{padding-left:20px;margin:6px 0}
+li{margin:3px 0}
+code{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:9.2pt;background:#f1f1ef;padding:0 3px;border-radius:2px}
+.lede{font-size:12pt;line-height:1.5}
+.eyebrow{font-size:8.5pt;text-transform:uppercase;letter-spacing:.12em;color:#5c5b57;font-weight:500}
+table{width:100%;border-collapse:collapse;font-size:9pt;margin:8px 0 6px}
+thead{display:table-header-group}
+tr{break-inside:avoid}
+th,td{padding:4px 6px;text-align:left;vertical-align:top;border-bottom:.8px solid #dcdbd6}
+th{font-size:7.8pt;text-transform:uppercase;letter-spacing:.05em;color:#3d3c39;font-weight:650;border-bottom:1.2px solid #111;background:none}
+td.num,th.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td.c{text-align:center}
+table.tight td{padding:2.5px 6px}
+figure{margin:14px 0 12px;break-inside:avoid}
+figure svg{display:block;width:100%;height:auto}
+figure img{display:block;width:100%;height:auto;border:.8px solid #dcdbd6}
+figure.half img{width:70%;margin:0 auto}
+figcaption{font-size:8.8pt;color:#4a4946;margin-top:6px;line-height:1.4}
+figcaption b{color:#111}
+.box{border:1px solid #111;padding:9px 13px;margin:14px 0;break-inside:avoid}
+.box p{margin:3px 0}
+.box .h{font-weight:700;margin-bottom:3px;font-size:9pt;text-transform:uppercase;letter-spacing:.07em}
+.box.grey{border:none;background:#f3f3f1}
+.box.warn{border:1.6px solid #111;border-left-width:6px}
+.box.idea{border:none;border-left:3px solid #111;background:#f6f6f4}
+.tag{display:inline-block;font-size:7.2pt;text-transform:uppercase;letter-spacing:.07em;font-weight:650;padding:0 4px;border:.8px solid #6b6a66;border-radius:2px;color:#3d3c39;vertical-align:1px;line-height:1.45}
+.tag.solid{background:#111;color:#fff;border-color:#111}
+.small{font-size:8.8pt;color:#4a4946}
+.muted{color:#5c5b57}
+.formula{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:9pt;background:#f3f3f1;padding:7px 12px;margin:7px 0;break-inside:avoid;white-space:pre-wrap;line-height:1.42}
+.term{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;font-size:8.7pt;background:#f3f3f1;border-left:2px solid #6b6a66;padding:7px 12px;margin:7px 0;break-inside:avoid;white-space:pre-wrap;line-height:1.45}
+/* numbered procedures */
+ol.steps{list-style:none;counter-reset:st;padding-left:0;margin:8px 0}
+ol.steps>li{counter-increment:st;position:relative;padding-left:34px;margin:7px 0;break-inside:avoid}
+ol.steps>li::before{content:counter(st);position:absolute;left:0;top:0;width:22px;height:18px;border:1px solid #111;font-size:8.5pt;font-weight:650;text-align:center;line-height:17px;font-variant-numeric:tabular-nums}
+ol.steps>li>ul{margin-top:3px}
+.chk{display:block;margin-top:3px;font-size:9.2pt}
+.chk::before{content:"";display:inline-block;width:8px;height:8px;border:1px solid #111;margin-right:7px;vertical-align:0}
+.cl{list-style:none;padding-left:0}
+.cl li{padding-left:17px;position:relative}
+.cl li::before{content:"";position:absolute;left:0;top:4px;width:8px;height:8px;border:1px solid #111}
+/* stage header */
+.stagehead{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1.2px solid #111;border-bottom:.8px solid #dcdbd6;margin:6px 0 12px;break-inside:avoid}
+.stagehead div{padding:6px 8px 7px 0;font-size:8.8pt;line-height:1.35}
+.stagehead b{display:block;font-size:7.4pt;text-transform:uppercase;letter-spacing:.08em;color:#5c5b57;font-weight:650;margin-bottom:2px}
+.problem{display:grid;grid-template-columns:150px 1fr;gap:4px 16px;border-top:.8px solid #dcdbd6;padding:8px 0;break-inside:avoid}
+.problem .k{font-size:7.6pt;text-transform:uppercase;letter-spacing:.08em;color:#5c5b57;font-weight:650;padding-top:2px}
+.cover{height:900px;break-after:page;position:relative}
+.cover .band{height:6px;background:#111;margin:0 0 38px}
+.cover h1{font-size:44pt;line-height:1.02;letter-spacing:-.025em;font-weight:700}
+.cover .sub{font-size:13.5pt;color:#4a4946;margin-top:14px;line-height:1.45}
+.cover .meta{font-size:9.3pt;color:#4a4946;margin-top:22px;line-height:1.55}
+.cover figure{margin:28px 0 0}
+.part{break-before:page;height:860px;display:flex;flex-direction:column;justify-content:center}
+.part .pn{font-size:10pt;text-transform:uppercase;letter-spacing:.16em;color:#5c5b57;font-weight:600}
+.part .pt{font-size:34pt;font-weight:700;letter-spacing:-.02em;line-height:1.05;margin-top:8px}
+.part .pd{font-size:11.5pt;color:#4a4946;margin-top:16px;max-width:520px;line-height:1.5}
+.part .pl{margin-top:26px;border-top:1.2px solid #111;padding-top:10px;font-size:10pt;line-height:1.7}
+.toc ol{list-style:none;padding:0;margin:0}
+.toc li{display:flex;align-items:baseline;gap:8px;padding:1.6px 0;border-bottom:.8px dotted #b9b8b2;font-size:9.3pt}
+.toc li.pt{border-bottom:none;font-weight:700;font-size:8.2pt;text-transform:uppercase;letter-spacing:.1em;padding-top:9px;color:#3d3c39}
+.toc .n{width:30px;color:#5c5b57;font-variant-numeric:tabular-nums;flex:none}
+.toc .t{flex:1}
+.toc .p{flex:none;color:#5c5b57;font-variant-numeric:tabular-nums}
+.toc a{color:#111;text-decoration:none}
+a{color:#111;text-decoration:underline;text-decoration-color:#b9b8b2}
+dl{margin:6px 0}
+dt{font-weight:650;margin-top:6px}
+dd{margin:1px 0 0 0}
+.glossary div{margin:4px 0;break-inside:avoid}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.sheet td{height:20px}
+table.sheet{break-inside:avoid}

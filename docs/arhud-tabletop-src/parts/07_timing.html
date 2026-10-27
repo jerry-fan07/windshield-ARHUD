@@ -1,0 +1,26 @@
+<section>
+  <h2 id="timing"><span class="num">7</span>Clocks and latency</h2>
+  <p class="lede">The plan's motion-to-photon budget is {{lat_plan_min}} to {{lat_plan_max}} ms with a limit of 90. The bench reproduces the chain with the camera replaced by a monitor and measures it with two photodiodes, without a car and without the ZED.</p>
+
+  <h3>7.1 One clock, or two</h3>
+  <p>With everything on the Mac there is one monotonic clock and every topic's capture and publish times are on it. When the Jetson takes the PGU and the perception, the Mac keeps the road monitor and <code>roadsrc</code>; the two hosts run chrony over the Ethernet switch, which holds them within a millisecond on a quiet LAN <span class="tag">verify</span>, and the frame's capture time crosses with the frame. A millisecond is 1% of the budget; the photodiode measurement does not depend on it at all, because it reads light on both monitors with one Pico.</p>
+
+  <h3>7.2 What "capture time" means on the bench</h3>
+  <p>In the car a frame's capture time is the ZED's exposure midpoint. On the bench it is the moment the frame's light leaves the road monitor: the vsync at which <code>roadsrc</code> presented it plus the road monitor's input lag (vsync to the start of scan-out), measured in T-F. <code>roadsrc</code> knows the vsync from the display link's timestamp and holds the frame back from perception until that capture time has passed, so perception cannot start before the light exists, as in the car. The ego stream is shifted so that the recording's own timestamps line up with these capture times.</p>
+
+  <h3>7.3 The bench chain</h3>
+  [[TBL latency]]
+  <p class="small">Table 7.1. The bench chain by stage, road photon to HUD photon. Monitor lags and Mac inference times are <span class="tag">assumed</span> until T-F and T-D measure them. The road monitor's own scan-out is excluded because the capture time is defined at its start.</p>
+  <p>A 20 Hz source adds up to 50 ms of staleness before this chain, which is the car's situation at 20 Hz too; the plan runs the camera topics at 30 Hz if the GPU allows. On the road, {{travel_50}}, {{travel_90}} and {{travel_200}} m pass at 30 m/s in 50, 90 and 200 ms, and a lane point 10 m ahead seen from {{h_cam}} m up moves by {{shift_50}}°, {{shift_90}}° and {{shift_200}}° in the image; that is what compensation removes and the bench shows with real speed and yaw rate.</p>
+
+  <h3>7.4 Measuring it</h3>
+  <p><b>Frame-ID strip.</b> <code>roadsrc</code> draws eight small squares at a corner of the road monitor encoding the frame index modulo 256; the loop camera (chapter 9) and the measuring camera decode it, so any photograph or video of the rig knows which frame it sees. It costs nothing and resolves every "which frame was that" question.</p>
+  <p><b>Timing patches and the photodiode pair.</b> On a key press, or at random intervals of 0.5 to 1.5 s, <code>roadsrc</code> turns a 60 × 60 px patch at the road monitor's corner white for one frame and publishes a flag with that frame's capture time; <code>hudd</code> turns a 60 × 60 px patch on the PGU white in the first frame it draws after receiving the flag, through the normal path (the flag travels as a field of <code>roadFrame</code> through <code>laned</code>, <code>planed</code> and the bus, so it takes the full chain). B6's Pico probe gains a second photodiode: one taped over each patch, shielded. The Pico timestamps both rising edges in microseconds and prints the difference; 200 samples give the median and the 95th percentile. The road monitor's own input lag is read the same way against the Pico receiving the vsync timestamp over serial, and the PGU's by sending a byte that <code>hudd</code> answers with the patch, which is also the renderer-plus-monitor figure B6.6 wants.</p>
+  <p><b>Phone slow motion</b> for a quick look: a phone at 240 fps filming the glass sees both patches (the road one through it, the PGU one in it); the frame count between the two edges times {{slomo_ms}} ms is the chain to the nearest 4 ms. Good enough to catch a stacked frame or a wrong vsync setting in a minute.</p>
+
+  <h3>7.5 Input lag and vsync on macOS</h3>
+  <p>Each monitor's lag is unknown <span class="tag">verify</span>; portable panels with scalers range from one to three frames. The vsync path on macOS can add a frame of its own if the window is composited rather than full screen, or if triple buffering is on; <code>hudd</code> is checked for exactly one frame between draw and scan-out by the byte-to-patch test, and the mode that gives it (full-screen exclusive, vsync on, no compositor) is recorded in the config. The road monitor's lag enters the capture-time definition; the PGU's enters t<sub>photon</sub> for compensation and the sync-mode offset.</p>
+
+  <h3>7.6 Two hosts</h3>
+  <p>When perception moves to the Jetson, the frame crosses the LAN as JPEG (a 1164 × 874 frame at quality 90 is about 150 kB, about 1.5 ms on gigabit plus encode and decode), the topics cross as they already do over TCP instead of IPC, and the photodiode pair still reads the chain end to end. The Jetson's own HDMI lag and TensorRT times replace the Mac's in Table 7.1.</p>
+</section>

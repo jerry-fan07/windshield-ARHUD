@@ -163,8 +163,7 @@ export class HudSim {
     const pl = this.plane;
     let D = new THREE.Vector3().subVectors(pl.c, GM.EYE).dot(GM.VIMG_N) / dir.dot(GM.VIMG_N);
     if (this.settings.window === 'traced') {
-      const d = GM.imageDistanceAlong(GM.EYE, dir);
-      if (d != null && d > 1 && d < 500) D = d;
+      D = GM.surfaceDistance(GM.imageDistanceAlong(GM.EYE, dir), D);
     }
     return GM.EYE.clone().addScaledVector(dir, D);
   }
@@ -750,6 +749,13 @@ export class HudSim {
   vignette(eyeOffset, cols = 13, rows = 7) {
     const e = GM.EYE.clone().add(eyeOffset);
     const out = [];
+    if (this.settings.window === 'stage1') {
+      // Stage 1 is the Fresnel magnifier and combiner, not the Stage 2 train: the whole window shows inside the lens's
+      // traced eye box, 141 x 251 mm at a 700 mm path (docs/ARHUD-FRESNEL-STAGE.pdf), and none of it outside.
+      const inside = Math.abs(eyeOffset.z) <= 0.0705 && Math.abs(eyeOffset.y) <= 0.1255 ? 1 : 0;
+      for (let k = 0; k < cols * rows; k++) out.push(inside);
+      return { cols, rows, data: out };
+    }
     for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
       const px = (i + 0.5) / cols * CROP_W, py = (j + 0.5) / rows * CROP_H;
       const d = this.pixelDir(px, py, e);
@@ -781,18 +787,28 @@ export function tracedWindow() {
   const target = { tl: [-0.03, -0.015], tr: [0.03, -0.015], bl: [-0.03, 0.015], br: [0.03, 0.015] };   // [z, x] on the panel; image top lands at -x
   const res = {};
   for (const [k, [tz, tx]] of Object.entries(target)) {
-    let ax = Math.sign(tz) * GM.FOV_W / 2 * 0.8, ay = (tx < 0 ? 1 : -1) * GM.FOV_H / 2 * 0.8;
-    for (let it = 0; it < 30; it++) {
-      const f = (a, b) => { const r = GM.traceFromEye(GM.EYE, GM.fieldDir(a, b)); return r ? [r.panelZ, r.panelX] : [NaN, NaN]; };
+    // Newton from the window centre, with the step halved until the ray still reaches the panel: a curved windshield
+    // bends the corner rays enough that a full first step from the flat-glass guess can leave the optics.
+    const f = (a, b) => { const r = GM.traceFromEye(GM.EYE, GM.fieldDir(a, b)); return r ? [r.panelZ, r.panelX] : [NaN, NaN]; };
+    let ax = 0, ay = 0;
+    for (let it = 0; it < 40; it++) {
       const [z0, x0] = f(ax, ay);
       const h = 1e-4;
       const [z1, x1] = f(ax + h, ay), [z2, x2] = f(ax, ay + h);
       const J = [[(z1 - z0) / h, (z2 - z0) / h], [(x1 - x0) / h, (x2 - x0) / h]];
       const det = J[0][0] * J[1][1] - J[0][1] * J[1][0];
+      if (!isFinite(det) || Math.abs(det) < 1e-12) break;
       const ez = tz - z0, ex = tx - x0;
-      ax += (J[1][1] * ez - J[0][1] * ex) / det; ay += (-J[1][0] * ez + J[0][0] * ex) / det;
+      let dax = (J[1][1] * ez - J[0][1] * ex) / det, day = (-J[1][0] * ez + J[0][0] * ex) / det;
+      let lam = 1;
+      while (lam > 1 / 64 && !isFinite(f(ax + lam * dax, ay + lam * day)[0])) lam /= 2;
+      if (!isFinite(f(ax + lam * dax, ay + lam * day)[0])) break;
+      ax += lam * dax; ay += lam * day;
+      if (Math.abs(lam * dax) < 1e-10 && Math.abs(lam * day) < 1e-10) break;
     }
-    res[k] = [ax, ay];
+    const [zf, xf] = f(ax, ay);
+    // a corner no ray reaches keeps the flat-glass window's field angle there
+    res[k] = isFinite(zf) && Math.abs(zf - tz) < 1e-4 && Math.abs(xf - tx) < 1e-4 ? [ax, ay] : [Math.sign(tz) * GM.FOV_W / 2 * 0.8, (tx < 0 ? 1 : -1) * GM.FOV_H / 2 * 0.8];
   }
   const { vt, vs, eyeToMirror } = GM.mirrorImages();
   const dist = eyeToMirror - (vt + vs) / 2;                 // virtual image distance from the eye

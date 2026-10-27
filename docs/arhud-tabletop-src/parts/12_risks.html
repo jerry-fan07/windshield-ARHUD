@@ -1,0 +1,40 @@
+<section>
+  <h2 id="risks"><span class="num">12</span>Risks, gotchas and the bill of materials</h2>
+
+  <h3>12.1 Things that will go wrong, and what to do</h3>
+  <table class="tight">
+    <thead><tr><th style="width:30%">Symptom or risk</th><th>Cause and response</th></tr></thead>
+    <tbody>
+      <tr><td>The overlay slides against the road when the viewer moves</td><td>Planes not coplanar (section 3.1). Shim the road monitor or the PGU until the parallax check passes; a rail stop that drifts is the usual culprit.</td></tr>
+      <tr><td>The reflection is dim, far under 30% of the PGU's white</td><td>The PGU's polarisation is p to the glass (section 3.5). Retarder film, or rotate the PGU 90° and the picture in software; meter again.</td></tr>
+      <tr><td>Every line is doubled, {{ghost_px}} px apart</td><td>The glass's bare face is toward the viewer. Turn the glass over; if both faces are bare, accept the ghost on the bench and use thick lines, as the plan's windshield rule does.</td></tr>
+      <tr><td>The road picture is blurry at the eye</td><td>Expected for comma2k19 (× {{c2k_up}}); use the comma three route or a phone clip for demos; perception is unaffected.</td></tr>
+      <tr><td>The picture is at half resolution or offset on a monitor</td><td>macOS scaling: the window was created at logical, not physical, pixels, or the display is set to "larger text". Use the high-DPI flag and native resolution; verify by photographing a 1 px checkerboard.</td></tr>
+      <tr><td>Judder on the road monitor</td><td>A 20 Hz source on a 60 Hz display shows each frame for three vsyncs; a dropped vsync shows as a 4-vsync frame. <code>display</code> logs every schedule; look for a slow decode (software HEVC path) and force the hardware decoder.</td></tr>
+      <tr><td>hudd drops frames</td><td>Vsync stacking or a compositor frame; the warp mesh rebuilt every frame; another window on the PGU's display. B6.8 applies.</td></tr>
+      <tr><td>Chain over 90 ms</td><td>Find the stage with the probe's split measurement (byte-to-patch for render plus PGU lag; vsync-to-patch for the road monitor's lag). A portable monitor with two frames of scaler lag at each end eats 67 ms by itself; if so, record it and note that the car's HDMI board is a different device.</td></tr>
+      <tr><td>Compensation makes it worse</td><td>The sign (B6.5), or <code>hudd</code>'s target set to t<sub>photon</sub> while measuring against the picture (section 6.2): switch the target to the picture's time for registration tests.</td></tr>
+      <tr><td>Lane residual grows with range on comma2k19</td><td>Pitch or height wrong (Table 5.1). Refit the vanishing point on a straight stretch; try the height as a free parameter against the lane width (3.7 m) at 20 m.</td></tr>
+      <tr><td>The networks score well on MetaDrive and badly on real clips, or the reverse</td><td>Expected; MetaDrive's paint is synthetic and its score is a floor. Weight the real-clip agreement with <code>modelV2</code> and the hand-checked frames; the plan's fine-tuning decision belongs to G1.</td></tr>
+      <tr><td>The PGU gets hot face up in the well</td><td>1,200 nits in a closed well with a hood. Leave the well's ends open, run the PGU at the gain the condition needs rather than at full white, watch for dimming.</td></tr>
+      <tr><td>A monitor drops out on the Mac's port</td><td>Power: use the monitors' own PD chargers; check which ports of the MacBook support two displays.</td></tr>
+      <tr><td>The Mac's inference times are nowhere near the Jetson's</td><td>They are not meant to be; the bench times size the bench's own chain. The plan's budget is measured under B2 on the Jetson.</td></tr>
+      <tr><td>The loop camera sees the HUD</td><td>It is inside the reflection's cone: raise it above the glass's top edge, or hood the gap between glass and camera.</td></tr>
+      <tr><td>Two hosts disagree on time</td><td>chrony not synced, or a topic stamped with the wrong clock. The photodiode chain is clock-free; use it to find which host's stamps are off.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>12.2 Bill of materials</h3>
+  [[TBL bom]]
+  <p class="small">Table 12.1. New purchases for the bench. The plan's spot meter, the OAK-D Pro and the ZED are not repeated here; the bench uses them when they arrive and works without them until then.</p>
+
+  <h3>12.3 Decisions this design leaves open</h3>
+  <ul>
+    <li>Eye-to-image distance: {{d_img}} mm by design; Table 3.1 for the others. Settled at T-C by looking.</li>
+    <li>Glass orientation (coated face): settled by the ghost photograph at T-A or T-G.</li>
+    <li>Whether the PGU needs the retarder film: settled by the photometry at T-G.</li>
+    <li>Which lane network: settled by score at T-D, as the plan intends.</li>
+    <li>Whether a larger glass is worth buying so the whole PGU reflects: only if a wider window than the plan's is wanted on the bench.</li>
+    <li>When the Jetson joins: after B2 (reflash); T-I is written so that it can run on the Mac with a webcam first.</li>
+  </ul>
+</section>

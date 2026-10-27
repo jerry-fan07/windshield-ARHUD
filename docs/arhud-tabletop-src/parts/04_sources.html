@@ -1,0 +1,37 @@
+<div class="part" data-toc="Part II · Detection">
+  <div class="pn">Part II</div>
+  <div class="pt">Detection</div>
+  <div class="pd">Where the road pictures come from, what each one knows about itself, and how lanes, vehicles and pedestrians are found in them and placed on the road.</div>
+  <div class="pl">4 Road sources · 5 Detection design</div>
+</div>
+
+<section>
+  <h2 id="sources"><span class="num">4</span>Road sources</h2>
+  <p class="lede">A road source is a stream of frames with a camera model, a clock, and whatever it knows about the car's motion and the truth of the scene. The bench accepts four, behind one interface, chosen for what each contributes: real paint and real motion, exact truth, sharpness, or the live case.</p>
+
+  [[TBL sources]]
+  <p class="small">Table 4.1. Sources and their cameras. Focal lengths for the comma cameras are this checkout's <code>openpilot/common/transformations/camera.py</code> (<code>_neo_config</code> for the EON, <code>_ar_ox_config</code> for the comma three); the ZED's is the plan's. "Life-size crop" is the source width that fills the road monitor at {{d_img}} mm; "window" the source pixels across the plan's {{fov_w}}°.</p>
+
+  <h3>4.1 comma2k19 segments</h3>
+  <p>The dataset the plan's reference stack came from: 2,019 one-minute segments of Highway 280 recorded on a comma EON, MIT licensed, about 100 GB in ten chunks of about 10 GB on Academic Torrents, also mirrored as the Hugging Face dataset <code>commaai/comma2k19</code> <span class="tag">verify</span>; one chunk is enough. Each segment holds <code>video.hevc</code> (1164 × 874 at 20 Hz, focal length {{c2k_f}} px), <code>processed_log/</code> with CAN speed in m/s and the four wheel speeds, the IMU's accelerometer and bias-corrected gyro in a forward-right-down frame, GNSS, and <code>global_pos/</code> with per-frame positions and orientations from the authors' Laika solution, plus <code>raw_log.bz2</code> readable with openpilot's <code>LogReader</code>. The frame reader in <code>openpilot/tools/lib/framereader.py</code> decodes the HEVC through ffmpeg, which on the Mac uses the hardware decoder.</p>
+  <p>What it gives the bench: real paint under real light, and the car's own speed and yaw rate at log rate for <code>egod</code>, so age compensation on the bench uses the same quantities the car will have. What it lacks: a camera height and pitch per car. The height is taken as {{h_c2k}} m, the plan's own EON-era figure <span class="tag">assumed</span>; the pitch per segment is fitted from the vanishing point of the lane lines on a straight stretch, cross-checked against the Laika orientations (chapter 8). The camera's {{c2k_hfov}}° field is wider than the {{hfov_shown}}° shown, so the life-size crop uses only its central {{c2k_crop}} px and the picture is soft (section 3.3); the lane and object networks see the full-resolution source.</p>
+
+  <h3>4.2 openpilot routes from a comma three</h3>
+  <p>A route recorded on a comma three carries a narrow camera of {{c3_f}} px focal length on 1928 × 1208 ({{c3_hfov}}° wide, 20 Hz) and, in its logs, <code>liveCalibration</code> (the camera's pitch and yaw against the road and, in newer logs, its height), <code>carState</code> (speed, yaw rate from the car's sensors), and <code>modelV2</code>: openpilot's own lane lines and lead, which serve the bench as a reference for the lane detector before any hand labelling. The demo route this checkout's <code>tools/clip</code> uses, <code>5beb9b58bd12b691/0000010a--a51155e496</code>, is public <span class="tag">verify</span>; the repository's <code>tools/lib/route.py</code> fetches segments. Its {{c3_hfov}}° field is close to the shown {{hfov_shown}}°, so the picture needs only × {{c3_up}} enlargement and looks sharp at the eye; the camera sits high on the windshield at the comma device's own calibration.</p>
+
+  <h3>4.3 MetaDrive renders</h3>
+  <p>The road simulator in <code>docs/arhud-road</code> already renders a road camera view from a mount on the windshield and keeps the truth of every lane boundary, vehicle and pedestrian. A new export tool in it writes a bench recording: a frame sequence at {{mon_px_w}} × {{mon_px_h}} rendered with exactly the field the road monitor shows ({{hfov_shown}}° × {{vfov_shown}}°, a pinhole of {{md_f}} px), a second sequence at the ZED's resolution and field for perception, the camera pose, the true ground plane, the ego speed and yaw rate at 100 Hz, and the truth per frame as car-frame polylines and boxes. It is the only source with truth, so it is the one the perception score (§5.7) and the registration residuals (chapter 6) are measured on; its paint is synthetic, so the lane detector's score on it is a floor, not a result. The simulator's scenarios (lead braking, pedestrian crossing, worn paint, curves) become bench recordings directly.</p>
+
+  <h3>4.4 Phone dashcam clips</h3>
+  <p>A 4K clip from a phone held on a windshield mount, 30 or 60 Hz, about 70° wide <span class="tag">assumed</span>, is the sharpest real picture the bench can show (× {{phone_up}} enlargement) and the easiest to record on the roads the demo will use. It has no log: the camera's focal length is fitted from a chessboard once, its pitch from the vanishing point, and ego-motion either from a GNSS logging app on the same phone (speed, heading, 1 to 10 Hz) or not at all, in which case age compensation is off and the clip serves the detector and the drawing rules only.</p>
+
+  <h3>4.5 Live camera</h3>
+  <p>The same interface accepts a camera on the Mac or the Jetson (a webcam, the OAK-D Pro, the ZED 2i when it arrives) so that the bench becomes the car's perception chain with the road monitor as the scene. This is the camera-in-the-loop configuration of chapter 9; its frames carry the camera's own capture time and its own intrinsics, and a homography maps its view of the road monitor back to road-picture pixels.</p>
+
+  <h3>4.6 The source interface</h3>
+  <p>Every source yields frames with: a monotonic frame index; the source's native image; the camera model (focal length, principal point, distortion if known, image size); the mount (height, pitch, yaw, lateral offset from the car's centre); the ego sample nearest the frame (speed, yaw rate, their times) and the full ego stream for <code>egod</code>; the truth, if any; and a display crop (the window of the source that fills the road monitor at life size, so that the pixel mapping between source and road monitor is a known scale and offset). <code>roadsrc</code> shows the crop and publishes the frame; the rest of the chain never knows which source it came from.</p>
+  <div class="box grey">
+    <p class="h">Time on the bench</p>
+    <p>A recording has its own timeline. <code>roadsrc</code> replays it in real time, scheduling each frame to a vsync of the road monitor, and defines the frame's <b>capture time</b> as the moment its scan-out begins on the road monitor (the vsync plus the monitor's measured input lag). Every topic derived from the frame carries that time, so <code>hudd</code>'s age is the real age of the light the viewer saw. The ego stream is shifted onto the same timeline. Sync mode (chapter 6) uses the same clock with perception precomputed.</p>
+  </div>
+</section>

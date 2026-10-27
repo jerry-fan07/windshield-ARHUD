@@ -122,7 +122,7 @@ def loft():
     verts, faces, mats, tags = [], [], [], []
     for x, s in zip(STATIONS, secs):
         for (y, z) in s:
-            verts.append((x, y, z))
+            verts.append((x, y, CZ + z))              # section z is measured from the centre line
     for i in range(len(STATIONS) - 1):
         x0, x1 = STATIONS[i], STATIONS[i + 1]
         xm = (x0 + x1) / 2
@@ -264,7 +264,7 @@ def main():
     for o in [o for o in sc.objects if o.type == "MESH" and o is not ob]:
         bpy.data.objects.remove(o, do_unlink=True)
     halves = []
-    for side, group, sign in (("left", "leftSide", 1), ("right", "rightSide", -1)):
+    for side, group, sign in (("left", "leftSide", -1), ("right", "rightSide", 1)):   # bisect clears the +normal side
         h = ob.copy()
         h.data = me.copy()
         h.name = side

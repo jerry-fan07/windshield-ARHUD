@@ -1,0 +1,53 @@
+<section class="cover">
+  <div class="band"></div>
+  <div class="eyebrow">Windshield AR HUD · HUD-only TFT LCD edition</div>
+  <h1 style="margin-top:12px">Tabletop Design</h1>
+  <p class="sub">Two 16-inch monitors and a sheet of teleprompter glass: one monitor shows a road, the HUD software detects the road in that picture, and the other monitor's reflection lays the registered overlay onto it. The design of the rig, the detection, the display chain, their calibration, and the tests that prove each part before anything goes into a car.</p>
+  <figure>[[FIG t_side]]</figure>
+  <p class="meta">Edition of 2026-10-27. Extends build stage B6 (Stage 0) of <code>docs/ARHUD-BUILD-GUIDE.pdf</code> and follows the plan in <code>docs/ARHUD-PLAN-TFT.pdf</code> and its specification <code>docs/ARHUD-PLAN-TFT-SPEC.md</code>. Shared numbers are imported from the plan's <code>calc.py</code>; bench numbers are derived in <code>docs/arhud-tabletop-src/tcalc.py</code>. Source of this document: <code>docs/arhud-tabletop-src</code>.</p>
+</section>
+
+<section>
+  <div class="eyebrow">Before anything else</div>
+  <h3 style="margin-top:6px">What this document is</h3>
+  <p>The request was to build the tabletop display with the two YODOIT monitors and to design, in detail, the detection of the road and the display on the monitor that is reflected. This document reads that request one way, states it, and designs to it: <b>monitor unit 1 lies face up under the glass as the picture generator (the PGU), exactly as build stage B6 places it; monitor unit 2 stands upright behind the glass, where B6 had a black backdrop, and shows the road.</b> The HUD software runs its perception on the same road frames that unit 2 is showing, so the overlay the viewer sees in the glass is drawn from a road the software actually detected, registered to that picture. The result is the plan's whole software chain, from camera frame to lit pixel, running on a desk and measurable to a fraction of a degree, weeks before a car, a stereo camera or a custom mirror exists.</p>
+  <p>It is a design, not a build log: nothing here has been measured on the rig yet, and the document says at each number whether it is derived, assumed or still to be read off the hardware. It does not replace B6; it extends it, and where it departs from B6 it says why.</p>
+
+  <h4>How to read it</h4>
+  <p><b>Part I</b> is the rig: its geometry, the light through the glass, what the viewer sees and how bright. <b>Part II</b> is the detection: where the road pictures come from, how lanes, vehicles and pedestrians are found in them and lifted to the car frame, and how that is scored. <b>Part III</b> is the display: how the renderer puts a car-frame point onto the PGU so that its reflection lands on the right pixel of the road picture, the timing of the chain, the calibrations, and the camera-in-the-loop variant. <b>Part IV</b> is the build: the software layout, the bring-up stages T-A to T-I with their gates, the risks, the bill of materials, and the appendices.</p>
+
+  <h4>Conventions</h4>
+  <table class="tight">
+    <thead><tr><th style="width:22%">Mark</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag">assumed</span></td><td>A design value that a named measurement must replace. The text says which measurement and which stage makes it.</td></tr>
+      <tr><td><span class="tag">verify</span></td><td>Not confirmed from a primary source, or not yet tested on this hardware.</td></tr>
+      <tr><td><span class="tag solid">decision</span></td><td>A choice the builder makes at that point; the options and their consequences are given.</td></tr>
+      <tr><td><span class="chk" style="display:inline">&nbsp;</span></td><td>A check to tick before the stage's gate is run.</td></tr>
+      <tr><td>Frames</td><td>Rig frame: x along the viewing axis (the eye at negative x), y to the viewer's right, z up, origin at the glass's centre; millimetres. Car frame as in the plan: x forward, y right, z down, origin at the road camera; metres. Image frames: pixels, u right, v down.</td></tr>
+      <tr><td>Names</td><td>"PGU" or "unit 1": the monitor that is reflected. "Road monitor" or "unit 2": the one seen through the glass. "Window": the plan's 10.8° × 5.4° HUD field. "Bench stage" T-A to T-I: a chapter of Part IV; build stages B1 to B14 are the build guide's; optical Stages 0, 1 and 2 are the plan's.</td></tr>
+      <tr><td>Prices</td><td>US dollars, read on vendor pages on 2026-10-27 unless noted. Not quotes.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box" style="break-inside:auto">
+    <p class="h">Design basis: where this bench departs from build stage B6</p>
+    <table class="tight" style="margin-top:6px">
+      <thead><tr><th style="width:24%">Item</th><th style="width:26%">B6 (Stage 0)</th><th>This design, and why</th></tr></thead>
+      <tbody>
+        <tr><td>Behind the glass</td><td>Black backdrop</td><td>The second monitor, showing the road. The overlay is then registered to something the software detected, and registration can be measured in pixels against truth. The backdrop remains the fallback if unit 2 is needed elsewhere (then unit 2 is the audience display, as the plan has it).</td></tr>
+        <tr><td>Image distance</td><td>About 0.6 m, uncontrolled</td><td>Exactly the road monitor's distance: glass centre {{d_glass}} mm above the PGU and {{d_glass}} mm in front of the road monitor, eye {{d_eye}} mm from the glass, image at {{d_img}} mm. Coplanar planes make the overlay parallax-free and its calibration a single homography.</td></tr>
+        <tr><td>Data into hudd</td><td>Synthetic logs, then car recordings</td><td>Live perception on the road frames being shown (lanes, vehicles, pedestrians), with the recording's own speed and yaw rate as <code>ego</code>; synthetic logs remain the first test of hudd alone.</td></tr>
+        <tr><td>Crop on the monitor</td><td>Any placement</td><td>The window drawn at life size: {{win_w}} × {{win_h}} mm, {{win_px_w}} × {{win_px_h}} px, {{ppd}} px per degree, centred in the glass's reflected area.</td></tr>
+        <tr><td>Latency test</td><td>LED into the ZED, photodiode on the panel</td><td>Two photodiodes: one on a timing patch of the road monitor, one on the PGU's. No camera is needed; the chain is road photon to HUD photon.</td></tr>
+        <tr><td>Host</td><td>Jetson, or a mini PC</td><td>The MacBook Pro M4, which already drives one of the monitors and can drive both; the Jetson has been unreachable since 2026-10-07 and has one HDMI output. The Jetson takes over the PGU later, with a second host for the road monitor and a shared clock.</td></tr>
+        <tr><td>Head tracking</td><td>Not on the bench</td><td>A parallax variant: the road monitor slides back {{delta_20}} mm to reproduce the car's parallax between its 7.5 m image and a road point at 20 m, and a webcam tracker is tested against a camera on a rail.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section style="break-before:page">
+  <div class="eyebrow">Contents</div>
+  [[TOC]]
+</section>
