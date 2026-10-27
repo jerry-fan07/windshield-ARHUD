@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "arhud-hud"
+version = "0.1.0"
+description = "Tabletop AR HUD bench: road player, HUD renderer, calibration tools (docs/ARHUD-TABLETOP-DESIGN.pdf)"
+requires-python = ">=3.12"
+dependencies = [
+  "numpy",
+  "opencv-contrib-python",   # opencv-python plus the contrib modules; ArUco lives in the main build since 4.7
+  "pyzmq",
+  "msgpack",
+  "pyyaml",
+  "raylib>=5.0",
+  "av",                       # HEVC fallback decoder (videotoolbox); imported lazily, never next to cv2's ffmpeg by default
+  "pillow",                   # Helvetica Neue text masks, as in docs/arhud-road
+  "pytest",
+]
+
+[tool.setuptools.packages.find]
+include = ["hud*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
