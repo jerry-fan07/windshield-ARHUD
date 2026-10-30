@@ -227,7 +227,7 @@ export function buildEgoCar() {
     const disc = mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.02, 24), discMat); disc.rotation.x = Math.PI / 2; disc.position.z = side * 0.01; pivot.add(disc);
     const cal = rbox(0.08, 0.10, 0.05, 0.01, caliperMat); cal.position.set(front ? -0.12 : 0.12, 0.06, side * 0.03); pivot.add(cal);
     body.add(pivot);
-    wheels.push({ pivot, spin, front });
+    wheels.push({ pivot, spin, front, base: pivot.position.clone() });
   }
 
   // ---------------------------------------------------------------------------------------------- greenhouse
@@ -578,10 +578,23 @@ export function buildEgoCar() {
     tailLens.emissiveIntensity = on ? 2.4 : 0.15;
     clusterMat.emissiveIntensity = on ? 1.1 : 0.85;
   }
+  // The body (this whole group) pitches and rolls on its suspension; the wheels stay on the road. Each wheel pivot is
+  // counter-rotated about the car origin so its world position and its axle direction do not move with the body.
+  const bodyInv = new THREE.Quaternion(), steerQ = new THREE.Quaternion(), _qa = new THREE.Quaternion(), _up = V3(0, 1, 0), _zAx = V3(0, 0, 1), _xAx = V3(1, 0, 0);
+  let steer = 0;
+  function setBodyAttitude(pitch = 0, roll = 0) {
+    bodyInv.setFromAxisAngle(_zAx, pitch).multiply(_qa.setFromAxisAngle(_xAx, roll)).invert();
+    for (const w of wheels) {
+      w.pivot.position.copy(w.base).applyQuaternion(bodyInv);
+      steerQ.setFromAxisAngle(_up, w.front ? -steer : 0);
+      w.pivot.quaternion.copy(bodyInv).multiply(steerQ);
+    }
+  }
   function update(dt, speed = 0, steerAngle = 0) {
+    steer = steerAngle;
     for (const w of wheels) {
       w.spin.rotation.z -= speed * dt / WHEEL_R;
-      if (w.front) w.pivot.rotation.y = -steerAngle;
+      if (w.front) { steerQ.setFromAxisAngle(_up, -steerAngle); w.pivot.quaternion.copy(bodyInv).multiply(steerQ); }
     }
     wheelSpin.rotation.z = -steerAngle * STEER_RATIO;
   }
@@ -617,7 +630,7 @@ export function buildEgoCar() {
     group, body, interior, wheels, steeringWheel, driver, seats, headrestMount, headlights, leftSide, anchors,
     windshieldMaterial: wsGlass,
     dims: { length: 4.84, width: 2 * HW + 0.04, height: 1.435, frontX: 2.46, rearX: -2.38, centerZ: CZ, wheelbase: FRONT_AXLE - REAR_AXLE },
-    setCutaway, setStrip, updateSection, setHeadlights, update, dashTopY,
+    setCutaway, setStrip, updateSection, setHeadlights, update, setBodyAttitude, dashTopY,
     get cutaway() { return cutaway; },
     get strip() { return strip; },
   };

@@ -147,6 +147,7 @@ export class VehicleMode {
     if (unit) { unit.comp.setWorking(this.opts.rays); unit.comp.handles && unit.comp.handles.setMirrorMode && unit.comp.handles.setMirrorMode(this.opts.mirror); }
     for (const id of ['jetson', 'controller', 'ledDriver', 'dcdc', 'ethSwitch', 'miniPC', 'zedF9r', 'gnssAntenna']) { const c = g.installed[id]; if (c) c.comp.setWorking(true); }
     this.savedSpeed = g.ego.speed; g.ego.speed = 0;
+    g.updateDynamics(0, 0, 0, 0);                       // parked: the body sits level
     app.renderer.toneMappingExposure = (g.world.env && g.world.env.exposure) || 1;
     this.applyVisibility('*');
     this.renderPanels();

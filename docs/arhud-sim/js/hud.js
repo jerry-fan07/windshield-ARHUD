@@ -29,6 +29,16 @@ export const PGU_SOURCES = [
   { key: 'hud', label: 'HUD-grade TFT', panel: 50000, unverified: true },
 ];
 
+const _UP = new THREE.Vector3(0, 1, 0), _XAX = new THREE.Vector3(1, 0, 0), _ZAX = new THREE.Vector3(0, 0, 1);
+
+// Running mean over the last N samples (the Phase 1 score is taken over 300 labelled frames, plan 5.7).
+class Ring {
+  constructor(n = 300) { this.n = n; this.buf = new Float64Array(n); this.i = 0; this.count = 0; this.sum = 0; }
+  push(v) { if (!isFinite(v)) return; if (this.count === this.n) this.sum -= this.buf[this.i]; else this.count++; this.buf[this.i] = v; this.sum += v; this.i = (this.i + 1) % this.n; }
+  get mean() { return this.count ? this.sum / this.count : NaN; }
+}
+const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+
 // Smooth deterministic noise in [-1, 1].
 function snoise(x, seed) {
   return (Math.sin(x * 1.13 + seed * 7.1) * 0.5 + Math.sin(x * 0.47 + seed * 3.3) * 0.35 + Math.sin(x * 2.71 + seed * 1.7) * 0.15);
@@ -65,7 +75,31 @@ export class HudSim {
       projection: 'plane',         // how hudd places a symbol for the tracked eye: 'plane' (one distance, the plan), 'surface' (image-surface map), 'trace' (the optical model, eye to panel, exact), 'lut' (the same as a lookup table, as the Jetson would)
       gnssOutage: false,
       showStale: false,
+      // Ground plane (plan 5.1): 'stereo' fits the road region of the depth map every frame (RANSAC), 'imu' is the
+      // fallback of a calibrated static plane tilted by the IMU's pitch, 'static' the calibrated plane alone.
+      plane: 'stereo',
+      planeNoiseDeg: 0.06,         // stereo fit: rms normal error, pitch and roll (sim, ASSUMED)
+      imuPitchBiasDeg: 0.3,        // IMU fallback: calibration offset of the fused pitch (sim, ASSUMED)
+      imuAccelLeak: 0.12,          // IMU fallback: deg of false pitch per m/s^2 of braking the accelerometer leaks into the estimate (sim, ASSUMED)
+      pitchComp: true,             // age compensation also undoes the body's pitch change (the ego topic carries pitch rate)
+      // The GPU (plan 5.6): the depth mode and whether face landmarks run on the Jetson set the serial time per frame;
+      // 'auto' drops the camera-rate topics to 20 Hz when that exceeds the 33 ms frame at 30 Hz.
+      depthMode: 'light',          // 'light' (NEURAL_LIGHT, 8 ms) or 'neural' (NEURAL, 20 ms)
+      faceOnJetson: false,         // the OAK-D Pro finds the landmarks on its own chip (plan); true moves them to the Jetson
+      cameraRate: 'auto',          // 'auto' | 30 | 20
+      linkLost: false,             // the HUD controller hears nothing from the Jetson over USB (fail-safe after 5 s)
+      polarisation: 's',           // the image's polarisation at the glass: 's' as designed (retarder set), 'p' if the retarder is wrong
+      eyewear: 'none',             // 'none' | 'polarised' (vertical transmission axis) | 'tinted'
+      nightCeiling: R.L_NIGHT_EYE, // cd/m^2 at the eye at the night setting: the plan's 50, or lower (TI: under 3)
     };
+    // Process faults: a crashed process publishes nothing until the supervisor restarts it (1 s) and it has started
+    // (camera open, engines loaded). Topics go stale meanwhile; the drawing rules say what the driver sees.
+    this.faults = { roadd: null, headtrackd: null, egod: null, hudd: null, tracker: null };
+    this.timing = { camHz: 30, gpuMs: 0, gpuLoad: 0, present: 0, draw: 0, photon: 0, late: false, renderMs: 0, egoAge: 0, eyeAge: 0, eyeState: 'tracking', frameAge: 0 };
+    this.lastVsync = -1; this.lastEgoT = -1e9;
+    this.planeStats = { mode: 'stereo', used: 'stereo', pitchErr: 0, rollErr: 0, failRate: 0, fails: 0, frames: 0 };
+    // The Phase 1 perception score (gate G1, plan 5.7), taken live against the world's truth over the last 300 captures.
+    this.score = { egoLane: new Ring(), lat10: new Ring(), lat20: new Ring(), lat30: new Ring(), vehRecall: new Ring(), pedRecall: new Ring(), rangeErr: new Ring(), frames: 0 };
     this.hist = [];                // ego pose history
     this.t = 0;
     this.k = -1;                   // last processed capture index
@@ -80,7 +114,7 @@ export class HudSim {
     // The sun-watch patch about the entry direction (degrees): the plan's figure until the Blender sun trace
     // (assets/cycles/sun_focus.json, loaded by install.js) replaces it with the directions that light the whole cell.
     this.sunPatch = { azHalf: R.PATCH_W / 2, elMin: -R.PATCH_H / 2, elMax: R.PATCH_H / 2, source: 'plan' };
-    this.eye = { trueOffset: new THREE.Vector3(), tracked: new THREE.Vector3(), used: new THREE.Vector3(), nominal: false };
+    this.eye = { trueOffset: new THREE.Vector3(), tracked: new THREE.Vector3(), used: new THREE.Vector3(), nominal: false, conf: 1, age: 0, state: 'tracking' };
     this.eyeHist = [];
     this.lastDrawn = { lead: null, lanePt: null };
     this.frameCount = 0;
@@ -218,38 +252,107 @@ export class HudSim {
     let dpsi = b.psi - a.psi; if (dpsi > Math.PI) dpsi -= 2 * Math.PI; if (dpsi < -Math.PI) dpsi += 2 * Math.PI;
     const psi = a.psi + dpsi * f;
     return {
-      t, s: lerp(a.s, b.s, f), x: lerp(a.x, b.x, f), z: lerp(a.z, b.z, f), psi,
-      speed: lerp(a.speed, b.speed, f), yawRate: lerp(a.yawRate, b.yawRate, f), offset: lerp(a.offset, b.offset, f),
+      t, s: lerp(a.s, b.s, f), x: lerp(a.x, b.x, f), z: lerp(a.z, b.z, f), y: lerp(a.y || 0, b.y || 0, f), psi,
+      pitch: lerp(a.pitch || 0, b.pitch || 0, f), roll: lerp(a.roll || 0, b.roll || 0, f),
+      speed: lerp(a.speed, b.speed, f), yawRate: lerp(a.yawRate, b.yawRate, f), pitchRate: lerp(a.pitchRate || 0, b.pitchRate || 0, f),
+      accel: lerp(a.accel || 0, b.accel || 0, f), offset: lerp(a.offset, b.offset, f),
     };
   }
-  // World point -> car frame at pose.
-  toCar(W, pose) {
-    const dx = W.x - pose.x, dz = W.z - pose.z;
-    const c = Math.cos(pose.psi), s = Math.sin(pose.psi);
-    return new THREE.Vector3(dx * c + dz * s, W.y, -dx * s + dz * c);
+  // The body's rotation at a pose: the road's yaw, then the suspension's pitch and roll (the same composition as
+  // Garage.placeEgo). Cached on the pose.
+  static bodyQuat(pose) {
+    if (pose._q) return pose._q;
+    const q = new THREE.Quaternion().setFromAxisAngle(_UP, -pose.psi);
+    q.multiply(_q1.setFromAxisAngle(_ZAX, pose.pitch || 0)).multiply(_q2.setFromAxisAngle(_XAX, pose.roll || 0));
+    pose._q = q; pose._qi = q.clone().invert();
+    return q;
   }
+  // World point -> car (body) frame at pose: the eye, the optics and the cameras ride on the body, so a pitched body
+  // sees the flat road tilted the other way.
+  toCar(W, pose) {
+    HudSim.bodyQuat(pose);
+    return new THREE.Vector3(W.x - pose.x, W.y - (pose.y || 0), W.z - pose.z).applyQuaternion(pose._qi);
+  }
+  // Unit normal of the true ground in the body frame at a pose (the ground passes through the car origin).
+  groundNormal(pose) { HudSim.bodyQuat(pose); return _UP.clone().applyQuaternion(pose._qi); }
 
   // Dead-reckon from t0 to t1 with egod's noisy speed and yaw rate. Returns { dx, dz, dpsi } in the frame at t0.
+  // The ego topic at 100 Hz: GNSS Doppler speed with a slow bias and 0.05 m/s noise, the ZED's gyro for yaw rate and
+  // pitch rate (0.002 rad/s noise, ASSUMED). The pitch rate is what lets hudd undo the body's dive between capture
+  // and display (settings.pitchComp); the plan's formula has only the yaw and the distance.
   egoDelta(t0, t1, seed) {
-    if (t1 <= t0) return { dx: 0, dz: 0, dpsi: 0 };
+    if (t1 <= t0) return { dx: 0, dz: 0, dpsi: 0, dpitch: 0 };
     const r = rng(seed);
     const bias = 0.03 * snoise(t0 * 0.2, 3);         // slow GNSS speed bias, m/s
-    let psi = 0, dx = 0, dz = 0;
+    let psi = 0, dx = 0, dz = 0, pitch = 0;
     const dt = 0.01;
     for (let t = t0; t < t1; t += dt) {
       const step = Math.min(dt, t1 - t);
       const p = this.poseAt(t);
       const vv = p.speed + bias + gauss(r) * 0.05;          // ZED-F9R velocity accuracy 0.05 m/s
       const w = p.yawRate + gauss(r) * 0.002;
-      psi += w * step;
+      const wp = (p.pitchRate || 0) + gauss(r) * 0.002;
+      psi += w * step; pitch += wp * step;
       dx += vv * Math.cos(psi) * step; dz += vv * Math.sin(psi) * step;
     }
-    return { dx, dz, dpsi: psi };
+    return { dx, dz, dpsi: psi, dpitch: this.settings.pitchComp ? pitch : 0 };
   }
   static applyDelta(p, d) {
     const c = Math.cos(d.dpsi), s = Math.sin(d.dpsi);
     const x = p.x - d.dx, z = p.z - d.dz;
-    return new THREE.Vector3(x * c + z * s, p.y, -x * s + z * c);
+    const x1 = x * c + z * s, z1 = -x * s + z * c;
+    if (!d.dpitch) return new THREE.Vector3(x1, p.y, z1);
+    // the body pitched nose-up by dpitch since capture: the point drops in the body frame
+    const cp = Math.cos(d.dpitch), sp = Math.sin(d.dpitch);
+    return new THREE.Vector3(x1 * cp + p.y * sp, -x1 * sp + p.y * cp, z1);
+  }
+
+  // The ground plane roadd reports for capture k, in the body frame: unit normal and offset (n . p = d). The stereo
+  // fit is the true plane with a small random tilt and offset, and fails on some frames (the road region hidden by a
+  // close lead, night texture), falling back to the IMU plane; the IMU plane is the calibrated static plane tilted by
+  // the fused pitch, which carries a calibration bias and leaks some of the braking acceleration (an accelerometer
+  // cannot tell a dive from a deceleration); the static plane is the calibration alone, so every degree of body
+  // pitch goes straight into the lane points (plan 5.4: 1 deg moves a 20 m point to 15.7 m).
+  groundPlane(pose, k, r) {
+    const S = this.settings;
+    const nTrue = this.groundNormal(pose);
+    const night = this.world.env && this.world.env.name === 'night';
+    let used = S.plane;
+    if (S.plane === 'stereo') {
+      const lead = this.world.lead, leadGap = lead && lead.gap != null ? lead.gap : 99;
+      const pFail = (night ? 0.08 : 0.025) + (leadGap < 12 ? 0.35 : leadGap < 20 ? 0.1 : 0);
+      if (r() < pFail) used = 'imu';
+    }
+    let n, d = 0;
+    if (used === 'stereo') {
+      const sig = S.planeNoiseDeg * DEG;
+      n = nTrue.clone().applyQuaternion(_q1.setFromAxisAngle(_ZAX, gauss(r) * sig)).applyQuaternion(_q2.setFromAxisAngle(_XAX, gauss(r) * sig)).normalize();
+      d = gauss(r) * 0.015;
+    } else if (used === 'imu') {
+      const pitchEst = (pose.pitch || 0) + S.imuPitchBiasDeg * DEG + S.imuAccelLeak * DEG * (-(pose.accel || 0)) + gauss(r) * 0.05 * DEG;
+      const rollEst = (pose.roll || 0) + gauss(r) * 0.05 * DEG;
+      n = _UP.clone().applyQuaternion(_q1.setFromAxisAngle(_ZAX, pitchEst).multiply(_q2.setFromAxisAngle(_XAX, rollEst)).invert());
+    } else {
+      n = _UP.clone();
+    }
+    // the tilt between the estimate and the truth, as pitch (about Z) and roll (about X)
+    const pitchErr = Math.atan2(n.x, n.y) - Math.atan2(nTrue.x, nTrue.y);
+    const rollErr = Math.atan2(-n.z, n.y) - Math.atan2(-nTrue.z, nTrue.y);
+    const ps = this.planeStats;
+    ps.mode = S.plane; ps.used = used; ps.pitchErr = pitchErr / DEG; ps.rollErr = rollErr / DEG;
+    ps.frames++; if (S.plane === 'stereo' && used !== 'stereo') ps.fails++;
+    ps.failRate = ps.fails / Math.max(1, ps.frames);
+    return { n, d, used, nTrue };
+  }
+  // Lift a true body-frame ground point to where the camera's ray through it meets the estimated plane: the lane
+  // point roadd would publish (image bearing exact, range from the plane).
+  liftToPlane(pTrue, plane, cam) {
+    const u = pTrue.clone().sub(cam);
+    const den = plane.n.dot(u);
+    if (den > -1e-6) return null;                       // ray does not reach the estimated ground ahead
+    const t = (plane.d - plane.n.dot(cam)) / den;
+    if (t <= 0 || t > 400) return null;
+    return cam.clone().addScaledVector(u, t);
   }
 
   // ---- perception at capture index k ------------------------------------------------
@@ -262,7 +365,9 @@ export class HudSim {
     const night = W.env && W.env.name === 'night';
     const dusk = W.env && W.env.name === 'dusk';
     const rangeScale = night ? 0.62 : dusk ? 0.85 : 1;
-    // Lanes: ego lines and their neighbours.
+    const cam = GM.ROAD_CAM;
+    const plane = this.groundPlane(pose, k, r);
+    // Lanes: ego lines and their neighbours, each image point lifted to the estimated ground plane.
     const ego = W.lanes.ego;
     const lines = W.lines.slice().sort((a, b) => a.offset - b.offset);
     const iL = lines.findIndex((l) => l.id === ego.left), iR = lines.findIndex((l) => l.id === ego.right);
@@ -274,17 +379,19 @@ export class HudSim {
       for (let ds = -2; ds <= 72; ds += 2) {
         const s = pose.s + ds;
         const Wp = W.linePoint(line, s);
-        const pc = this.toCar(Wp, pose);
-        if (pc.x < 3 || pc.x > 72) continue;
-        const sig = 0.02 + 0.004 * pc.x;
-        const lat = sig * (0.65 * snoise(tc * 0.9 + pc.x * 0.05, line.id.length + type.length) + 0.35 * gauss(r));
+        const truth = this.toCar(Wp, pose);
+        if (truth.x < 3 || truth.x > 72) continue;
+        const pc = this.liftToPlane(truth, plane, cam);
+        if (!pc || pc.x < 3 || pc.x > 120) continue;
+        const sig = 0.02 + 0.004 * truth.x;
+        const lat = sig * (0.65 * snoise(tc * 0.9 + truth.x * 0.05, line.id.length + type.length) + 0.35 * gauss(r));
         pc.z += lat;
         const painted = W.isPainted(line, s) || (line.style === 'dashed' && W.isPainted(line, s + 6));
         const worn = line.gaps && line.gaps.some(([a, b]) => s >= a && s <= b);
-        let conf = (worn ? 0.22 : 0.93) * (1 - smoothstep(38 * rangeScale, 68 * rangeScale, pc.x));
+        let conf = (worn ? 0.22 : 0.93) * (1 - smoothstep(38 * rangeScale, 68 * rangeScale, truth.x));
         if (!painted && line.style !== 'dashed') conf *= 0.6;
         conf = clamp(conf + 0.04 * gauss(r), 0, 1);
-        pts.push({ p: pc, conf });
+        pts.push({ p: pc, conf, truth, s });
       }
       const near = pts.filter((q) => q.p.x >= 6 && q.p.x <= 25);
       const lineConf = near.length ? near.reduce((a, q) => a + q.conf, 0) / near.length : 0;
@@ -294,7 +401,6 @@ export class HudSim {
       lastConf = lineConf;
     }
     // Objects: bearing exact from the road camera, range with stereo error.
-    const cam = GM.ROAD_CAM;
     const objects = [];
     for (const a of W.agents) {
       const wp = a.worldPosition();
@@ -307,10 +413,16 @@ export class HudSim {
       const pdet = isPerson ? (pc.x < 30 * rangeScale ? 0.9 : 0.4) : (pc.x < 50 * rangeScale ? 0.97 : 0.75);
       if (r() > pdet) continue;
       const z = rel.length();
-      const dz = z < 35 ? z * z * R.D_DISP / (R.F_PX * R.B_ST) : z * 0.05;
-      const zMeas = z + dz * gauss(r) * 0.8;
-      const scale = zMeas / z;
-      const meas = new THREE.Vector3(cam.x, 0, cam.z).addScaledVector(rel, scale);
+      // range: the stereo median over the box's lower fifth inside 35 m; beyond that the ground plane at the box base
+      let meas;
+      if (z < 35) {
+        const dz = z * z * R.D_DISP / (R.F_PX * R.B_ST);
+        meas = new THREE.Vector3(cam.x, 0, cam.z).addScaledVector(rel, (z + dz * gauss(r) * 0.8) / z);
+      } else {
+        const lifted = this.liftToPlane(pc, plane, cam);
+        if (!lifted) continue;
+        meas = lifted;
+      }
       // Heading of the agent in the car frame
       const hw = a.heading ? new THREE.Vector3(wp.x + a.heading.x, 0, wp.z + a.heading.z) : null;
       const hc = hw ? this.toCar(hw, pose).sub(pc) : new THREE.Vector3(1, 0, 0);
@@ -324,7 +436,39 @@ export class HudSim {
         if (r() < 0.8) signRead = { value: sg.value, id: sg.id, p: pc, h: sg.height || 0.75, w: sg.width || 0.6 };
       }
     }
-    return { k, tc, pose, lanes, objects, signRead };
+    this.scoreCapture(pose, lanes, objects, rangeScale);
+    return { k, tc, pose, lanes, objects, signRead, plane };
+  }
+
+  // Score this capture against the truth the way the Phase 1 labelled set would (plan 5.7): ego lane found (both
+  // ego lines confident near the car), lateral error of the published lane points against the painted line at the
+  // point's own range (10, 20, 30 m), recall of ego-lane vehicles within 50 m and of pedestrians within 30 m, and the
+  // range error of detected vehicles.
+  scoreCapture(pose, lanes, objects, rangeScale) {
+    const W = this.world, sc = this.score;
+    sc.frames++;
+    const egoL = lanes.find((l) => l.type === 'egoLeft'), egoR = lanes.find((l) => l.type === 'egoRight');
+    sc.egoLane.push(egoL && egoR && egoL.conf > 0.6 && egoR.conf > 0.6 ? 1 : 0);
+    for (const ln of [egoL, egoR]) {
+      if (!ln || ln.conf < 0.3) continue;
+      for (const [x0, ring] of [[10, sc.lat10], [20, sc.lat20], [30, sc.lat30]]) {
+        const q = ln.pts.reduce((b, c) => (Math.abs(c.p.x - x0) < Math.abs(b.p.x - x0) ? c : b), ln.pts[0]);
+        if (!q || Math.abs(q.p.x - x0) > 2.5) continue;
+        const truthAt = this.toCar(W.linePoint(ln.line, pose.s + q.p.x), pose);   // the paint at the published point's range
+        ring.push(Math.abs(q.p.z - truthAt.z));
+      }
+    }
+    const cam = GM.ROAD_CAM;
+    for (const a of W.agents) {
+      const pc = this.toCar(a.worldPosition(), pose);
+      const rel = pc.clone().sub(new THREE.Vector3(cam.x, 0, cam.z));
+      if (pc.x < 2 || Math.abs(Math.atan2(rel.z, rel.x)) > 36 * DEG) continue;
+      const det = objects.find((o) => o.id === a.id);
+      const vehicle = ['car', 'suv', 'truck', 'bus', 'motorcycle'].includes(a.kind);
+      if (vehicle && a.inEgoLane && pc.x <= 50) sc.vehRecall.push(det ? 1 : 0);
+      if (a.kind === 'person' && pc.x <= 30) sc.pedRecall.push(det ? 1 : 0);
+      if (vehicle && det) { const zT = rel.length(), zM = det.p.clone().sub(new THREE.Vector3(cam.x, 0, cam.z)).length(); sc.rangeErr.push(Math.abs(zM - zT) / Math.max(1, zT)); }
+    }
   }
 
   // Apply the stateful drawing rules (3 consecutive frames, hysteresis, persistence) for each new capture.
@@ -357,33 +501,136 @@ export class HudSim {
     }
   }
 
+  // ---- processes, timing and faults -------------------------------------------------
+  // Crash a process (the supervisor restarts it after 1 s; it then needs its start-up time), or drop the tracker's
+  // confidence for a while (the driver turns away, a hand over the face).
+  crash(name, t = this.t) {
+    const startup = { roadd: 1.4, headtrackd: 0.9, egod: 0.3, hudd: 0.6 }[name];
+    if (startup === undefined) return;
+    this.faults[name] = { from: t, until: t + 1.0 + startup, reset: false };
+  }
+  trackerDropout(secs = 3, t = this.t) { this.faults.tracker = { from: t, until: t + secs }; }
+  processDown(name, t) { const f = this.faults[name]; return !!(f && t >= f.from && t < f.until); }
+  processState(name, t) {
+    const f = this.faults[name];
+    if (!f || t >= f.until) return 'up';
+    return t < f.from + 1.0 ? 'crashed, restart in ' + (f.from + 1.0 - t).toFixed(1) + ' s' : 'starting';
+  }
+
+  // The GPU's serial time per camera frame (plan 5.6, ms): depth, lanes, detector, face landmarks if on the Jetson,
+  // and hudd's own pass. The load is that time against the camera period.
+  gpuModel() {
+    const S = this.settings, G = P.GPU;
+    const row = (re) => G.find((g) => re.test(g[0])) || ['', 0, 0];
+    const depth = S.depthMode === 'neural' ? row(/depth/i)[2] : row(/depth/i)[1];
+    const lanes = (row(/lane/i)[1] + row(/lane/i)[2]) / 2, det = row(/detector/i)[1] + 1.9, face = S.faceOnJetson ? (row(/face/i)[1] + row(/face/i)[2]) / 2 : 0, hudd = 3;
+    const total = depth + lanes + det + face + hudd;
+    const camHz = S.cameraRate === 'auto' ? (total <= 33 ? 30 : 20) : Number(S.cameraRate);
+    return { depth, lanes, det, face, hudd, total, camHz, load: total / (1000 / camHz) };
+  }
+
+  // hudd's render time for the frame drawn for vsync j (ms, deterministic in j): its own pass plus contention with the
+  // perception kernels, which grows with the GPU load, plus an occasional spike (a texture upload, a page fault).
+  renderTime(j, gpu) {
+    const r = rng(5000 + j);
+    const over = Math.max(0, gpu.load - 0.55);
+    const contention = over > 0 ? -Math.log(Math.max(1e-6, r())) * over * 12 : r() * 1.0;
+    const spike = r() < 0.02 ? 5 + r() * 6 : 0;
+    return gpu.hudd + contention + spike;
+  }
+
+  // The frame on the panel at time t: hudd draws for a 60 Hz vsync train, sampling the topics lat[3] ms before the
+  // vsync it targets (a late latch) and finishing its pass by then. When the pass overruns, the panel repeats the
+  // previous frame for one vsync (a dropped frame), the late frame goes out at the next vsync, and the frame that
+  // would have been drawn for that vsync is skipped. Scan-out through the HDMI board takes lat[4] after the vsync.
+  visibleFrame(t, gpu) {
+    const S = this.settings, Pv = 1 / 60, lat3 = S.lat[3] / 1000, scan = S.lat[4] / 1000;
+    const vLast = Math.floor((t - scan) / Pv);
+    let content = { j: vLast - 8, tDraw: (vLast - 8) * Pv - lat3, tPresent: (vLast - 8) * Pv, late: false, render: gpu.hudd }, pendingLate = null;
+    for (let v = vLast - 7; v <= vLast; v++) {
+      if (pendingLate) { pendingLate.tPresent = v * Pv; content = pendingLate; pendingLate = null; continue; }
+      const r = this.renderTime(v, gpu);
+      if (r > S.lat[3]) pendingLate = { j: v, tDraw: v * Pv - lat3, tPresent: 0, late: true, render: r };   // the panel repeats `content` this vsync
+      else content = { j: v, tDraw: v * Pv - lat3, tPresent: v * Pv, late: false, render: r };
+    }
+    // count the frames dropped since the last call
+    if (this.lastVsync >= 0) for (let v = this.lastVsync + 1; v <= vLast; v++) if (this.renderTime(v, gpu) > S.lat[3]) this.stats.dropped++;
+    this.lastVsync = vLast;
+    content.tPhoton = content.tPresent + scan;
+    return content;
+  }
+
+  // The pipeline time of capture k (s): exposure, readout and transfer (longer at night, when the rolling shutter
+  // exposes longer), inference and publish, with jitter that grows with the GPU load, and an occasional stall.
+  pipelineTime(k, gpu) {
+    const S = this.settings, lat = S.lat, r = rng(9000 + k);
+    const night = this.world.env && this.world.env.name === 'night';
+    const base = (lat[0] + (night ? 8 : 0) + lat[1] * (0.7 + 0.6 * gpu.load) + lat[2]) / 1000;
+    const jitter = base * 0.08 * gauss(r);
+    const stall = r() < 0.04 ? (0.01 + 0.02 * r()) : 0;
+    return Math.max(0.012, base + jitter + stall);
+  }
+
   // ---- per-frame update ------------------------------------------------------------
   // t: sim time (s). env: world.env. sunDirCar: unit vector to the sun in the car frame. eyeOffset: true head offset.
   update(t, dt, { sunDirCar, eyeOffset, ambientLux }) {
     this.t = t;
-    const S = this.settings;
-    const lat = S.lat;
-    const ageCapture = (lat[0] + lat[1] + lat[2]) / 1000;   // camera + inference + publish
+    const S = this.settings, lat = S.lat;
+    const gpu = this.gpuModel();
+    if (gpu.camHz !== this.timing.camHz) { this.timing.camHz = gpu.camHz; this.k = -1; }
+    S.cameraHz = gpu.camHz;
+    const ageCapture = (lat[0] + lat[1] + lat[2]) / 1000;   // camera + inference + publish, the plan's budget figure
     const dDisplay = (lat[3] + lat[4]) / 1000;               // render + scan-out
     this.latency = { ageCapture, dDisplay, total: ageCapture + dDisplay };
-    const tDraw = t - dDisplay;                              // when hudd drew the frame now on the panel
-    const kNow = Math.floor((tDraw - ageCapture) * S.cameraHz);
+    // the frame now on the panel
+    const vf = this.visibleFrame(t, gpu);
+    const tDraw = vf.tDraw, tPhoton = vf.tPhoton;
+    Object.assign(this.timing, { gpuMs: gpu.total, gpuLoad: gpu.load, present: vf.tPresent, draw: tDraw, photon: tPhoton, late: vf.late, renderMs: vf.render, frameAge: t - tPhoton });
+    // the captures hudd could have had when it drew: the newest whose pipeline had finished by tDraw, and every one
+    // before it in order (the drawing rules are stateful); none while roadd is down, and a restarted roadd starts with
+    // no lane or track state
+    const Hz = gpu.camHz;
+    let kNow = Math.floor(tDraw * Hz);
+    while (kNow > 0 && kNow / Hz + this.pipelineTime(kNow, gpu) > tDraw) kNow--;
     if (this.k < 0) this.k = kNow - 1;
-    // process new captures in order (cap the catch-up)
-    for (let k = Math.max(this.k + 1, kNow - 8); k <= kNow; k++) { const m = this.capture(k); if (m) { this.ingest(m); this.msg = m; } }
+    const fr = this.faults.roadd;
+    for (let k = Math.max(this.k + 1, kNow - 8); k <= kNow; k++) {
+      const tc = k / Hz;
+      if (fr && tc >= fr.from && tc < fr.until) continue;
+      if (fr && tc >= fr.until && !fr.reset) { fr.reset = true; this.lineState.clear(); this.tracks.clear(); }
+      const m = this.capture(k); if (m) { this.ingest(m); this.msg = m; }
+    }
     this.k = Math.max(this.k, kNow);
+    // the ego topic: 100 Hz while egod is up
+    if (!this.processDown('egod', tDraw)) this.lastEgoT = Math.floor(tDraw * 100) / 100;
+    this.timing.egoAge = tDraw - this.lastEgoT;
 
-    // Head: true offset now; tracker reports it 40 ms late with 3 mm noise.
+    // Head: the true offset now; eyePose messages at 30 Hz arrive trackerLatency later (with jitter) and carry a
+    // confidence. hudd uses the newest confident eyePose it had at tDraw, and the nominal eye point once that is
+    // older than 500 ms (plan 6, stale rules), with the glyph in the speed block.
     this.eye.trueOffset.copy(eyeOffset);
     this.eyeHist.push({ t, o: eyeOffset.clone() });
-    while (this.eyeHist.length > 2 && this.eyeHist[0].t < t - 1) this.eyeHist.shift();
-    const tl = tDraw - S.trackerLatency / 1000;
-    let tracked = this.eyeHist[0].o;
-    for (const e of this.eyeHist) if (e.t <= tl) tracked = e.o;
-    const r = rng(77 + this.frameCount);
-    this.eye.tracked.copy(tracked).add(new THREE.Vector3(0, gauss(r) * 0.002, gauss(r) * 0.003));
-    this.eye.nominal = !S.headTracking;
-    this.eye.used.copy(S.headTracking ? this.eye.tracked : new THREE.Vector3());
+    while (this.eyeHist.length > 2 && this.eyeHist[0].t < t - 1.5) this.eyeHist.shift();
+    const offsetAt = (tq) => { let o = this.eyeHist[0].o; for (const e of this.eyeHist) { if (e.t <= tq) o = e.o; else break; } return o; };
+    let used = null, eIdx = Math.floor(tDraw * 30);
+    for (let e = eIdx; e >= eIdx - 20; e--) {
+      const tc = e / 30, re = rng(300 + e);
+      const avail = tc + (S.trackerLatency + (re() - 0.5) * 8) / 1000;
+      if (avail > tDraw) continue;
+      if (this.processDown('headtrackd', tc)) continue;
+      const fd = this.faults.tracker, dropped = fd && tc >= fd.from && tc < fd.until;
+      const conf = dropped ? 0.1 * re() : clamp(0.92 + 0.06 * gauss(re), 0, 1);
+      if (conf < 0.5) continue;
+      used = { tc, conf, o: offsetAt(tc).clone().add(new THREE.Vector3(0, gauss(re) * 0.002, gauss(re) * 0.003)) };
+      break;
+    }
+    if (used) { this.eye.tracked.copy(used.o); this.eye.conf = used.conf; this.eye.age = tDraw - used.tc; }
+    else { this.eye.conf = 0; this.eye.age = 9; }
+    const stale = !used || this.eye.age > 0.5;
+    this.eye.state = !S.headTracking ? 'off' : this.processDown('headtrackd', tDraw) ? 'headtrackd down' : stale ? 'stale: nominal eye' : 'tracking';
+    this.eye.nominal = !S.headTracking || stale;
+    this.eye.used.copy(this.eye.nominal ? new THREE.Vector3() : this.eye.tracked);
+    this.timing.eyeAge = this.eye.age; this.timing.eyeState = this.eye.state;
 
     // Luminance and dimming (controllerd)
     this.updateLuminance(dt, ambientLux);
@@ -392,9 +639,10 @@ export class HudSim {
     // Thermal (cell) model
     this.updateThermal(dt);
 
-    // Draw the frame
+    // Draw the frame (a crashed hudd leaves the panel black until it is back)
     const t0 = performance.now();
-    this.draw(tDraw, t);
+    if (this.processDown('hudd', tDraw)) { const ctx = this.ctx; ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over'; ctx.fillStyle = '#000'; ctx.fillRect(0, 0, CROP_W, CROP_H); this.lead = null; this.ribbon = null; }
+    else this.draw(tDraw, t, tPhoton);
     this.stats.render = performance.now() - t0;
     this.texture.needsUpdate = true;
     this.frameCount++;
@@ -404,15 +652,23 @@ export class HudSim {
     const S = this.settings;
     const stage1 = S.window === 'stage1';
     const src = stage1 ? { key: 'yod', label: 'YODOIT monitor via the 30% combiner', panel: 1200 } : (PGU_SOURCES.find((s) => s.key === S.pgu) || PGU_SOURCES[2]);
-    const path = stage1 ? R.PATH_COMB : S.bothSurfaces ? R.PATH_WS_TWO : R.PATH_WS;
+    // the windshield path: s-polarised as designed (23.6% per surface at 65 deg), or p if the retarder is set wrong
+    // (1.2%, Fresnel ratio 19); the combiner path for Stage 1
+    const polScale = S.polarisation === 'p' ? R.RP65 / R.RS65 : 1;
+    const path = stage1 ? R.PATH_COMB : (S.bothSurfaces ? R.PATH_WS_TWO : R.PATH_WS) * polScale;
     const Lmax = src.panel * path;
-    // Dimming curve: night ceiling (50 cd/m2 at the eye) at <= 10 lux, full at >= 10,000 lux, log-linear between.
-    const nightDuty = Math.min(1, R.L_NIGHT_EYE / Lmax);
+    // Dimming curve: the night ceiling at the eye at <= 10 lux, full at >= 10,000 lux, log-linear between. The duty
+    // floor is one step of a 12-bit PWM at 2 kHz.
+    const nightDuty = Math.min(1, S.nightCeiling / Lmax);
     const f = clamp((Math.log10(Math.max(lux, 1)) - 1) / 3, 0, 1);
     let target = S.autoDim ? Math.exp(lerp(Math.log(nightDuty), 0, f)) : 1;
-    target = clamp(target * Math.pow(1.25, S.dimSteps), 0.002, 1);
+    target = clamp(target * Math.pow(1.25, S.dimSteps), 1 / 4096, 1);
     if (this.thermal.state === 'derate') target *= 0.5;
     if (this.thermal.state === 'cutoff') target = 0;
+    // the controller's own rule: USB silent for 5 s -> backlight off (and the shutter closed, in updateSun)
+    if (S.linkLost) { if (this.linkDownSince == null) this.linkDownSince = this.t; } else this.linkDownSince = null;
+    this.linkFailsafe = this.linkDownSince != null && this.t - this.linkDownSince >= 5;
+    if (this.linkFailsafe) target = 0;
     // 1 s ramp
     const k = 1 - Math.exp(-dt / 0.35);
     this.lum.duty += (target - this.lum.duty) * k;
@@ -444,6 +700,7 @@ export class HudSim {
     sh.target = 1;
     if (this.settings.sunWatch && s.inPatch) { sh.target = 0; sh.reason = `sun-watch: sun inside the entry patch (${this.sunPatch.source})`; }
     if (this.thermal.state === 'cutoff') { sh.target = 0; sh.reason = 'cell over threshold 2'; }
+    if (this.linkFailsafe) { sh.target = 0; sh.reason = 'controller fail-safe: USB silent 5 s'; }
     if (this.powerOff) { sh.target = 0; sh.reason = 'HUD off: fails closed'; }
     const rate = dt / 0.6;                                   // servo travel ~0.6 s
     sh.open += clamp(sh.target - sh.open, -rate, rate);
@@ -459,6 +716,17 @@ export class HudSim {
     this.thermal.state = this.thermal.cell > T2 ? 'cutoff' : this.thermal.cell > T1 ? 'derate' : 'ok';
   }
 
+  // What the driver's eyewear passes of the scene and of the image. The image leaves the glass s-polarised (its
+  // electric field horizontal); polarised sunglasses transmit the vertical axis, so they pass about 2% of it (their
+  // extinction, ASSUMED) and half of the unpolarised scene, times their tint. A p-polarised image passes them whole.
+  // Neutral tinted glasses take both down alike.
+  eyewear() {
+    const S = this.settings;
+    if (S.eyewear === 'polarised') { const tint = 0.6; return { scene: 0.5 * tint, image: (S.polarisation === 'p' ? 1 : 0.02) * tint, name: 'polarised' }; }
+    if (S.eyewear === 'tinted') return { scene: 0.3, image: 0.3, name: 'tinted' };
+    return { scene: 1, image: 1, name: 'none' };
+  }
+
   // Scene-linear intensity for the virtual-image quad: the eye luminance relative to the luminance the driver is
   // adapted to, mapped onto the renderer's mid-grey.
   overlayGain(exposure) {
@@ -467,23 +735,29 @@ export class HudSim {
   }
 
   // ---- hudd: draw the frame -------------------------------------------------------
-  draw(tDraw, tNow) {
+  draw(tDraw, tNow, tPhoton = tNow) {
     const ctx = this.ctx, W = CROP_W, H = CROP_H, S = this.settings;
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = '#000'; ctx.fillRect(0, 0, W, H);
     const m = this.msg; if (!m) return;
     const clutter = S.clutterUntil > tNow;
     const age = tDraw - m.tc;
-    this.stats.ageLanes = age; this.stats.ageObjects = age; this.stats.ageEye = S.trackerLatency / 1000 + (tNow - tDraw);
-    this.stats.ageEgo = 0.01;
+    this.stats.ageLanes = age; this.stats.ageObjects = age; this.stats.ageEye = this.eye.age;
+    this.stats.ageEgo = this.timing.egoAge;
     // stale rule: fade over 300 ms once older than 250 ms, gone at 600 ms
     const staleA = age < 0.25 ? 1 : age > 0.6 ? 0 : 1 - smoothstep(0.25, 0.55, age);
-    // compensation to the target time
-    const tTarget = S.compensation === 'photon' ? tNow : tDraw;
-    const delta = S.compensation === 'off' ? { dx: 0, dz: 0, dpsi: 0 } : this.egoDelta(m.tc, tTarget, 991 + m.k);
+    // compensation to the target time: the photon time of this frame (its vsync plus the scan-out), or the draw time
+    // as the plan's formula has it; off when the ego topic is older than 200 ms (stale rule)
+    const egoStale = this.timing.egoAge > 0.2;
+    const tTarget = S.compensation === 'photon' ? tPhoton : tDraw;
+    const delta = S.compensation === 'off' || egoStale ? { dx: 0, dz: 0, dpsi: 0, dpitch: 0 } : this.egoDelta(m.tc, tTarget, 991 + m.k);
+    this.stats.compensated = !(S.compensation === 'off' || egoStale);
     const comp = (p) => HudSim.applyDelta(p, delta);
     const eye = GM.EYE.clone().add(this.eye.used);
     const proj = (p) => this.project(p, eye);
+    // draw region (plan 6): nothing above the horizon + 2 deg (the window's bottom edge is the canvas's own)
+    ctx.save();
+    { const hz = this.projectPlane(eye.clone().add(new THREE.Vector3(1000, 1000 * Math.tan(2 * DEG), 0)), eye); if (hz && hz[1] > 0 && hz[1] < H) { ctx.beginPath(); ctx.rect(0, hz[1], W, H - hz[1]); ctx.clip(); } }
 
     // lanes
     const lanes = m.lanes.map((ln) => ({ ...ln, pts: ln.pts.map((q) => ({ p: comp(q.p), conf: q.conf })) }));
@@ -495,20 +769,22 @@ export class HudSim {
     let ribbon = null;
     if ((drawnL || drawnR) && staleA > 0) {
       const far = Math.min(drawnL ? egoL.last : 99, drawnR ? egoR.last : 99, 60);
-      const sideL = drawnL ? egoL.pts : null, sideR = drawnR ? egoR.pts : null;
+      // the ribbon is built from the published points (on roadd's ground plane, so y as well as z), then compensated
+      const rawL = m.lanes.find((l) => l.type === 'egoLeft'), rawR = m.lanes.find((l) => l.type === 'egoRight');
+      const sideL = drawnL ? rawL.pts : null, sideR = drawnR ? rawR.pts : null;
       const xs = [];
       for (let x = 4; x <= far; x += 1.5) xs.push(x);
-      const at = (pts, x) => { // interpolate z at x
-        for (let i = 1; i < pts.length; i++) { const a = pts[i - 1].p, b = pts[i].p; if ((a.x - x) * (b.x - x) <= 0 && a.x !== b.x) { const f = (x - a.x) / (b.x - a.x); return lerp(a.z, b.z, f); } }
+      const at = (pts, x) => { // interpolate (y, z) at x
+        for (let i = 1; i < pts.length; i++) { const a = pts[i - 1].p, b = pts[i].p; if ((a.x - x) * (b.x - x) <= 0 && a.x !== b.x) { const f = (x - a.x) / (b.x - a.x); return [lerp(a.y, b.y, f), lerp(a.z, b.z, f)]; } }
         return null;
       };
       const left = [], right = [];
       for (const x of xs) {
-        let zl = sideL ? at(sideL, x) : null, zr = sideR ? at(sideR, x) : null;
-        if (zl === null && zr !== null) zl = zr - 3.7;
-        if (zr === null && zl !== null) zr = zl + 3.7;
-        if (zl === null || zr === null) continue;
-        left.push(new THREE.Vector3(x, 0, zl)); right.push(new THREE.Vector3(x, 0, zr));
+        let l = sideL ? at(sideL, x) : null, rr = sideR ? at(sideR, x) : null;
+        if (l === null && rr !== null) l = [rr[0], rr[1] - 3.7];
+        if (rr === null && l !== null) rr = [l[0], l[1] + 3.7];
+        if (l === null || rr === null) continue;
+        left.push(comp(new THREE.Vector3(x, l[0], l[1]))); right.push(comp(new THREE.Vector3(x, rr[0], rr[1])));
       }
       if (left.length > 1) {
         const both = drawnL && drawnR;
@@ -553,7 +829,7 @@ export class HudSim {
       if (vis <= 0) continue;
       // advance by the track's own velocity over its age, then compensate ego motion
       const o = tr.obj;
-      const adv = o.heading.clone().multiplyScalar((o.speed || 0) * (tTarget - tr.lastSeen) * (S.compensation === 'off' ? 0 : 1));
+      const adv = o.heading.clone().multiplyScalar((o.speed || 0) * (tTarget - tr.lastSeen) * (this.stats.compensated ? 1 : 0));
       const p = comp(o.p.clone().add(adv));
       tracks.push({ tr, o, p, vis: vis * staleA });
     }
@@ -574,16 +850,16 @@ export class HudSim {
     const egoPose = this.poseAt(tDraw) || { speed: 0 };
     const v = egoPose.speed;
     const drawChevron = (t, withText) => {
-      const x = t.p.x, z = t.p.z;
+      const x = t.p.x, z = t.p.z, y = t.p.y || 0;
       const pts = [[x - 2.6, z - 0.95], [x - 1.0, z], [x - 2.6, z + 0.95], [x - 3.3, z + 0.95], [x - 1.9, z], [x - 3.3, z - 0.95]]
-        .map(([a, b]) => proj(new THREE.Vector3(a, 0, b))).filter(Boolean);
+        .map(([a, b]) => proj(new THREE.Vector3(a, y, b))).filter(Boolean);
       if (pts.length < 6) return;
       ctx.fillStyle = `rgba(255,190,90,${0.95 * t.vis})`;
       ctx.beginPath(); pts.forEach(([a, b], i) => (i ? ctx.lineTo(a, b) : ctx.moveTo(a, b))); ctx.closePath(); ctx.fill();
       if (withText) {
         const gap = Math.max(0, x - FRONT_BUMPER_X);
         const txt = v > 3 ? `${gap.toFixed(0)} m · ${(gap / v).toFixed(1)} s` : `${gap.toFixed(0)} m`;
-        const base = proj(new THREE.Vector3(x - 3.6, 0, z));
+        const base = proj(new THREE.Vector3(x - 3.6, y, z));
         if (base) {
           ctx.font = '700 30px "Helvetica Neue", Helvetica, Arial, sans-serif';
           ctx.textAlign = 'center'; ctx.textBaseline = 'top';
@@ -613,6 +889,7 @@ export class HudSim {
       if (tl && br) { ctx.strokeStyle = 'rgba(200,230,255,0.75)'; ctx.lineWidth = 6; roundRect(ctx, tl[0] - 6, tl[1] - 6, br[0] - tl[0] + 12, br[1] - tl[1] + 12, 6); ctx.stroke(); }
     }
 
+    ctx.restore();
     // speed block: fixed, non-conformal, low in the window
     this.drawSpeedBlock(ctx, tNow, v);
 
@@ -629,7 +906,7 @@ export class HudSim {
   drawSpeedBlock(ctx, tNow, v) {
     const S = this.settings, H = CROP_H;
     const x = 26, y = H - 112, w = 300, h = 92;
-    const fix = !S.gnssOutage;
+    const fix = !S.gnssOutage && !(this.timing.egoAge > 1);          // no fix, or the ego topic a second old: a dash
     const speedMeas = fix ? Math.max(0, v + 0.05 * snoise(tNow * 3, 9)) : null;
     ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(255,255,255,0.97)';
@@ -696,7 +973,8 @@ export class HudSim {
         const drawnP = comp(q.p);
         const drawn = proj(drawnP);
         this.stats.drawnLane = drawn;
-        // truth: the line's world point at the station where it was drawn, now (along-line error is invisible)
+        // truth: the line's world point at the drawn forward distance, now (an error along the line is invisible, and
+        // a range error from the ground plane shows only where the line curves or where the ribbon's end lands)
         const s = poseNow.s + drawnP.x;
         const truth = this.toCar(this.world.linePoint(egoR.line, s), poseNow);
         if (drawn && drawn[0] >= 0 && drawn[0] <= CROP_W && drawn[1] >= 0 && drawn[1] <= CROP_H) {
@@ -707,6 +985,12 @@ export class HudSim {
           errs.lane = Math.acos(clamp(dDrawn.dot(dTrue), -1, 1)) / DEG;
           errs.laneFlat = Math.acos(clamp(dFlat.dot(dTrue), -1, 1)) / DEG;
           errs.binLane = this.binocularConflict(drawn, truth, eyeTrue);
+          // point-wise: the same sample's true point, now. A range error from the ground plane shows here (the plan's
+          // 1 deg of pitch = 0.27 deg at 20 m) even though the line itself still looks right on a straight road.
+          if (q.s != null) {
+            const tp = this.toCar(this.world.linePoint(egoR.line, q.s), poseNow);
+            errs.lanePoint = Math.acos(clamp(dDrawn.dot(tp.clone().sub(eyeTrue).normalize()), -1, 1)) / DEG;
+          }
         }
       }
     }
@@ -725,6 +1009,7 @@ export class HudSim {
     const k = 0.15;
     if (errs.lead !== undefined) this.stats.residualLead = lerp(this.stats.residualLead || errs.lead, errs.lead, k); else this.stats.residualLead = null;
     if (errs.lane !== undefined) this.stats.residualLane = lerp(this.stats.residualLane || errs.lane, errs.lane, k); else this.stats.residualLane = null;
+    if (errs.lanePoint !== undefined) this.stats.residualLanePoint = lerp(this.stats.residualLanePoint || errs.lanePoint, errs.lanePoint, k); else this.stats.residualLanePoint = null;
     if (errs.marks !== null) this.stats.residualMarks = lerp(this.stats.residualMarks || errs.marks, errs.marks, k); else this.stats.residualMarks = null;
     if (errs.binLead !== undefined) this.stats.binocularLead = lerp(this.stats.binocularLead || errs.binLead, errs.binLead, k);
     if (errs.binLane !== undefined) this.stats.binocularLane = lerp(this.stats.binocularLane || errs.binLane, errs.binLane, k);
@@ -769,7 +1054,7 @@ export class HudSim {
 function projBox(p, o, proj) {
   const hx = (o.kind === 'person' ? 0.3 : o.kind === 'bicycle' ? 0.9 : o.length / 2), hz = (o.width || 0.6) / 2, h = o.height || 1.7;
   const corners = [];
-  for (const dx of [-hx, hx]) for (const dz of [-hz, hz]) for (const y of [0, h]) corners.push(new THREE.Vector3(p.x + dx, y, p.z + dz));
+  for (const dx of [-hx, hx]) for (const dz of [-hz, hz]) for (const y of [0, h]) corners.push(new THREE.Vector3(p.x + dx, (p.y || 0) + y, p.z + dz));
   const pts = corners.map(proj).filter(Boolean);
   if (pts.length < 8) return null;
   const xs = pts.map((q) => q[0]), ys = pts.map((q) => q[1]);

@@ -446,6 +446,7 @@ export class BuildMode {
     const step = this.steps[this.idx];
     const g = this.g;
     if (step.scene === 'world') {
+      g.updateDynamics(0, 0, 0, 0);                     // parked: the body sits level
       g.placeEgo(t);
       const sunDirCar = g.world.sunDir ? g.toCarDir(g.world.sunDir) : null;
       g.hud.update(t, dt, { sunDirCar, eyeOffset: new THREE.Vector3(), ambientLux: g.ambientLux() });

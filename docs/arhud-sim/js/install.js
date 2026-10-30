@@ -8,6 +8,7 @@ import { tube, DEG } from './util.js';
 import { HudSim, CROP_W, CROP_H } from './hud.js';
 
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const _X = new THREE.Vector3(1, 0, 0), _Z = new THREE.Vector3(0, 0, 1), _qTmp = new THREE.Quaternion();
 
 // The virtual image's grid: 24 x 12 cells over the window.
 const VIMG_NX = 24, VIMG_NY = 12;
@@ -220,8 +221,19 @@ export class Garage {
       }
     } catch (e) { /* the plan's patch stays */ }
     this.makeVirtualImage();
-    // Driving state
-    this.ego = { s: 140, offset: this.world.lanes.ego.center, speed: 0, wander: 0 };
+    // Driving state. The body's attitude (pitch, roll, heave) comes from the suspension model in updateDynamics():
+    // the eye, the housing and the virtual image are fixed to the body, the road is not, so every degree of body
+    // pitch the perception does not measure is a registration error (the plan's static-plane fallback, 5.4).
+    this.ego = { s: 140, offset: this.world.lanes.ego.center, speed: 0, wander: 0, accel: 0, latAccel: 0, pitch: 0, roll: 0, pitchRate: 0, rollRate: 0, heave: 0 };
+    this.dyn = {
+      on: true,                 // body pitch and roll from the suspension; off parks the body level (the plan's model)
+      pitchGain: 0.40,          // deg of nose-up pitch per m/s^2 of forward acceleration (sedan, ASSUMED: 0.3 to 0.5)
+      rollGain: 0.45,           // deg of outward roll per m/s^2 of lateral acceleration (about 4.4 deg/g, ASSUMED)
+      fPitch: 1.3, zPitch: 0.35, // pitch mode: natural frequency (Hz) and damping ratio (ASSUMED)
+      fRoll: 1.6, zRoll: 0.40,  // roll mode (ASSUMED)
+      roughness: 1,             // road texture: 1 = a fair highway, 0.08 deg rms of pitch at 25 m/s (ASSUMED); 0 = glass smooth
+      _vp: 0, _vr: 0, _rough: { p: 0, r: 0, h: 0, x: 0 },
+    };
     this.placeEgo(0);
     // live panel texture on the PGU, audience view on monitor 2
     const unit = this.installed.hudUnit;
@@ -449,16 +461,59 @@ export class Garage {
     return v.data.reduce((a, b) => a + b, 0) / v.data.length;
   }
 
+  // The suspension: pitch follows the forward acceleration (braking dives the nose, throttle squats the tail), roll
+  // follows the lateral acceleration (outward in a bend), each a damped second-order mode, plus the road's texture as
+  // smooth noise whose rate scales with speed. Angles in radians, heave in metres. Called once per driving frame.
+  updateDynamics(dt, speed, accel, curvature) {
+    const d = this.dyn, e = this.ego;
+    e.accel = accel; e.latAccel = speed * speed * (curvature || 0);
+    if (!d.on || dt <= 0) { e.pitch = e.roll = e.pitchRate = e.rollRate = e.heave = 0; d._vp = d._vr = 0; return; }
+    const step = (x, v, target, f, z) => {   // one semi-implicit Euler step of x'' = w^2 (target - x) - 2 z w x'
+      const w = 2 * Math.PI * f;
+      const a = w * w * (target - x) - 2 * z * w * v;
+      const v1 = v + a * dt;
+      return [x + v1 * dt, v1];
+    };
+    const pT = d.pitchGain * DEG * accel;            // nose up for forward acceleration
+    const rT = -d.rollGain * DEG * e.latAccel;       // right turn (positive curvature) rolls the body to the left
+    let [p, vp] = step(e.pitch - d._rough.p, d._vp, pT, d.fPitch, d.zPitch);
+    let [r, vr] = step(e.roll - d._rough.r, d._vr, rT, d.fRoll, d.zRoll);
+    d._vp = vp; d._vr = vr;
+    // road texture: three incommensurate sines in distance, so a given stretch of road always feels the same;
+    // the amplitude grows gently with speed as the suspension stops following the surface
+    const rg = d._rough; rg.x += speed * dt;
+    const amp = d.roughness * 0.08 * DEG * Math.sqrt(Math.max(0.2, speed) / 25);
+    const n = (x, k) => Math.sin(x * 0.61 + k) * 0.5 + Math.sin(x * 1.37 + 2.1 * k) * 0.3 + Math.sin(x * 2.93 + 0.7 * k) * 0.2;
+    const pr = amp * n(rg.x, 1.0), rr = 0.7 * amp * n(rg.x, 4.2), hv = d.roughness * 0.006 * n(rg.x * 0.8, 7.7);
+    const prevP = e.pitch, prevR = e.roll;
+    rg.p = pr; rg.r = rr; rg.h = hv;
+    e.pitch = p + pr; e.roll = r + rr; e.heave = hv;
+    e.pitchRate = (e.pitch - prevP) / dt; e.rollRate = (e.roll - prevR) / dt;
+  }
+
+  // The body's rotation in the car frame: pitch about the lateral axis (nose up positive), then roll about the
+  // longitudinal axis (right side down positive). Shared with hud.js, which must undo it the same way.
+  static bodyQuaternion(pitch, roll, out = new THREE.Quaternion()) {
+    out.setFromAxisAngle(_Z, pitch);
+    return out.multiply(_qTmp.setFromAxisAngle(_X, roll));
+  }
+
   placeEgo(t) {
     const w = this.world, e = this.ego;
     const pose = w.egoPose(e.s, e.offset);
-    this.carGroup.position.copy(pose.position);
-    this.carGroup.quaternion.copy(pose.quaternion);
     const smp = w.road.sample(e.s);
     const fwd = new THREE.Vector3(1, 0, 0).applyQuaternion(pose.quaternion);
     const psi = Math.atan2(fwd.z, fwd.x);
+    // the road's yaw, then the body's attitude on the suspension (pitch about Z, roll about X, see bodyQuaternion)
+    const q = pose.quaternion.clone().multiply(Garage.bodyQuaternion(e.pitch, e.roll));
+    this.carGroup.position.copy(pose.position); this.carGroup.position.y += e.heave;
+    this.carGroup.quaternion.copy(q);
+    if (this.car.setBodyAttitude) this.car.setBodyAttitude(e.pitch, e.roll);
     const yawRate = e.speed * (smp.curvature || 0);
-    this.lastPose = { t, s: e.s, x: pose.position.x, z: pose.position.z, psi, speed: e.speed, yawRate, offset: e.offset, curvature: smp.curvature || 0 };
+    this.lastPose = {
+      t, s: e.s, x: pose.position.x, z: pose.position.z, y: e.heave, psi, pitch: e.pitch, roll: e.roll,
+      speed: e.speed, yawRate, pitchRate: e.pitchRate, accel: e.accel, offset: e.offset, curvature: smp.curvature || 0,
+    };
     this.hud.pushPose(this.lastPose);
     return this.lastPose;
   }
@@ -505,6 +560,9 @@ export class Garage {
     const fw = 560, fh = fw * CROP_H / CROP_W;
     ctx.drawImage(hs.canvas, 24, 74, fw, fh);
     ctx.strokeStyle = '#2b3440'; ctx.strokeRect(24, 74, fw, fh);
+    // the plan's 300 ms stale fade shows on the frame itself; a stamp names the body attitude and the plane source
+    ctx.fillStyle = 'rgba(141,151,165,0.9)'; ctx.font = '500 13px "Helvetica Neue", Helvetica, Arial, sans-serif';
+    ctx.fillText(`body pitch ${(this.ego.pitch / DEG).toFixed(2)}° roll ${(this.ego.roll / DEG).toFixed(2)}° · ground plane: ${hs.planeStats.used}, error ${(hs.planeStats.pitchErr * 60).toFixed(0)}′ · frame age ${Math.round(hs.stats.ageLanes * 1000)} ms`, 24, 74 + fh + 4);
     if (driverImg) { ctx.drawImage(driverImg, 610, 74, 326, 200); ctx.strokeRect(610, 74, 326, 200); ctx.fillStyle = '#8d97a5'; ctx.fillText('driver camera · eye point', 610, 50); }
     const st = hs.stats, lum = hs.lum;
     const rows = [
@@ -515,15 +573,18 @@ export class Garage {
       ['contrast vs sky / road', `${lum.contrastSky.toFixed(2)} / ${lum.contrastRoad.toFixed(2)}`, '≥ 1.15', lum.contrastSky >= 1.15],
       ['cell temperature', `${hs.thermal.cell.toFixed(0)} °C`, `derate ${hs.thermal.T1}, off ${hs.thermal.T2} (sim)`, hs.thermal.state === 'ok'],
       ['shutter', hs.shutter.open > 0.5 ? 'open' : 'closed', hs.shutter.reason || 'sun-watch armed', hs.shutter.open > 0.5],
+      ['processes (health)', ['roadd', 'headtrackd', 'egod', 'hudd'].filter((n) => hs.processState(n, hs.timing.draw) !== 'up').join(', ') || 'all up', `${hs.stats.dropped} frames dropped · GPU ${Math.round(hs.timing.gpuLoad * 100)}%`, ['roadd', 'headtrackd', 'egod', 'hudd'].every((n) => hs.processState(n, hs.timing.draw) === 'up')],
+      ['eyePose', hs.eye.state, `${hs.eye.age < 5 ? Math.round(hs.eye.age * 1000) + ' ms old' : 'none'} · nominal after 500 ms`, hs.eye.state === 'tracking' || hs.eye.state === 'off'],
     ];
     let y = 74 + fh + 26;
+    ctx.font = '500 15px "Helvetica Neue", Helvetica, Arial, sans-serif';
     ctx.font = '500 16px "Helvetica Neue", Helvetica, Arial, sans-serif';
     for (const [k, v, tgt, ok] of rows) {
       ctx.fillStyle = '#8d97a5'; ctx.fillText(k, 24, y);
       ctx.fillStyle = ok ? '#4fd18b' : '#ffc04d'; ctx.font = '700 16px "Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.fillText(v, 330, y);
       ctx.fillStyle = '#5b6573'; ctx.font = '500 14px "Helvetica Neue", Helvetica, Arial, sans-serif'; ctx.fillText(tgt, 520, y + 1);
       ctx.font = '500 16px "Helvetica Neue", Helvetica, Arial, sans-serif';
-      y += 27;
+      y += 24;
     }
     this.audienceTex.needsUpdate = true;
   }

@@ -88,6 +88,12 @@ async function boot() {
   if (flag('env') && app.mode && app.mode.applyEnv) app.mode.applyEnv(flag('env'));
   if (flag('strip') && app.mode && app.mode.setStrip) app.mode.setStrip(flag('strip'), { fly: false });
   if (flag('ribbon') && app.modes.drive) app.modes.drive.setRibbon(flag('ribbon'));
+  // #drive&plane=stereo|imu|static picks roadd's ground-plane source; &body=0 parks the suspension (a level body);
+  // &scenario=cutin|brake starts a traffic scenario before the warm-up; &gpu=neural runs the ZED's NEURAL depth.
+  if (flag('plane') && app.garage) app.garage.hud.settings.plane = flag('plane');
+  if (flag('body') === '0' && app.garage) app.garage.dyn.on = false;
+  if (flag('gpu') === 'neural' && app.garage) app.garage.hud.settings.depthMode = 'neural';
+  if (flag('scenario') && app.garage) app.garage.world.startScenario(flag('scenario'), app.garage.ego);
   // #drive&eye=DY,DZ puts the driver's head DY up and DZ right of the nominal eye (metres) before the warm-up, so the
   // tracker settles on it; &surf=1 makes hudd project onto the measured image surface (the Optics toggle).
   if (flag('eye') && app.modes.drive) { const [dy, dz] = flag('eye').split(',').map(parseFloat); app.modes.drive.head.user.y = dy || 0; app.modes.drive.head.user.z = dz || 0; }

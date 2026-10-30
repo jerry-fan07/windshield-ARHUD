@@ -917,14 +917,63 @@ export class World {
     for (const w of a.model.wheels || []) w.userData.spin.rotation.z -= dist / w.userData.r;
   }
 
+  // Scripted traffic for the HUD's drawing rules. 'cutin': the adjacent car pulls into the ego lane 22 m ahead, holds
+  // there, then leaves (the lead chevron must move to it and back, through the 3-frame and 400 ms rules). 'brake': the
+  // lead brakes hard (brake lamps, the gap and the seconds shrink; the driver model brakes behind it).
+  startScenario(name, ego) {
+    const t = this.time;
+    if (name === 'cutin') {
+      const a = this.agents.find((q) => q.role === 'adjacent' && q.kind === 'car') || this.agents.find((q) => q.role === 'adjacent');
+      if (!a) return null;
+      a.scn = { name, t0: t, phase: 'approach', v: ego.speed + 1.5 };
+      a.s = this.wrap(ego.s + EGO_FRONT + 22 + a.length / 2); a.offset = this.lanes.adjacent.center; a.braking = false; this._setAgentLights(a);
+      if (this.lead) this.lead.minGap = 48;
+      return a;
+    }
+    if (name === 'brake') {
+      const a = this.lead; if (!a) return null;
+      a.scn = { name, t0: t, phase: 'brake', v: a.speed || ego.speed, sOwn: a.s };
+      return a;
+    }
+    return null;
+  }
+
   update(dt, ego = { s: 0, offset: this.lanes.ego.center, speed: 25 }) {
     this.time += dt;
     const t = this.time, L = this._R.length, r = this.rand;
     const rel = (s) => { let d = this.wrap(s) - this.wrap(ego.s); if (d > L / 2) d -= L; if (d < -L / 2) d += L; return d; };
     for (const a of this.agents) {
       const prevS = a.s;
+      if (a.scn) {
+        const sc = a.scn, age = t - sc.t0;
+        if (sc.name === 'cutin') {
+          const egoC = this.lanes.ego.center, adjC = this.lanes.adjacent.center;
+          if (sc.phase === 'approach' && age > 1.2) { sc.phase = 'merge'; sc.t1 = t; }
+          if (sc.phase === 'merge') { const f = smoothstep(0, 3.2, t - sc.t1); a.offset = lerp(adjC, egoC, f); if (f >= 1) { sc.phase = 'hold'; sc.t1 = t; sc.v = ego.speed - 0.8; } }
+          if (sc.phase === 'hold') { sc.v = lerp(sc.v, ego.speed - 0.8, clamp(dt * 0.5, 0, 1)); if (t - sc.t1 > 11) { sc.phase = 'leave'; sc.t1 = t; } }
+          if (sc.phase === 'leave') { const f = smoothstep(0, 3.0, t - sc.t1); a.offset = lerp(egoC, adjC, f); sc.v += 2.0 * dt; if (f >= 1) { a.scn = null; a.dv = sc.v - ego.speed; if (this.lead) this.lead.minGap = 0; } }
+          a.speed = Math.max(0, sc.v);
+          a.s = this.wrap(a.s + a.speed * dt);
+          a.inCutIn = true;
+        } else if (sc.name === 'brake') {
+          if (sc.phase === 'brake') { sc.v = Math.max(2, sc.v - 5.5 * dt); a.accel = -5.5; if (age > 2.6) { sc.phase = 'hold'; sc.t1 = t; } }
+          else if (sc.phase === 'hold') { a.accel = 0; if (t - sc.t1 > 1.5) { sc.phase = 'resume'; } }
+          else { sc.v += 2.2 * dt; a.accel = 2.2; }
+          a.speed = sc.v;
+          a.s = this.wrap(a.s + a.speed * dt);
+          const was = a.braking; a.braking = a.accel < -0.6; if (was !== a.braking) this._setAgentLights(a);
+          // back to the formula once the lead has reached the gap it calls for (or after 25 s)
+          const gapNow = rel(a.s) - EGO_FRONT - a.length / 2;
+          const gapWant = clamp(42.5 + 27.5 * (0.62 * Math.sin(0.11 * t) + 0.38 * Math.sin(0.237 * t + 1.7)), 15, 70);
+          a.gap = gapNow;
+          if ((sc.phase === 'resume' && gapNow >= gapWant) || age > 25) { a.scn = null; }
+        }
+        this._placeAgent(a);
+        if (a.kind !== 'person') this._spinWheels(a, a.speed * dt);
+        continue;
+      }
       if (a.role === 'lead') {
-        const gap = clamp(42.5 + 27.5 * (0.62 * Math.sin(0.11 * t) + 0.38 * Math.sin(0.237 * t + 1.7)), 15, 70);
+        const gap = Math.max(a.minGap || 0, clamp(42.5 + 27.5 * (0.62 * Math.sin(0.11 * t) + 0.38 * Math.sin(0.237 * t + 1.7)), 15, 70));
         a.gap = gap;
         const s = ego.s + EGO_FRONT + gap + a.length / 2;
         const v = this._initialised && dt > 0 ? rel(s - prevS + ego.s) / dt : ego.speed;
