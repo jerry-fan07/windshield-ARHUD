@@ -7,10 +7,11 @@ timeline. Scenes are JSON files in scenes/; times are seconds from the start of 
                 (or on frame at_t, with "at_t": s, carried back to ref_t through the tracking)
     "blocks":   [{"plane": "pp3", "prefix": "PP3-", "corners": [tl, tr, br, bl],   a uniform grid of ports
                   "rows": 2, "cols": 12, "first": 1, "gap": 0.18}]                  numbered row by row
-    "timeline": [{"t": 0.3, "step": "2/6", "text": "PP3-24  ->  SW2-17"},           the one instruction line
+    "timeline": [{"t": 0.3, "step": "2/6", "text": "Unplug  PP3 · 24"},             the one instruction line
                  {"t": 0.8, "target": "PP3-24", "label": "24"},                     brackets on a port
-                 {"t": 6.1, "done": "PP3-24", "note": "Link up"},                   confirmation, then gone
-                 {"t": 9.0, "clear": true}]                                         instruction line off
+                 {"t": 6.1, "done": "PP3-24"},                                      verified: outline and check
+                 {"t": 9.0, "step": "end", "text": "C14 clear", "hold": 2.0},      a closing line, gone after hold
+                 {"t": 12.0, "clear": true}]                                        instruction line off
 
 The HUD state is a pure function of time, so any frame can be rendered on its own.
 """
@@ -20,10 +21,13 @@ import os
 import numpy as np
 
 APPEAR = 0.35     # s, brackets converge onto the port
-CONFIRM = 0.8     # s, green outline and check held after the verification event
-FADE = 0.35       # s
-LINE_FADE = 0.3   # s, instruction cross-fade
-LINE_DIM = 3.0    # s, after which the instruction steps back to half brightness while the hands work
+CONFIRM = 0.6     # s, green outline and check held after the verification event
+FADE = 0.3        # s
+NEXT_CLEAR = 0.15 # s, a confirmation still showing when the next target appears is cleared this fast
+LINE_OUT = 0.12   # s, the old instruction fades out...
+LINE_IN = 0.22    # s, ...then the new one fades in: the two strings are never on screen together
+LINE_HIDE = 2.5   # s into a step, the line steps aside while its target is locked in view (the brackets say it)
+VERIFIED_DIM = 0.4  # the line's level once its step is verified, until the next step replaces it
 
 
 class Scene:
@@ -51,35 +55,61 @@ class Scene:
         return f if os.path.isabs(f) else os.path.join(self.dir, f)
 
     def state(self, t):
-        """What the HUD shows at t: the instruction line(s) with levels, and each port's bracket state."""
-        lines = []
+        """What the HUD shows at t.
+
+        lines:   [{"e": step event, "level": 0..1, "since": s, "target": port name or None}]; at most one string at a
+                 time is visible (the old one fades out before the new one fades in)
+        targets: {port: {"label", "since", "done" (s since verified, or None), "clear" (0..1 left of a confirmation
+                 that the next target is pushing off)}}
+        """
         steps = [e for e in self.timeline if "step" in e or "clear" in e]
-        cur = None
-        for i, e in enumerate(steps):
-            if e["t"] > t:
-                break
-            cur = i
+        lines = []
+        cur = max((k for k, e in enumerate(steps) if e["t"] <= t), default=None)
         if cur is not None:
             e = steps[cur]
-            a = min(1.0, (t - e["t"]) / LINE_FADE)
+            dt = t - e["t"]
+            prev = steps[cur - 1] if cur > 0 else None
+            if prev is not None and "step" in prev and dt < LINE_OUT:
+                lines.append(self._line_state(prev, t, cur - 1, steps, 1.0 - dt / LINE_OUT))
             if "step" in e:
-                lines.append((e, a))
-            if a < 1.0 and cur > 0 and "step" in steps[cur - 1]:
-                lines.append((steps[cur - 1], 1.0 - a))
+                lines.append(self._line_state(e, t, cur, steps, _smooth((dt - LINE_OUT) / LINE_IN)))
         targets = {}
+        starts = [e["t"] for e in self.timeline if "target" in e]
         for e in self.timeline:
             if e["t"] > t:
                 break
             if "target" in e:
-                targets[e["target"]] = {"label": e.get("label", ""), "since": t - e["t"], "done": None, "note": ""}
+                targets[e["target"]] = {"label": e.get("label", ""), "since": t - e["t"], "done": None, "note": "",
+                                        "clear": 1.0}
             elif "done" in e and e["done"] in targets:
-                targets[e["done"]]["done"] = t - e["t"]
-                targets[e["done"]]["note"] = e.get("note", "")
+                st = targets[e["done"]]
+                st["done"] = t - e["t"]
+                st["note"] = e.get("note", "")
+                nxt = min((s for s in starts if s >= e["t"]), default=None)
+                if nxt is not None and nxt <= t:
+                    st["clear"] = 1.0 - _smooth((t - nxt) / NEXT_CLEAR)
         for k in list(targets):
-            d = targets[k]["done"]
-            if d is not None and d > CONFIRM + FADE:
+            st = targets[k]
+            if st["done"] is not None and (st["done"] > CONFIRM + FADE or st["clear"] <= 0.0):
                 del targets[k]
         return lines, targets
+
+    def _line_state(self, e, t, k, steps, level):
+        """One instruction line: dimmed once its step is verified, faded after its hold, with its step's target."""
+        end = steps[k + 1]["t"] if k + 1 < len(steps) else float("inf")
+        target = next((x["target"] for x in self.timeline if "target" in x and e["t"] <= x["t"] < end), None)
+        done_t = next((x["t"] for x in self.timeline if x.get("done") == target and e["t"] <= x["t"] <= t), None) \
+            if target else None
+        if done_t is not None:
+            level *= 1.0 - (1.0 - VERIFIED_DIM) * _smooth((t - done_t) / 0.2)
+        if "hold" in e:
+            level *= 1.0 - _smooth((t - e["t"] - e["hold"]) / 0.4)
+        return {"e": e, "level": max(0.0, level), "since": t - e["t"], "target": target}
+
+
+def _smooth(x):
+    x = min(max(x, 0.0), 1.0)
+    return x * x * (3 - 2 * x)
 
 
 def grid_ports(b):

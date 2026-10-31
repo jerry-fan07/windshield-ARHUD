@@ -13,10 +13,11 @@ What a head-worn optical see-through display does to its own image, in the order
   rainbow flare  - the gratings also diffract bright sources outside the line of sight (the overhead LED troffers)
                    into faint spectral streaks inside the field, fixed to the head, not the world.
   additive light - the world is never dimmed by the image; black is transparent. Against a white cold aisle the HUD
-                   loses contrast, against a black switch face it pops. The visor itself lifts blacks ~1 % and
-                   tints the world very slightly.
-and then the camera: motion blur of world-locked content with the head's motion, the footage's own softness, shot
-noise on the added light, and a soft shoulder so bright strokes clip toward white the way a sensor does.
+                   loses contrast, against a black switch face it pops. The visor adds a faint veil in proportion
+                   to the light around (about 1 % of the scene's mean) and tints the world very slightly.
+and then the camera: motion blur of world-locked content with the head's motion, the source camera's own pixel grid
+(the HUD is resampled down to it and back up like the footage), its 4:2:0 chroma, shot noise on the added light, and
+a soft shoulder so bright strokes clip toward white the way a sensor does.
 """
 import math
 
@@ -57,7 +58,11 @@ class Display:
         self.soften = cfg.get("match_softness_px", 0.0)
         self.noise = cfg.get("shot_noise", 0.012)
         self.shutter = cfg.get("shutter", 0.5)
-        self.lift = np.array(cfg.get("visor_lift", [0.006, 0.007, 0.009]), np.float32)
+        # the visor's veil scales with the light around: nothing in a dark aisle, a visible haze in a lit one
+        self.lift = np.array(cfg.get("visor_lift", [0.009, 0.010, 0.0125]), np.float32)
+        # the camera that filmed the world also filmed the display: its native resolution and 4:2:0 chroma
+        self.native = cfg.get("native_size")
+        self.chroma_blur = cfg.get("chroma_blur_px", 0.0)
         self.trans = np.array(cfg.get("visor_transmission", [0.985, 0.99, 1.0]), np.float32)
         self.flare = cfg.get("flare", {"gain": 0.05, "offset_deg": 17.0, "direction": [0.18, 1.0],
                                        "spread": 0.16, "threshold": 0.93})
@@ -107,7 +112,8 @@ class Display:
     def compose(self, frame_lin, layers, velocity, rng, exposure=1.0):
         """frame_lin: HxWx3 linear world. layers: [(light HxWx3, bbox or None, world-locked?)]. velocity: px/frame
         of the world-locked layer. exposure scales the HUD light for the camera's auto-exposure."""
-        plate = frame_lin * self.trans + self.lift
+        mean = float(frame_lin[::8, ::8].mean())
+        plate = frame_lin * self.trans + self.lift * mean
         out = plate.copy()
         E, box = None, None
         blur = math.hypot(*velocity) * self.shutter
@@ -137,6 +143,15 @@ class Display:
             for sigma, k in self.halo:
                 glow += k * cv2.GaussianBlur(e, (0, 0), sigma)
             e = e + glow
+            if self.native:
+                # through the source camera: down to its pixel grid and back up the way the footage was
+                sx, sy = self.native[0] / self.w, self.native[1] / self.h
+                hh, ww = e.shape[:2]
+                small = cv2.resize(e, (max(1, round(ww * sx)), max(1, round(hh * sy))), interpolation=cv2.INTER_AREA)
+                e = np.maximum(cv2.resize(small, (ww, hh), interpolation=cv2.INTER_LANCZOS4), 0)
+            if self.chroma_blur > 0:
+                y = e @ np.array([0.2126, 0.7152, 0.0722], np.float32)
+                e = y[..., None] + cv2.GaussianBlur(e - y[..., None], (0, 0), self.chroma_blur)
             if self.soften > 0:
                 e = cv2.GaussianBlur(e, (0, 0), self.soften)
             e *= self.gain * exposure

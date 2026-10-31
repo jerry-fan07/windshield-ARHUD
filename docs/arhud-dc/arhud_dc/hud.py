@@ -19,7 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 SS = 2  # supersampling factor
 FONT_DIRS = ["/usr/share/fonts/opentype/inter", "/usr/share/fonts/truetype/inter", os.path.expanduser("~/.fonts")]
 CYAN = (0.78, 0.94, 1.00)
-GREEN = (0.50, 1.00, 0.62)
+GREEN = (0.18, 1.00, 0.38)
 AMBER = (1.00, 0.78, 0.40)
 
 

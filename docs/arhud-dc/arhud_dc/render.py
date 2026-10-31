@@ -15,7 +15,7 @@ import numpy as np
 
 from . import hud as HUD
 from .optics import Display
-from .scene import APPEAR, CONFIRM, FADE, LINE_DIM
+from .scene import APPEAR, CONFIRM, FADE, LINE_HIDE
 from .track import track_planes
 from .video import Writer, probe, read_frames, to_linear, to_srgb8
 
@@ -47,6 +47,7 @@ class Renderer:
         self.f_count = HUD.font(cfg.get("count_px", 18), "Medium")
         self.f_label = HUD.font(cfg.get("label_px", 18), "SemiBold")
         self.f_note = HUD.font(cfg.get("note_px", 17), "SemiBold")
+        self.stroke = cfg.get("stroke_px", 2.2)
         self.Hs = None
         self._lum = None
         self._last_i = None
@@ -72,6 +73,8 @@ class Renderer:
             self.inliers = {k: v[1] for k, v in res.items()}
             os.makedirs(cache_dir, exist_ok=True)
             np.savez(path, Hs=np.array(self.Hs, dtype=object), inl=np.array(self.inliers, dtype=object))
+        polys = {p["name"]: np.asarray(p["poly"], np.float64)[:4] for p in self.sc.cfg.get("planes", [])}
+        self.Hs = {k: _fill_gaps(v, polys[k], self.cfg.get("max_gap_frames", 4)) for k, v in self.Hs.items()}
         self.vis = {k: _visibility(v) for k, v in self.Hs.items()}
         # ports read off a later frame ("at_t") are carried back to their plane's reference frame
         for name, p in self.sc.ports.items():
@@ -95,8 +98,13 @@ class Renderer:
         v = np.zeros(2)
         if i > 0 and Hs[i - 1] is not None:
             qp = _warp(Hs[i - 1], p["quad"])
-            v = (q - qp).mean(axis=0)
-            q = q - self.latency * (q - qp)
+            q_lag = q - self.latency * (q - qp)
+            # the image moves over the whole exposure: central difference where the next pose is known
+            if i + 1 < len(Hs) and Hs[i + 1] is not None:
+                v = (_warp(Hs[i + 1], p["quad"]) - qp).mean(axis=0) / 2
+            else:
+                v = (q - qp).mean(axis=0)
+            q = q_lag
         q = q + self.rng.normal(0, self.tremor, 2)
         return q, (float(v[0]), float(v[1]))
 
@@ -106,6 +114,7 @@ class Renderer:
         world = HUD.Layer(self.W, self.H)
         head = HUD.Layer(self.W, self.H)
         vel = (0.0, 0.0)
+        w = self.stroke
         for name, st in targets.items():
             plane = self.sc.ports[name]["plane"]
             vis = self.vis[plane][i] if i < len(self.vis[plane]) else 0.0
@@ -115,7 +124,7 @@ class Renderer:
             lvl_in = HUD.smoothstep(0.0, 0.2, since)
             grow = 1.0 + 0.7 * (1.0 - a_in)
             mix = 0.0 if done is None else HUD.smoothstep(0.0, 0.25, done)
-            fade = 1.0 if done is None else 1.0 - HUD.smoothstep(CONFIRM, CONFIRM + FADE, done)
+            fade = (1.0 if done is None else 1.0 - HUD.smoothstep(CONFIRM, CONFIRM + FADE, done)) * st["clear"]
             if q is None or vis <= 0.01:
                 continue
             vel = v
@@ -123,16 +132,16 @@ class Renderer:
             dg = world.draw(HUD.GREEN)
             base = 0.95 * lvl_in * vis
             if mix < 1.0:
-                HUD.quad_brackets(dw, q, base * (1 - mix), grow=grow)
+                HUD.quad_brackets(dw, q, base * (1 - mix), width=w, grow=grow)
             if mix > 0.0:
-                # brackets close into a full outline as they turn green
-                HUD.quad_brackets(dg, q, base * mix * fade, leg=0.28 + 0.22 * mix)
+                # verified: the brackets close into an outline that tightens onto the port's own footprint
+                HUD.quad_brackets(dg, q, base * mix * fade, width=w, leg=0.28 + 0.22 * mix, pad=0.22 - 0.16 * mix)
             c = q.mean(axis=0)
             pad = c + (q - c) * 1.22
             top = pad[:2].mean(axis=0)
             edge = float(np.linalg.norm(pad[1] - pad[0]))
             lab_at = (top[0], top[1] - max(8.0, 0.18 * edge))
-            # the tag fades out before the note fades in, so the two never overlap
+            # the tag fades out before the check fades in, so the two never overlap
             tag = 1.0 if done is None else 1.0 - HUD.smoothstep(0.0, 0.15, done)
             if st["label"] and tag > 0.0:
                 HUD.text(dw, lab_at, st["label"], self.f_label, 0.88 * lvl_in * vis * tag * a_in, anchor="mb",
@@ -142,24 +151,39 @@ class Renderer:
                 note = st["note"]
                 tw = HUD.text_width(note, self.f_note, 0.02) if note else 0.0
                 ck = 11.0
-                x = lab_at[0] - (tw + ck + 8) / 2 if note else lab_at[0]
-                HUD.check(dg, (x + ck / 2, lab_at[1] - 8), ck, lvl)
+                x = lab_at[0] - (tw + ck + 8) / 2 if note else lab_at[0] - ck / 2
+                HUD.check(dg, (x + ck / 2, lab_at[1] - 8), ck, lvl, width=w)
                 if note:
                     HUD.text(dg, (x + ck + 8, lab_at[1]), note, self.f_note, lvl, anchor="lb", spacing=0.02)
             if not self.disp.inside(c, margin=0.02) and done is None:
                 at, ang = self.disp.edge_point(c)
-                HUD.chevron(head.draw(HUD.CYAN), at, ang, 14.0, 0.75 * lvl_in * vis)
+                HUD.chevron(head.draw(HUD.CYAN), at, ang, 14.0, 0.75 * lvl_in * vis, width=w)
         x0, y0, x1, y1 = self.disp.rect
-        ly = y0 + (y1 - y0) * self.cfg.get("line_y", 0.84)
-        for e, a in lines:
-            dim = 1.0 - 0.45 * HUD.smoothstep(LINE_DIM, LINE_DIM + 1.0, t - e["t"])
-            self._line(head, e, a * dim, ((x0 + x1) / 2, ly))
+        ly = y0 + (y1 - y0) * self.cfg.get("line_y", 0.1)
+        for ln in lines:
+            level = ln["level"]
+            if ln["target"] is not None:
+                # once its target has been locked in view for a moment, the line steps aside: the brackets say it
+                level *= 1.0 - 0.85 * HUD.smoothstep(LINE_HIDE, LINE_HIDE + 0.5, ln["since"]) * self.locked(ln["target"], i)
+            self._line(head, ln["e"], level, ((x0 + x1) / 2, ly))
         return world, head, vel
 
+    def locked(self, name, i, window=12):
+        """Fraction of the last `window` frames in which a port was tracked and inside the display's field."""
+        p = self.sc.ports[name]
+        Hs = self.Hs[p["plane"]]
+        n = 0
+        for j in range(max(0, i - window + 1), i + 1):
+            if j < len(Hs) and Hs[j] is not None and self.disp.inside(_warp(Hs[j], p["quad"]).mean(axis=0)):
+                n += 1
+        return n / window
+
     def _line(self, layer, e, a, at):
+        if a <= 0.0:
+            return
         d = layer.draw(HUD.CYAN)
-        main = e["text"].replace("->", "→")
-        count = e.get("step", "")
+        main = e["text"].replace("->", "\u2192")
+        count = e.get("step", "") if self.cfg.get("step_counter", False) else ""
         gap = 16.0
         wm = HUD.text_width(main, self.f_line, 0.015)
         wc = HUD.text_width(count, self.f_count, 0.04) if count else 0.0
@@ -221,6 +245,28 @@ class Renderer:
         if w:
             w.close()
         return n
+
+
+def _fill_gaps(Hs, poly, max_gap):
+    """Bridge tracking dropouts of up to max_gap frames by interpolating the plane's corners, as a headset's IMU
+    carries the pose through a short visual loss; longer losses stay None (content fades out)."""
+    Hs = list(Hs)
+    i = 0
+    n = len(Hs)
+    while i < n:
+        if Hs[i] is not None:
+            i += 1
+            continue
+        j = i
+        while j < n and Hs[j] is None:
+            j += 1
+        if 0 < i and j < n and j - i <= max_gap:
+            a, b = _warp(Hs[i - 1], poly), _warp(Hs[j], poly)
+            for k in range(i, j):
+                u = (k - i + 1) / (j - i + 1)
+                Hs[k] = cv2.getPerspectiveTransform(poly.astype(np.float32), (a + (b - a) * u).astype(np.float32))
+        i = j
+    return Hs
 
 
 def _visibility(Hs, ramp=5):

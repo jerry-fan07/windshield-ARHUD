@@ -19,11 +19,20 @@
     "vfov_deg": 28,
     "center": [
       0.5,
-      0.52
+      0.5
     ],
-    "match_softness_px": 0.8,
-    "gain": 0.8,
-    "exposure_k": 0.15
+    "gain": 0.95,
+    "exposure_k": 0.15,
+    "shutter": 1.0,
+    "stroke_px": 3.0,
+    "native_size": [
+      640,
+      480
+    ],
+    "chroma_blur_px": 2.2,
+    "defocus_px": 0.8,
+    "match_softness_px": 0.6,
+    "line_y": 0.1
   },
   "planes": [
     {
@@ -48,6 +57,32 @@
         ],
         [
           380,
+          1000
+        ]
+      ]
+    },
+    {
+      "name": "rack24",
+      "ref_t": 24.5,
+      "t_range": [
+        21.0,
+        28.6
+      ],
+      "poly": [
+        [
+          420,
+          -600
+        ],
+        [
+          1150,
+          -600
+        ],
+        [
+          1150,
+          1000
+        ],
+        [
+          420,
           1000
         ]
       ]
@@ -83,7 +118,7 @@
     {
       "t": 0.2,
       "step": "2/5",
-      "text": "Remove IB  n07 · P1"
+      "text": "Unplug  n07 · P1"
     },
     {
       "t": 0.4,
@@ -91,59 +126,56 @@
       "label": "P1"
     },
     {
-      "t": 3.8,
-      "done": "n07-P1",
-      "note": "Removed"
+      "t": 3.3,
+      "done": "n07-P1"
     },
     {
-      "t": 4.6,
+      "t": 5.5,
       "step": "3/5",
-      "text": "Remove IB  SW2 · 22"
+      "text": "Unplug  SW2 · 22"
     },
     {
-      "t": 8.0,
+      "t": 8.25,
       "target": "SW2-22",
       "label": "22"
     },
     {
       "t": 20.25,
-      "done": "SW2-22",
-      "note": "Removed"
+      "done": "SW2-22"
+    },
+    {
+      "t": 20.95,
+      "step": "4/5",
+      "text": "Unplug  SW2 · 23"
     },
     {
       "t": 21.0,
-      "step": "4/5",
-      "text": "Remove IB  SW2 · 23"
-    },
-    {
-      "t": 21.05,
       "target": "SW2-23",
       "label": "23"
     },
     {
-      "t": 21.9,
-      "done": "SW2-23",
-      "note": "Removed"
-    },
-    {
-      "t": 22.4,
-      "step": "5/5",
-      "text": "Remove IB  SW2 · 24"
+      "t": 21.8,
+      "done": "SW2-23"
     },
     {
       "t": 22.5,
+      "step": "5/5",
+      "text": "Unplug  SW2 · 24"
+    },
+    {
+      "t": 22.6,
       "target": "SW2-24",
       "label": "24"
     },
     {
       "t": 26.25,
-      "done": "SW2-24",
-      "note": "Removed"
+      "done": "SW2-24"
     },
     {
       "t": 26.9,
-      "step": "",
-      "text": "C14 · IB clear"
+      "step": "end",
+      "text": "✓  C14 IB clear",
+      "hold": 1.1
     }
   ],
   "ports": {
@@ -211,23 +243,23 @@
       ]
     },
     "SW2-24": {
-      "plane": "rack",
+      "plane": "rack24",
       "quad": [
         [
-          800,
-          562
+          928,
+          518
         ],
         [
-          898,
-          561
+          1042,
+          514
         ],
         [
-          899,
-          634
+          1046,
+          628
         ],
         [
-          801,
-          635
+          932,
+          632
         ]
       ]
     }
