@@ -50,7 +50,8 @@ class Display:
         self.rect = (cx - hw, cy - hh, cx + hw, cy + hh)
         self.c = (cx, cy)
         self.gain = cfg.get("gain", 1.1)
-        gx, gy, gg = cfg.get("ghost_deg", [0.45, 0.35, 0.035])
+        # 1.2 % in linear light is already ~10 % in display code values: enough to see, not enough to double text
+        gx, gy, gg = cfg.get("ghost_deg", [0.45, 0.35, 0.012])
         self.ghost = (gx * self.ppd, gy * self.ppd, gg)
         self.dispersion = cfg.get("dispersion", 0.0016)
         self.defocus = cfg.get("defocus_px", 0.6)
@@ -59,7 +60,7 @@ class Display:
         self.noise = cfg.get("shot_noise", 0.012)
         self.shutter = cfg.get("shutter", 0.5)
         # the visor's veil scales with the light around: nothing in a dark aisle, a visible haze in a lit one
-        self.lift = np.array(cfg.get("visor_lift", [0.009, 0.010, 0.0125]), np.float32)
+        self.lift = np.array(cfg.get("visor_lift", [0.002, 0.0022, 0.0028]), np.float32)
         # the camera that filmed the world also filmed the display: its native resolution and 4:2:0 chroma
         self.native = cfg.get("native_size")
         self.chroma_blur = cfg.get("chroma_blur_px", 0.0)

@@ -162,21 +162,27 @@ class Renderer:
         ly = y0 + (y1 - y0) * self.cfg.get("line_y", 0.1)
         for ln in lines:
             level = ln["level"]
-            if ln["target"] is not None:
+            if ln["target"] in targets:
                 # once its target has been locked in view for a moment, the line steps aside: the brackets say it
-                level *= 1.0 - 0.85 * HUD.smoothstep(LINE_HIDE, LINE_HIDE + 0.5, ln["since"]) * self.locked(ln["target"], i)
+                lock = self.lock_time(ln["target"], i, targets[ln["target"]]["since"])
+                level *= 1.0 - 0.85 * HUD.smoothstep(LINE_HIDE, LINE_HIDE + 0.5, lock)
+            elif ln["verified"]:
+                level *= 0.15   # done and its confirmation gone: stay aside until the next step
             self._line(head, ln["e"], level, ((x0 + x1) / 2, ly))
         return world, head, vel
 
-    def locked(self, name, i, window=12):
-        """Fraction of the last `window` frames in which a port was tracked and inside the display's field."""
+    def lock_time(self, name, i, since):
+        """Seconds the port has been continuously tracked and inside the display's field (since its target began)."""
         p = self.sc.ports[name]
         Hs = self.Hs[p["plane"]]
         n = 0
-        for j in range(max(0, i - window + 1), i + 1):
-            if j < len(Hs) and Hs[j] is not None and self.disp.inside(_warp(Hs[j], p["quad"]).mean(axis=0)):
-                n += 1
-        return n / window
+        limit = int(min(max(since, 0.0), LINE_HIDE + 0.6) * self.fps)
+        while n < limit and i - n >= 0:
+            j = i - n
+            if j >= len(Hs) or Hs[j] is None or not self.disp.inside(_warp(Hs[j], p["quad"]).mean(axis=0)):
+                break
+            n += 1
+        return n / self.fps
 
     def _line(self, layer, e, a, at):
         if a <= 0.0:

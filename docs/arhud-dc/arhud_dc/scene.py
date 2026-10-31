@@ -79,8 +79,12 @@ class Scene:
             if e["t"] > t:
                 break
             if "target" in e:
-                targets[e["target"]] = {"label": e.get("label", ""), "since": t - e["t"], "done": None, "note": "",
-                                        "clear": 1.0}
+                # a new target waits for a confirmation it is pushing off to clear, so the two never overlap
+                busy = any(st["done"] is not None and st["done"] - (t - e["t"]) <= CONFIRM + FADE
+                           for st in targets.values())
+                delay = NEXT_CLEAR if busy else 0.0
+                targets[e["target"]] = {"label": e.get("label", ""), "since": t - e["t"] - delay, "done": None,
+                                        "note": "", "clear": 1.0}
             elif "done" in e and e["done"] in targets:
                 st = targets[e["done"]]
                 st["done"] = t - e["t"]
@@ -104,7 +108,8 @@ class Scene:
             level *= 1.0 - (1.0 - VERIFIED_DIM) * _smooth((t - done_t) / 0.2)
         if "hold" in e:
             level *= 1.0 - _smooth((t - e["t"] - e["hold"]) / 0.4)
-        return {"e": e, "level": max(0.0, level), "since": t - e["t"], "target": target}
+        return {"e": e, "level": max(0.0, level), "since": t - e["t"], "target": target,
+                "verified": done_t is not None}
 
 
 def _smooth(x):

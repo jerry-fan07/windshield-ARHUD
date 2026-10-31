@@ -32,7 +32,12 @@
     "chroma_blur_px": 2.2,
     "defocus_px": 0.8,
     "match_softness_px": 0.6,
-    "line_y": 0.1
+    "line_y": 0.1,
+    "line_px": 26,
+    "label_px": 22,
+    "flare": {
+      "gain": 0
+    }
   },
   "planes": [
     {

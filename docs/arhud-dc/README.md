@@ -40,6 +40,15 @@ The video went through an independent frame-by-frame review with three lenses: o
 - three event times were corrected
 - port 24 got its own reference frame, to remove a 15 px drift
 
+A second, fresh review of the revised render confirmed all of these and found a few more, which are fixed too:
+
+- the line's step-aside timer now runs from when the target locks in view, not from when the line appears
+- the rainbow flare is off
+- the ghost was lowered
+- a new target now waits the 0.15 s for the previous confirmation to clear
+- tags and the line are slightly larger
+- the veil was cut again
+
 ## The HUD
 
 At most four things are ever on screen, and usually just the brackets and their tag:
@@ -64,14 +73,14 @@ The design follows the in-situ guidance literature: world-registered cues beat i
 The headset modelled is a binocular diffractive-waveguide display of the HoloLens 2 / Orion class, with a 44° × 28° field of view by default.
 
 - **Field of view.** The image exists only inside the display's field, which is much smaller than the camera's. Its edge is never drawn: content fades over the last ~1° and is cut there. With a phone or GoPro-linear camera, the display covers roughly the middle half of the frame.
-- **Additive light.** The display can only add light. Black is transparent, and the world behind is never dimmed. The marks pop against black switch faces and wash out against a lit white cold aisle. The visor adds a faint veil in proportion to the light around (about 1% of the scene's mean, so nearly nothing in a dark rack) and tints the world very slightly.
+- **Additive light.** The display can only add light. Black is transparent, and the world behind is never dimmed. The marks pop against black switch faces and wash out against a lit white cold aisle. The visor adds a faint veil in proportion to the light around (about 0.2% of the scene's mean: a code value or two over black in a lit aisle, nothing in a dark rack) and tints the world very slightly.
 - **Waveguide flaws.** Each is a few percent and fixed to the display, not the world:
   - colour drifts across the field in broad magenta, cyan and green lobes
   - the corners are about 30% dimmer than the centre
   - lateral colour puts red and blue a fraction of a pixel apart
-  - a ghost image sits about 0.6° off at 3.5%
+  - a ghost image sits about 0.6° off at 1.2% (in linear light; that is already about 10% in display code values)
   - a tight glow and a wide, low halo (σ ≈ 1°) surround bright strokes
-  - the gratings smear the overhead LED troffers into faint rainbow streaks inside the field
+  - the gratings smear bright light sources outside the line of sight, such as overhead LED troffers, into faint rainbow streaks inside the field. This is off in the decabling scene (`"flare": {"gain": 0}`), because the rack's lit faceplates turned it into smudges
 - **Focus.** The virtual image sits at about 2 m while the hands work at 0.5 m, so with the camera focused on the rack the HUD is slightly soft.
 - **Registration.** World-locked marks are drawn from the tracked pose, minus a few milliseconds of uncorrected render-to-photon latency, plus sub-pixel tremor. They sit still when the head is still and trail slightly in quick turns, as on real headsets. Hands and cables do not hide the marks: a see-through display draws on top of everything, and that is part of what makes it look real.
 - **The camera.** The HUD's light is resampled down to the source camera's pixel grid (`native_size`, 640 × 480 here) and back up the way the footage was, and its chroma is blurred as 4:2:0 recording would. That keeps it from being the sharpest thing in the frame. World-locked marks get the footage's full-shutter motion blur, with velocity taken as a central difference over the neighbouring frames. The camera's auto-exposure follows the scene: in a dim aisle it opens up and the HUD reads brighter, and panning onto a bright aisle dims it (about 0.4 s lag). The display's own ambient-light sensor works the other way and dims the display in the dark, so the scene uses a weak coupling (`exposure_k` 0.15) and `gain` 0.95 for this dark rack. That keeps the strokes reading as translucent light rather than white paint. World-locked marks get the same motion blur as the footage. Shot noise is added to the display's light, and a soft shoulder lets bright strokes clip toward white the way a sensor does.
