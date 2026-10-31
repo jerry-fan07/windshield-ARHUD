@@ -162,11 +162,16 @@ class PlaneTracker:
         cx, cy = q.mean(axis=0)
         return -w < cx < 2 * w and -h < cy < 2 * h and cv2.isContourConvex(q.astype(np.float32))
 
-    def track(self):
+    def track(self, lo=0, hi=None):
+        """Track over frames [lo, hi) (default: all); frames outside the range are None."""
         n = len(self.g)
-        fwd = self._run(range(self.ref + 1, n))
-        bwd = self._run(range(self.ref - 1, -1, -1))
-        res = {**bwd, **fwd}
+        hi = n if hi is None else min(n, hi)
+        lo = max(0, lo)
+        fwd = self._run(range(self.ref + 1, hi))
+        bwd = self._run(range(self.ref - 1, lo - 1, -1))
+        res = {i: (None, 0) for i in range(n)}
+        res.update(bwd)
+        res.update(fwd)
         Hs = [res[i][0] for i in range(n)]
         inl = [res[i][1] for i in range(n)]
         Hs = smooth(Hs, self.poly)
@@ -205,11 +210,12 @@ def load_grey(frames, scale):
 
 
 def track_planes(frames_iter, planes, width):
-    """planes: [{'name', 'ref_frame', 'poly': [[x, y], ...]}] in full-res pixels. Returns {name: (Hs, inliers)}."""
+    """planes: [{'name', 'ref_frame', 'poly': [[x, y], ...], 'range': (lo, hi) frames or None}] in full-res
+    pixels. Returns {name: (Hs, inliers)}."""
     scale = min(1.0, 1280.0 / width)
     grey = load_grey(frames_iter, scale)
     out = {}
     for p in planes:
         t = PlaneTracker(grey, p["ref_frame"], p["poly"], scale)
-        out[p["name"]] = t.track()
+        out[p["name"]] = t.track(*(p.get("range") or (0, None)))
     return out

@@ -56,11 +56,20 @@ class Layer:
         return self.inks[color][1]
 
     def light(self):
+        """Full-frame light, filled only inside the drawn bounding box (self.bbox, display px, or None)."""
         out = np.zeros((self.h, self.w, 3), np.float32)
+        self.bbox = None
         for color, (im, _) in self.inks.items():
-            a = np.asarray(im, np.float32) / 255.0
-            a = cv2.resize(a, (self.w, self.h), interpolation=cv2.INTER_AREA)
-            out += a[..., None] * np.array(color, np.float32)
+            bb = im.getbbox()
+            if bb is None:
+                continue
+            x0, y0 = (bb[0] // (2 * SS)) * 2, (bb[1] // (2 * SS)) * 2
+            x1, y1 = min(self.w, -(-bb[2] // SS) + 1), min(self.h, -(-bb[3] // SS) + 1)
+            a = np.asarray(im.crop((x0 * SS, y0 * SS, x1 * SS, y1 * SS)), np.float32) / 255.0
+            a = cv2.resize(a, (x1 - x0, y1 - y0), interpolation=cv2.INTER_AREA)
+            out[y0:y1, x0:x1] += a[..., None] * np.array(color, np.float32)
+            self.bbox = (x0, y0, x1, y1) if self.bbox is None else (
+                min(self.bbox[0], x0), min(self.bbox[1], y0), max(self.bbox[2], x1), max(self.bbox[3], y1))
         return out
 
 

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """AR display for data center cabling, composited onto real first-person footage.
 
-    python3 run.py fetch  scenes/<scene>.json            # download the source clip with yt-dlp into footage/
+    python3 run.py fetch  scenes/<scene>.json            # download the source clip into footage/ (S3 or yt-dlp)
     python3 run.py frames scenes/<scene>.json --every 1  # reference frames with a pixel grid, for authoring
     python3 run.py track  scenes/<scene>.json            # track the scene's planes (cached in cache/)
+    python3 run.py trackviz scenes/<scene>.json          # out/<scene>-track.mp4: tracked outlines and ports
     python3 run.py stills scenes/<scene>.json 3.2 7.5    # composited stills at those times (--compare: side by side)
     python3 run.py render scenes/<scene>.json            # the whole cut to out/<scene>.mp4
 
@@ -13,6 +14,7 @@ import argparse
 import os
 import subprocess
 import sys
+import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -31,6 +33,11 @@ def fetch(sc, args):
         print(f"{out} exists")
         return
     os.makedirs(os.path.dirname(out), exist_ok=True)
+    if "mp4" in sc.src:
+        # a direct file (e.g. a YFCC100M video from Multimedia Commons on S3)
+        print(f"{sc.src['mp4']} -> {out}")
+        urllib.request.urlretrieve(sc.src["mp4"], out)
+        return
     cmd = ["yt-dlp", "-f", "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/bv*[height<=1080]+ba/b[height<=1080]",
            "--merge-output-format", "mp4", "-o", out, sc.src["url"]]
     if "t1" in sc.src and not args.whole:
@@ -89,6 +96,35 @@ def render(sc, args):
     print(f"{n} frames -> {out}")
 
 
+def trackviz(sc, args):
+    """Tracking check: every frame with each plane's outline, its ports and the inlier count."""
+    from arhud_dc.video import Writer
+    r = Renderer(sc)
+    r.track(os.path.join(HERE, "cache"))
+    out = os.path.join(HERE, "out", f"{sc.name}-track.mp4")
+    w = Writer(out, r.W, r.H, r.fps, crf=22)
+    colors = [(0, 255, 255), (255, 0, 255), (0, 255, 0), (255, 160, 0), (80, 160, 255)]
+    planes = {p["name"]: p for p in sc.cfg.get("planes", [])}
+    for i, rgb in enumerate(r.frames()):
+        img = rgb.copy()
+        for k, (name, Hs) in enumerate(r.Hs.items()):
+            c = colors[k % len(colors)]
+            if i < len(Hs) and Hs[i] is not None:
+                poly = cv2.perspectiveTransform(np.asarray(planes[name]["poly"], np.float64).reshape(-1, 1, 2), Hs[i])
+                cv2.polylines(img, [np.round(poly).astype(np.int32)], True, c, 1, cv2.LINE_AA)
+                for pn, p in sc.ports.items():
+                    if p["plane"] == name:
+                        q = cv2.perspectiveTransform(np.asarray(p["quad"], np.float64).reshape(-1, 1, 2), Hs[i])
+                        cv2.polylines(img, [np.round(q).astype(np.int32)], True, c, 2, cv2.LINE_AA)
+                        cv2.putText(img, pn, tuple(np.round(q[0, 0]).astype(int) - [0, 6]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, c, 1)
+            cv2.putText(img, f"{name}: {r.inliers[name][i] if Hs[i] is not None else 'lost'}", (12, 30 + 26 * k),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, c, 2)
+        cv2.putText(img, f"t={i / r.fps:.2f}", (12, r.H - 16), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        w.write(img)
+    w.close()
+    print(out)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -104,6 +140,7 @@ def main():
     p.add_argument("--every", type=float, default=1.0, help="seconds between frames")
     p.add_argument("--no-grid", dest="grid", action="store_false")
     cmd("track")
+    cmd("trackviz")
     p = cmd("stills")
     p.add_argument("times", nargs="+")
     p.add_argument("--compare", action="store_true", help="source and composite side by side")
@@ -113,7 +150,8 @@ def main():
     p.add_argument("--crf", type=int, default=16)
     args = ap.parse_args()
     sc = Scene(args.scene)
-    {"fetch": fetch, "frames": frames, "track": track, "stills": stills, "render": render}[args.cmd](sc, args)
+    {"fetch": fetch, "frames": frames, "track": track, "trackviz": trackviz, "stills": stills,
+     "render": render}[args.cmd](sc, args)
 
 
 if __name__ == "__main__":

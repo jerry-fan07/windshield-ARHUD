@@ -1,0 +1,235 @@
+{
+  "source": {
+    "file": "footage/yfcc-4366776083.mp4",
+    "mp4": "https://multimedia-commons.s3.amazonaws.com/data/videos/mp4/231/21c/23121c1fe4f663e7253f67ba4c704d55.mp4",
+    "flickr": "http://www.flickr.com/videos/51035766041@N01/4366776083/",
+    "title": "Infiniband cluster decabling",
+    "author": "phrenologist",
+    "license": "CC BY-NC 2.0",
+    "t0": 9.0,
+    "t1": 37.6
+  },
+  "output_size": [
+    1440,
+    1080
+  ],
+  "display": {
+    "camera_hfov_deg": 63,
+    "hfov_deg": 44,
+    "vfov_deg": 28,
+    "center": [
+      0.5,
+      0.52
+    ],
+    "match_softness_px": 0.8,
+    "gain": 0.8,
+    "exposure_k": 0.15
+  },
+  "planes": [
+    {
+      "name": "rack",
+      "ref_t": 14.0,
+      "t_range": [
+        0.0,
+        28.6
+      ],
+      "poly": [
+        [
+          380,
+          -700
+        ],
+        [
+          960,
+          -700
+        ],
+        [
+          960,
+          1000
+        ],
+        [
+          380,
+          1000
+        ]
+      ]
+    },
+    {
+      "name": "nodes",
+      "ref_t": 2.6,
+      "t_range": [
+        0.0,
+        8.0
+      ],
+      "poly": [
+        [
+          200,
+          0
+        ],
+        [
+          1350,
+          0
+        ],
+        [
+          1350,
+          1080
+        ],
+        [
+          200,
+          1080
+        ]
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "t": 0.2,
+      "step": "2/5",
+      "text": "Remove IB  n07 · P1"
+    },
+    {
+      "t": 0.4,
+      "target": "n07-P1",
+      "label": "P1"
+    },
+    {
+      "t": 3.8,
+      "done": "n07-P1",
+      "note": "Removed"
+    },
+    {
+      "t": 4.6,
+      "step": "3/5",
+      "text": "Remove IB  SW2 · 22"
+    },
+    {
+      "t": 8.0,
+      "target": "SW2-22",
+      "label": "22"
+    },
+    {
+      "t": 20.25,
+      "done": "SW2-22",
+      "note": "Removed"
+    },
+    {
+      "t": 21.0,
+      "step": "4/5",
+      "text": "Remove IB  SW2 · 23"
+    },
+    {
+      "t": 21.05,
+      "target": "SW2-23",
+      "label": "23"
+    },
+    {
+      "t": 21.9,
+      "done": "SW2-23",
+      "note": "Removed"
+    },
+    {
+      "t": 22.4,
+      "step": "5/5",
+      "text": "Remove IB  SW2 · 24"
+    },
+    {
+      "t": 22.5,
+      "target": "SW2-24",
+      "label": "24"
+    },
+    {
+      "t": 26.25,
+      "done": "SW2-24",
+      "note": "Removed"
+    },
+    {
+      "t": 26.9,
+      "step": "",
+      "text": "C14 · IB clear"
+    }
+  ],
+  "ports": {
+    "n07-P1": {
+      "plane": "nodes",
+      "quad": [
+        [
+          500,
+          585
+        ],
+        [
+          562,
+          583
+        ],
+        [
+          564,
+          628
+        ],
+        [
+          502,
+          630
+        ]
+      ]
+    },
+    "SW2-22": {
+      "plane": "rack",
+      "quad": [
+        [
+          588,
+          564
+        ],
+        [
+          682,
+          562
+        ],
+        [
+          684,
+          642
+        ],
+        [
+          590,
+          644
+        ]
+      ]
+    },
+    "SW2-23": {
+      "plane": "rack",
+      "quad": [
+        [
+          694,
+          561
+        ],
+        [
+          790,
+          559
+        ],
+        [
+          792,
+          638
+        ],
+        [
+          696,
+          640
+        ]
+      ]
+    },
+    "SW2-24": {
+      "plane": "rack",
+      "quad": [
+        [
+          800,
+          562
+        ],
+        [
+          898,
+          561
+        ],
+        [
+          899,
+          634
+        ],
+        [
+          801,
+          635
+        ]
+      ]
+    }
+  }
+}

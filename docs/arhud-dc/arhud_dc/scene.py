@@ -1,8 +1,10 @@
 """A scene: one clip of real footage, the rack surfaces to track in it, the ports on them, and the work order's
 timeline. Scenes are JSON files in scenes/; times are seconds from the start of the cut (source.t0).
 
-    "planes":   [{"name": "pp3", "ref_t": 2.0, "poly": [[x, y], ...]}]           surface outline on frame ref_t
+    "planes":   [{"name": "pp3", "ref_t": 2.0, "poly": [[x, y], ...],            surface outline on frame ref_t,
+                  "t_range": [0.0, 9.5]}]                                         tracked only within t_range
     "ports":    {"PP3-24": {"plane": "pp3", "quad": [[x, y] x 4]}}                 tl, tr, br, bl on frame ref_t
+                (or on frame at_t, with "at_t": s, carried back to ref_t through the tracking)
     "blocks":   [{"plane": "pp3", "prefix": "PP3-", "corners": [tl, tr, br, bl],   a uniform grid of ports
                   "rows": 2, "cols": 12, "first": 1, "gap": 0.18}]                  numbered row by row
     "timeline": [{"t": 0.3, "step": "2/6", "text": "PP3-24  ->  SW2-17"},           the one instruction line
@@ -18,8 +20,8 @@ import os
 import numpy as np
 
 APPEAR = 0.35     # s, brackets converge onto the port
-CONFIRM = 1.1     # s, green outline and check held after the verification event
-FADE = 0.4        # s
+CONFIRM = 0.8     # s, green outline and check held after the verification event
+FADE = 0.35       # s
 LINE_FADE = 0.3   # s, instruction cross-fade
 LINE_DIM = 3.0    # s, after which the instruction steps back to half brightness while the hands work
 
@@ -37,6 +39,8 @@ class Scene:
         self.ports = {}
         for name, p in self.cfg.get("ports", {}).items():
             self.ports[name] = {"plane": p["plane"], "quad": np.asarray(p["quad"], np.float64)}
+            if "at_t" in p:
+                self.ports[name]["at_t"] = float(p["at_t"])
         for b in self.cfg.get("blocks", []):
             self.ports.update(grid_ports(b))
         self.timeline = sorted(self.cfg.get("timeline", []), key=lambda e: e["t"])

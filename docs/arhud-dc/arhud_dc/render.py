@@ -45,7 +45,7 @@ class Renderer:
         self.rng = np.random.default_rng(seed)
         self.f_line = HUD.font(cfg.get("line_px", 23), "SemiBold")
         self.f_count = HUD.font(cfg.get("count_px", 18), "Medium")
-        self.f_label = HUD.font(cfg.get("label_px", 17), "SemiBold")
+        self.f_label = HUD.font(cfg.get("label_px", 18), "SemiBold")
         self.f_note = HUD.font(cfg.get("note_px", 17), "SemiBold")
         self.Hs = None
         self._lum = None
@@ -56,7 +56,8 @@ class Renderer:
         return read_frames(self.sc.footage, self.sc.t0, self.t1, size=(self.W, self.H))
 
     def track(self, cache_dir):
-        planes = [{"name": p["name"], "ref_frame": int(round(p["ref_t"] * self.fps)), "poly": p["poly"]}
+        planes = [{"name": p["name"], "ref_frame": int(round(p["ref_t"] * self.fps)), "poly": p["poly"],
+                   "range": [int(round(t * self.fps)) for t in p["t_range"]] if "t_range" in p else None}
                   for p in self.sc.cfg.get("planes", [])]
         key = hashlib.sha1(json.dumps([planes, self.sc.t0, self.t1, self.W, self.H, self.sc.footage]).encode()).hexdigest()[:12]
         path = os.path.join(cache_dir, f"{self.sc.name}-{key}.npz")
@@ -72,6 +73,14 @@ class Renderer:
             os.makedirs(cache_dir, exist_ok=True)
             np.savez(path, Hs=np.array(self.Hs, dtype=object), inl=np.array(self.inliers, dtype=object))
         self.vis = {k: _visibility(v) for k, v in self.Hs.items()}
+        # ports read off a later frame ("at_t") are carried back to their plane's reference frame
+        for name, p in self.sc.ports.items():
+            if "at_t" in p:
+                Hs = self.Hs[p["plane"]]
+                i = min(len(Hs) - 1, int(round(p.pop("at_t") * self.fps)))
+                if Hs[i] is None:
+                    raise ValueError(f"port {name}: plane {p['plane']} is not tracked at its at_t frame {i}")
+                p["quad"] = _warp(np.linalg.inv(Hs[i]), p["quad"])
         n = len(next(iter(self.Hs.values()))) if self.Hs else 0
         return {k: f"{sum(h is not None for h in v)}/{n} frames tracked" for k, v in self.Hs.items()}
 
@@ -123,11 +132,13 @@ class Renderer:
             top = pad[:2].mean(axis=0)
             edge = float(np.linalg.norm(pad[1] - pad[0]))
             lab_at = (top[0], top[1] - max(8.0, 0.18 * edge))
-            if st["label"] and mix < 1.0:
-                HUD.text(dw, lab_at, st["label"], self.f_label, 0.88 * lvl_in * vis * (1 - mix) * a_in, anchor="mb",
+            # the tag fades out before the note fades in, so the two never overlap
+            tag = 1.0 if done is None else 1.0 - HUD.smoothstep(0.0, 0.15, done)
+            if st["label"] and tag > 0.0:
+                HUD.text(dw, lab_at, st["label"], self.f_label, 0.88 * lvl_in * vis * tag * a_in, anchor="mb",
                          spacing=0.02)
-            if mix > 0.0:
-                lvl = 0.92 * mix * fade * vis
+            if done is not None and done > 0.18:
+                lvl = 0.92 * HUD.smoothstep(0.18, 0.4, done) * fade * vis
                 note = st["note"]
                 tw = HUD.text_width(note, self.f_note, 0.02) if note else 0.0
                 ck = 11.0
@@ -178,7 +189,12 @@ class Renderer:
         world, head, vel = self.hud_layers(i)
         lin = to_linear(rgb)
         g = self.exposure(i, lin)
-        out = self.disp.compose(lin, world.light() if world.inks else None, head.light(), vel, self.rng, g)
+        layers = []
+        for layer, is_world in ((world, True), (head, False)):
+            if layer.inks:
+                light = layer.light()
+                layers.append((light, layer.bbox, is_world))
+        out = self.disp.compose(lin, layers, vel, self.rng, g)
         return to_srgb8(out)
 
     # ---- output ---------------------------------------------------------------------------------------------

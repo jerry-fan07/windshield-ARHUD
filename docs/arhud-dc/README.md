@@ -1,8 +1,31 @@
 # AR display for data center cabling, on real first-person footage
 
-A simulation of what a technician would see through an optical see-through AR headset while patching cables in a data center. The world is real: first-person footage of cabling work, filmed from the worker's head. The display is simulated on top of it, as light from a waveguide: tracked to the rack so its marks stay on the port, cut off at the display's field of view, and carrying the optics' small flaws.
+A simulation of what a technician would see through an optical see-through AR headset while working on cables in a data center. The world is real: first-person footage of a technician removing InfiniBand cables from a live cluster rack, filmed from the worker's head. The display is simulated on top of it as light from a waveguide. It is tracked to the rack so its marks stay on the port, cut off at the display's field of view, and carries the optics' small flaws.
 
 The UI is deliberately sparse. The technician's attention belongs on the port, the latch and the label, not on the headset. Everything on screen has to earn its place.
+
+`python3 run.py render scenes/ib-decabling.json` produces `out/ib-decabling.mp4`: 28.6 s, 1440 × 1080, with the source's audio. The video is not committed; see [Footage](#footage) for why and how to get the clip.
+
+![Step 3 of 5: brackets on switch port 22, instruction low in the view](shots/ib-decabling-port22.jpg)
+
+## The scene: decommissioning rack C14's InfiniBand
+
+The work order is a decabling job. The technician has already done step 1 when the clip starts. The HUD follows what the hands do in the footage, and each confirmation fires on the frame where the connector visibly comes out.
+
+| Cut time | HUD | In the footage |
+|---|---|---|
+| 0.2 s | `2/5  Remove IB  n07 · P1`, brackets and `P1` on the node's adapter port | the gloved hand reaches for the leftmost port of a node |
+| 3.8 s | green outline, `✓ Removed` | the cable is out; the hand drops away |
+| 4.6 s | `3/5  Remove IB  SW2 · 22` | the head turns down toward the switch; the target is not in view yet |
+| 8.0 s | brackets converge on switch port 22 | the switch's three InfiniBand connectors come into view |
+| 20.25 s | `✓ Removed` on 22 | the left connector comes out |
+| 21.0 s | `4/5`, brackets on 23 | |
+| 21.9 s | `✓ Removed` on 23 | the middle connector comes out |
+| 22.5 s | `5/5`, brackets on 24 | |
+| 26.25 s | `✓ Removed` on 24 | the right connector comes out |
+| 26.9 s | `C14 · IB clear` | the head swings away |
+
+During the fast pan from the nodes to the switch (about 6.8–7.7 s), the frames are too blurred to track. The world-locked marks fade out, as a headset hides content it has lost track of, and the instruction line stays.
 
 ## The HUD
 
@@ -38,7 +61,7 @@ The headset modelled is a binocular diffractive-waveguide display of the HoloLen
   - the gratings smear the overhead LED troffers into faint rainbow streaks inside the field
 - **Focus.** The virtual image sits at about 2 m while the hands work at 0.5 m, so with the camera focused on the rack the HUD is slightly soft.
 - **Registration.** World-locked marks are drawn from the tracked pose, minus a few milliseconds of uncorrected render-to-photon latency, plus sub-pixel tremor. They sit still when the head is still and trail slightly in quick turns, as on real headsets. Hands and cables do not hide the marks: a see-through display draws on top of everything, and that is part of what makes it look real.
-- **The camera.** The camera's auto-exposure follows the scene: in a dim aisle it opens up and the HUD reads brighter, and panning onto a bright aisle dims it (about 0.4 s lag). World-locked marks get the same motion blur as the footage. Shot noise is added to the display's light, and a soft shoulder lets bright strokes clip toward white the way a sensor does.
+- **The camera.** The camera's auto-exposure follows the scene: in a dim aisle it opens up and the HUD reads brighter, and panning onto a bright aisle dims it (about 0.4 s lag). The display's own ambient-light sensor works the other way and dims the display in the dark, so the scene uses a weak coupling (`exposure_k` 0.15) and a lower `gain` (0.8) for this dark rack. That keeps the strokes reading as translucent light rather than white paint. World-locked marks get the same motion blur as the footage. Shot noise is added to the display's light, and a soft shoulder lets bright strokes clip toward white the way a sensor does.
 
 ## Pipeline
 
@@ -89,4 +112,10 @@ A scene is one cut of one source video. Coordinates are output-frame pixels on t
 
 ## Footage
 
-The source footage is not in the repository; `run.py fetch` downloads it. Clips on YouTube belong to their creators and are used here for an internal design simulation only: don't publish the rendered videos without the creator's permission.
+**"Infiniband cluster decabling"** by *phrenologist* on Flickr (http://www.flickr.com/videos/51035766041@N01/4366776083/), licensed CC BY-NC 2.0. It is 73 s at 640 × 480 and 29.97 fps, recorded in February 2010. The cut used is 9.0–37.6 s. The same author's part 2, "Infiniband Cluster decabling 2" (4367522800, same licence), is a usable second clip. The licence allows non-commercial use with attribution, so renders must credit the author and must not be used commercially.
+
+`run.py fetch` downloads the file from Multimedia Commons (`multimedia-commons.s3.amazonaws.com`), the public S3 mirror of YFCC100M's 787,000 Creative Commons Flickr videos. The footage is not committed.
+
+How it was found: the network of the environment this was built in blocks YouTube, Pexels, Pixabay, Vimeo, Wikimedia and the Internet Archive, but allows S3. The only searchable YFCC100M metadata on Multimedia Commons is a 65 GB SQLite file. `tools/yfcc_search.py` streams it in parallel byte ranges and never stores it. GNU grep finds pages mentioning data-center and cabling terms, and the script parses those b-tree pages, records and overflow chains in place, keeping video rows only. Each video's S3 key is the MD5 of its Flickr download URL, written as unpadded hex per byte. The full scan took about 40 minutes and found 39 videos. Two of them are real first-person cabling work, both by the same author.
+
+The pipeline also takes YouTube sources (`"url"` instead of `"mp4"`, fetched with yt-dlp) if the environment allows `www.youtube.com` and `*.googlevideo.com`. Most first-person cabling footage there is under the standard YouTube licence, which does not allow redistributing renders.

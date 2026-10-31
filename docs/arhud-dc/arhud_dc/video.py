@@ -5,6 +5,7 @@ frame-accurate with re-encoded input in current ffmpeg.
 """
 import json
 import subprocess
+from fractions import Fraction
 
 import numpy as np
 
@@ -57,7 +58,7 @@ class Writer:
 
     def __init__(self, path, w, h, fps, audio=None, t0=0.0, t1=None, crf=16):
         cmd = ["ffmpeg", "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{w}x{h}",
-               "-r", f"{fps:.6f}", "-i", "-"]
+               "-r", str(Fraction(fps).limit_denominator(1001)), "-i", "-"]
         if audio:
             cmd += ["-ss", f"{t0:.3f}"] + (["-t", f"{t1 - t0:.3f}"] if t1 is not None else []) + ["-i", audio,
                                                                                                  "-map", "0:v", "-map", "1:a?",
@@ -82,7 +83,9 @@ def to_linear(rgb8):
     return _DECODE[rgb8]
 
 
+_q = np.arange(16384, dtype=np.float64) / 16383.0
+_ENCODE = (np.where(_q <= 0.0031308, _q * 12.92, 1.055 * np.power(_q, 1 / 2.4) - 0.055) * 255.0 + 0.5).astype(np.uint8)
+
+
 def to_srgb8(lin):
-    x = np.clip(lin, 0.0, 1.0)
-    y = np.where(x <= 0.0031308, x * 12.92, 1.055 * np.power(x, 1 / 2.4) - 0.055)
-    return (y * 255.0 + 0.5).astype(np.uint8)
+    return _ENCODE[(np.clip(lin, 0.0, 1.0) * 16383.0 + 0.5).astype(np.uint16)]

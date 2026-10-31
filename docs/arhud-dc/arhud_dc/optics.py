@@ -104,19 +104,27 @@ class Display:
         s = min(sx, sy)
         return (cx + dx * s, cy + dy * s), math.atan2(dy, dx)
 
-    def compose(self, frame_lin, world, head, velocity, rng, exposure=1.0):
-        """frame_lin: HxWx3 linear world. world/head: HxWx3 HUD light. velocity: px/frame of the world layer.
-        exposure scales the HUD light for the camera's auto-exposure."""
+    def compose(self, frame_lin, layers, velocity, rng, exposure=1.0):
+        """frame_lin: HxWx3 linear world. layers: [(light HxWx3, bbox or None, world-locked?)]. velocity: px/frame
+        of the world-locked layer. exposure scales the HUD light for the camera's auto-exposure."""
         plate = frame_lin * self.trans + self.lift
-        add = np.zeros_like(plate)
-        E = head.copy()
-        if world is not None:
-            E += motion_blur(world, velocity, self.shutter)
-        ys, xs = np.nonzero(E.max(axis=2) > 1e-4)
-        if len(xs):
+        out = plate.copy()
+        E, box = None, None
+        blur = math.hypot(*velocity) * self.shutter
+        for light, bb, world in layers:
+            if bb is None:
+                continue
+            if world:
+                light = motion_blur(light, velocity, self.shutter)
+                g = int(blur) + 2
+                bb = (bb[0] - g, bb[1] - g, bb[2] + g, bb[3] + g)
+            E = light if E is None else E + light
+            box = bb if box is None else (min(box[0], bb[0]), min(box[1], bb[1]), max(box[2], bb[2]), max(box[3], bb[3]))
+        regions = []
+        if E is not None:
             m = int(3 * max(s for s, _ in self.halo)) + 8
-            x0, x1 = max(0, xs.min() - m), min(self.w, xs.max() + m + 1)
-            y0, y1 = max(0, ys.min() - m), min(self.h, ys.max() + m + 1)
+            x0, y0 = max(0, box[0] - m), max(0, box[1] - m)
+            x1, y1 = min(self.w, box[2] + m), min(self.h, box[3] + m)
             e = E[y0:y1, x0:x1] * self.mask[y0:y1, x0:x1, None] * self.tint[y0:y1, x0:x1]
             if self.defocus > 0:
                 e = cv2.GaussianBlur(e, (0, 0), self.defocus)
@@ -134,11 +142,16 @@ class Display:
             e *= self.gain * exposure
             if self.noise > 0:
                 e += rng.normal(0, 1, e.shape).astype(np.float32) * np.sqrt(np.maximum(e, 0)) * self.noise
-            add[y0:y1, x0:x1] += np.maximum(e, 0)
+            regions.append(((x0, y0, x1, y1), np.maximum(e, 0)))
         if self.flare and self.flare.get("gain", 0) > 0:
-            add += self._rainbow(frame_lin) * exposure
+            fl = self._rainbow(frame_lin)
+            if fl is not None:
+                regions.append((fl[0], fl[1] * exposure))
         # the sensor clips what the display adds on top of the plate; the plate itself is left as it was
-        return plate + shoulder(plate + add) - shoulder(plate)
+        for (x0, y0, x1, y1), a in regions:
+            p = out[y0:y1, x0:x1]
+            out[y0:y1, x0:x1] = p + shoulder(p + a) - shoulder(p)
+        return out
 
     def _disperse(self, e, x0, y0):
         if self.dispersion <= 0:
@@ -159,7 +172,7 @@ class Display:
         lum = small @ np.array([0.2126, 0.7152, 0.0722], np.float32)
         src = np.clip((lum - F["threshold"]) / (1 - F["threshold"]), 0, 1)
         if src.max() <= 0:
-            return np.zeros_like(lin)
+            return None
         src = cv2.GaussianBlur(src, (0, 0), 1.5)
         d = np.array(F["direction"], np.float64)
         d /= np.linalg.norm(d)
@@ -177,7 +190,10 @@ class Display:
             kern[int(round(ln + t * d[1])), int(round(ln + t * d[0]))] += 1
         out = cv2.filter2D(out, -1, kern / kern.sum())
         out = cv2.resize(out, (self.w, self.h), interpolation=cv2.INTER_LINEAR)
-        return out * (F["gain"] / len(SPECTRUM) * 2.0) * self.mask[..., None]
+        x0, y0, x1, y1 = (int(v) for v in self.rect)
+        x0, y0, x1, y1 = max(0, x0), max(0, y0), min(self.w, x1 + 1), min(self.h, y1 + 1)
+        k = F["gain"] / len(SPECTRUM) * 2.0
+        return (x0, y0, x1, y1), out[y0:y1, x0:x1] * k * self.mask[y0:y1, x0:x1, None]
 
 
 def motion_blur(img, v, shutter):
