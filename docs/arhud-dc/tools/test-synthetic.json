@@ -1,0 +1,13 @@
+{
+  "source": {"file": "footage/test-synthetic.mp4", "t0": 0.0, "t1": 6.0},
+  "display": {"camera_hfov_deg": 82, "hfov_deg": 44, "vfov_deg": 28, "center": [0.5, 0.5]},
+  "planes": [{"name": "wall", "ref_t": 0.0, "poly": [[491.3, 197.0], [1460.5, 193.6], [1378.2, 780.0], [571.7, 777.6]]}],
+  "blocks": [{"plane": "wall", "prefix": "PP3-", "corners": [[760, 420], [1180, 418], [1170, 500], [770, 502]], "rows": 2, "cols": 12}],
+  "timeline": [
+    {"t": 0.2, "step": "2/6", "text": "PP3-20 -> SW2-17"},
+    {"t": 0.5, "target": "PP3-20", "label": "20"},
+    {"t": 3.0, "done": "PP3-20", "note": "Link up"},
+    {"t": 4.8, "step": "3/6", "text": "PP3-21 -> SW2-18"},
+    {"t": 5.0, "target": "PP3-21", "label": "21"}
+  ]
+}

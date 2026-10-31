@@ -1,0 +1,7 @@
+footage/
+out/
+cache/
+__pycache__/
+*.mp4
+*.webm
+*.mkv
